@@ -54,6 +54,7 @@ impl<S: Get<u32>> NomadMessage<S> {
 #[cfg(test)]
 mod tests {
 	use core::convert::TryInto;
+
 	use frame_support::{parameter_types, BoundedVec};
 	use sp_std::mem::size_of_val;
 

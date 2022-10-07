@@ -1,4 +1,5 @@
 use core::{convert::TryFrom, mem};
+
 use sp_std::vec::Vec;
 
 /// This trait provides structure for encoding a Vec<u8> as a xapp message.
