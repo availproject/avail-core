@@ -55,7 +55,7 @@ jobs:
           command: test
           args: --workspace
         env:
-          RUSTFLAGS: "-Zinstrument-coverage"
+          RUSTFLAGS: "-C instrument-coverage"
           LLVM_PROFILE_FILE: "profile-%p-%m.profraw"
 
       - name: Generate test code coverage report
