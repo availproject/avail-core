@@ -43,6 +43,9 @@ jobs:
           command: fmt
           args: --check
 
+      - name: Check `TOML`, `JSON`, and `MarkDown` formatting
+        uses: dprint/check@v2.1
+
       - name: Run tests
         uses: actions-rs/cargo@v1
         with:
