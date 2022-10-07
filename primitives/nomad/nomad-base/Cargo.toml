@@ -32,4 +32,6 @@ std = [
 	"scale-info/std",
 	"frame-support/std",
 	"nomad-core/std",
+	"sp-std/std",
+	"sp-core/std",
 ]
