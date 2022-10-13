@@ -753,6 +753,7 @@ name = "da-primitives"
 version = "0.1.0"
 dependencies = [
  "frame-support",
+ "hex-literal",
  "log",
  "parity-scale-codec 2.3.1",
  "parity-util-mem",

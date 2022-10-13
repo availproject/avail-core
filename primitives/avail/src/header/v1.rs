@@ -1,4 +1,4 @@
-use codec::{Codec, Decode, Encode, EncodeAsRef, Error, HasCompact, Input, Output};
+use codec::{Codec, Decode, Encode};
 #[cfg(feature = "std")]
 use parity_util_mem::{MallocSizeOf, MallocSizeOfOps};
 use scale_info::TypeInfo;
@@ -7,72 +7,25 @@ use serde::{Deserialize, Serialize};
 use sp_core::{RuntimeDebug, H256, U256};
 use sp_runtime::{
 	traits::{
-		AtLeast32BitUnsigned, Hash as HashT, Header as HeaderT, MaybeDisplay, MaybeFromStr,
-		MaybeMallocSizeOf, MaybeSerialize, MaybeSerializeDeserialize, Member, SimpleBitOps,
+		AtLeast32BitUnsigned, Hash as HashT, Header as HeaderT, MaybeDisplay, MaybeMallocSizeOf,
+		MaybeSerialize, MaybeSerializeDeserialize, Member, SimpleBitOps,
 	},
 	Digest,
 };
-use sp_runtime_interface::pass_by::{Codec as PassByCodecImpl, PassBy};
-use sp_std::{convert::TryFrom, fmt::Debug, hash::Hash as StdHash};
+use sp_std::{convert::TryFrom, fmt::Debug};
 
 use crate::{
 	asdr::DataLookup,
 	traits::{ExtendedHeader, ExtrinsicsWithCommitment as _},
-	KateCommitment,
+	HeaderNumberTrait, KateCommitment, KateHashOutputTrait, KateHashTrait,
 };
 
-pub trait HeaderNumberTrait:
-	Member
-	+ AtLeast32BitUnsigned
-	+ Codec
-	+ MaybeSerializeDeserialize
-	+ MaybeDisplay
-	+ MaybeFromStr
-	+ MaybeFromStr
-	+ MaybeMallocSizeOf
-	+ StdHash
-	+ Copy
-	+ Into<U256>
-	+ TryFrom<U256>
-	+ Debug
-	+ Eq
-{
-}
-
-impl<
-		T: Member
-			+ AtLeast32BitUnsigned
-			+ Codec
-			+ MaybeSerializeDeserialize
-			+ MaybeDisplay
-			+ MaybeFromStr
-			+ MaybeMallocSizeOf
-			+ StdHash
-			+ Copy
-			+ Into<U256>
-			+ TryFrom<U256>
-			+ Debug
-			+ Eq,
-	> HeaderNumberTrait for T
-{
-}
-
-pub trait KateHashTrait: HashT {}
-impl<T: HashT> KateHashTrait for T {}
-
-pub trait KateHashOutputTrait:
-	MaybeDisplay + Decode + MaybeMallocSizeOf + SimpleBitOps + Ord
-{
-}
-
-impl<T: MaybeDisplay + Decode + MaybeMallocSizeOf + SimpleBitOps + Ord> KateHashOutputTrait for T {}
-
 /// Abstraction over a block header for a substrate chain.
-#[derive(PartialEq, Eq, Clone, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, RuntimeDebug, TypeInfo, Encode, Decode)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(deny_unknown_fields, rename_all = "camelCase"))]
 pub struct Header<Number: HeaderNumberTrait, Hash: KateHashTrait> {
-	/// The parent hash.
+	/// The parent hash.:w
 	pub parent_hash: Hash::Output,
 	/// The block number.
 	#[cfg_attr(feature = "std", serde(with = "number_serde"))]
@@ -90,13 +43,12 @@ pub struct Header<Number: HeaderNumberTrait, Hash: KateHashTrait> {
 
 impl<N, H> Default for Header<N, H>
 where
-	N: HeaderNumberTrait,
-	H: KateHashTrait,
-	<H as sp_runtime::traits::Hash>::Output: From<[u8; 32]>,
+	N: HeaderNumberTrait + Default,
+	H: KateHashTrait + Default,
 {
 	fn default() -> Self {
 		Self {
-			number: 1u32.into(),
+			number: Default::default(),
 			extrinsics_root: Default::default(),
 			state_root: Default::default(),
 			parent_hash: Default::default(),
@@ -104,14 +56,6 @@ where
 			app_data_lookup: Default::default(),
 		}
 	}
-}
-
-impl<Number, Hash> PassBy for Header<Number, Hash>
-where
-	Number: HeaderNumberTrait,
-	Hash: KateHashTrait,
-{
-	type PassBy = PassByCodecImpl<Header<Number, Hash>>;
 }
 
 /// This module adds serialization support to `Header::number` field.
@@ -155,56 +99,6 @@ where
 			+ self.digest.size_of(ops)
 			+ self.app_data_lookup.size_of(ops)
 	}
-}
-
-impl<Number, Hash> Decode for Header<Number, Hash>
-where
-	Number: HeaderNumberTrait,
-	Hash: KateHashTrait,
-	Hash::Output: Decode,
-{
-	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
-		let parent_hash = Decode::decode(input)?;
-		let number = <<Number as HasCompact>::Type>::decode(input)?.into();
-		let state_root = Decode::decode(input)?;
-		let extrinsics_root = Decode::decode(input)?;
-		let digest = Decode::decode(input)?;
-		let app_data_lookup = Decode::decode(input)?;
-
-		Ok(Self {
-			parent_hash,
-			number,
-			state_root,
-			extrinsics_root,
-			digest,
-			app_data_lookup,
-		})
-	}
-}
-
-impl<Number, Hash> Encode for Header<Number, Hash>
-where
-	Number: HeaderNumberTrait,
-	Hash: KateHashTrait,
-	Hash::Output: Encode,
-{
-	fn encode_to<T: Output + ?Sized>(&self, dest: &mut T) {
-		self.parent_hash.encode_to(dest);
-		<<<Number as HasCompact>::Type as EncodeAsRef<_>>::RefType>::from(&self.number)
-			.encode_to(dest);
-		self.state_root.encode_to(dest);
-		self.extrinsics_root.encode_to(dest);
-		self.digest.encode_to(dest);
-		self.app_data_lookup.encode_to(dest);
-	}
-}
-
-impl<Number, Hash> codec::EncodeLike for Header<Number, Hash>
-where
-	Number: HeaderNumberTrait,
-	Hash: KateHashTrait,
-	Hash::Output: Encode,
-{
 }
 
 impl<Number, Hash> HeaderT for Header<Number, Hash>
@@ -258,7 +152,10 @@ where
 
 	fn digest_mut(&mut self) -> &mut Digest {
 		#[cfg(feature = "std")]
-		log::debug!(target: "header", "Retrieving mutable reference to digest");
+		log::debug!(
+			target: super::LOG_TARGET,
+			"Retrieving mutable reference to digest"
+		);
 		&mut self.digest
 	}
 
@@ -311,7 +208,6 @@ where
 		digest: Digest,
 		app_data_lookup: DataLookup,
 	) -> Self {
-		// TODO @miguel: Default app_data_lookup?
 		Self {
 			number,
 			extrinsics_root,
@@ -335,6 +231,8 @@ where
 
 #[cfg(all(test, feature = "std"))]
 mod tests {
+	use hex_literal::hex;
+
 	use super::*;
 
 	#[test]
@@ -390,19 +288,8 @@ mod tests {
 			hash: BlakeTwo256::hash(b"4"),
 			rows: 1,
 			cols: 4,
-			commitment: vec![
-				128, 233, 73, 235, 218, 245, 193, 62, 9, 100, 156, 88, 124, 107, 25, 5, 251, 119,
-				11, 74, 104, 67, 171, 170, 198, 180, 19, 227, 167, 64, 93, 152, 37, 172, 118, 77,
-				178, 52, 29, 185, 183, 150, 89, 101, 7, 62, 151, 89, 128, 233, 73, 235, 218, 245,
-				193, 62, 9, 100, 156, 88, 124, 107, 25, 5, 251, 119, 11, 74, 104, 67, 171, 170,
-				198, 180, 19, 227, 167, 64, 93, 152, 37, 172, 118, 77, 178, 52, 29, 185, 183, 150,
-				89, 101, 7, 62, 151, 89,
-			],
-			data_root: [
-				63, 191, 50, 39, 146, 108, 250, 63, 65, 103, 119, 30, 90, 217, 28, 250, 44, 45,
-				112, 144, 102, 124, 224, 30, 145, 28, 169, 11, 79, 49, 91, 17,
-			]
-			.into(),
+			commitment: hex!("80e949ebdaf5c13e09649c587c6b1905fb770b4a6843abaac6b413e3a7405d9825ac764db2341db9b7965965073e975980e949ebdaf5c13e09649c587c6b1905fb770b4a6843abaac6b413e3a7405d9825ac764db2341db9b7965965073e9759").to_vec(),
+			data_root: hex!("3fbf3227926cfa3f4167771e5ad91cfa2c2d7090667ce01e911ca90b4f315b11").into(),
 		};
 		let data_lookup = DataLookup {
 			size: 1,
@@ -419,20 +306,6 @@ mod tests {
 			app_data_lookup: data_lookup,
 		};
 		let encoded = header.encode();
-		assert_eq!(encoded, vec![
-			146, 205, 245, 120, 196, 112, 133, 165, 153, 34, 86, 240, 220, 249, 125, 11, 25, 241,
-			241, 201, 222, 77, 95, 227, 12, 58, 206, 97, 145, 182, 229, 219, 8, 88, 19, 72, 51,
-			123, 15, 62, 20, 134, 32, 23, 61, 170, 165, 249, 77, 0, 216, 129, 112, 93, 203, 240,
-			170, 131, 239, 218, 186, 97, 210, 237, 225, 235, 134, 73, 33, 73, 151, 87, 78, 32, 196,
-			100, 56, 138, 23, 36, 32, 210, 84, 3, 104, 43, 187, 184, 12, 73, 104, 49, 200, 204, 31,
-			143, 13, 129, 1, 128, 233, 73, 235, 218, 245, 193, 62, 9, 100, 156, 88, 124, 107, 25,
-			5, 251, 119, 11, 74, 104, 67, 171, 170, 198, 180, 19, 227, 167, 64, 93, 152, 37, 172,
-			118, 77, 178, 52, 29, 185, 183, 150, 89, 101, 7, 62, 151, 89, 128, 233, 73, 235, 218,
-			245, 193, 62, 9, 100, 156, 88, 124, 107, 25, 5, 251, 119, 11, 74, 104, 67, 171, 170,
-			198, 180, 19, 227, 167, 64, 93, 152, 37, 172, 118, 77, 178, 52, 29, 185, 183, 150, 89,
-			101, 7, 62, 151, 89, 1, 0, 4, 0, 63, 191, 50, 39, 146, 108, 250, 63, 65, 103, 119, 30,
-			90, 217, 28, 250, 44, 45, 112, 144, 102, 124, 224, 30, 145, 28, 169, 11, 79, 49, 91,
-			17, 4, 0, 4, 53, 1, 0, 0, 0, 0
-		],);
+		assert_eq!(encoded, hex!("92cdf578c47085a5992256f0dcf97d0b19f1f1c9de4d5fe30c3ace6191b6e5db08581348337b0f3e148620173daaa5f94d00d881705dcbf0aa83efdaba61d2ede1eb8649214997574e20c464388a172420d25403682bbbb80c496831c8cc1f8f0d810180e949ebdaf5c13e09649c587c6b1905fb770b4a6843abaac6b413e3a7405d9825ac764db2341db9b7965965073e975980e949ebdaf5c13e09649c587c6b1905fb770b4a6843abaac6b413e3a7405d9825ac764db2341db9b7965965073e975904103fbf3227926cfa3f4167771e5ad91cfa2c2d7090667ce01e911ca90b4f315b11040004350100000000").to_vec());
 	}
 }

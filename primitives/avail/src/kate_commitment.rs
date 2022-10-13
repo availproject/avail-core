@@ -19,8 +19,10 @@ pub struct KateCommitment<HashOutput> {
 	/// Plonk commitment.
 	pub commitment: Vec<u8>,
 	/// Rows
+	#[codec(compact)]
 	pub rows: u16,
 	/// Cols
+	#[codec(compact)]
 	pub cols: u16,
 	/// The merkle root of the data submitted
 	pub data_root: H256,

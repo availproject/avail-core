@@ -21,6 +21,9 @@ sp-runtime = { version = "4.0.0-dev", default-features = false }
 sp-runtime-interface = { version = "4.0.0-dev", default-features = false }
 sp-std = { version = "4.0.0-dev", default-features = false }
 
+[dev-dependencies]
+hex-literal = "0.3.4"
+
 [features]
 default = ["std"]
 std = [
