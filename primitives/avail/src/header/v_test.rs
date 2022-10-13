@@ -12,7 +12,7 @@ use sp_runtime::{
 	},
 	Digest,
 };
-use sp_std::{convert::TryFrom, fmt::Debug};
+use sp_std::{convert::TryFrom, fmt::Debug, vec::Vec};
 
 use crate::{
 	asdr::DataLookup,
