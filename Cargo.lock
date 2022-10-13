@@ -765,6 +765,7 @@ dependencies = [
  "sp-runtime",
  "sp-runtime-interface",
  "sp-std",
+ "test-case",
 ]
 
 [[package]]

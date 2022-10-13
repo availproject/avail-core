@@ -23,6 +23,7 @@ sp-std = { version = "4.0.0-dev", default-features = false }
 
 [dev-dependencies]
 hex-literal = "0.3.4"
+test-case = "1.2.3"
 
 [features]
 default = ["std"]
@@ -40,3 +41,5 @@ std = [
 	"frame-support/std",
 	"parity-util-mem/std",
 ]
+
+header-backward-compatibility-test = []
