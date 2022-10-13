@@ -154,9 +154,7 @@ where
 
 	/// Convenience helper for computing the hash of the header without having
 	/// to import the trait.
-	pub fn hash(&self) -> H::Output {
-		forward_to_version!(self, hash)
-	}
+	pub fn hash(&self) -> H::Output { forward_to_version!(self, hash) }
 }
 
 #[cfg(feature = "std")]
@@ -182,9 +180,11 @@ where
 	N: HeaderNumberTrait + Default,
 	H: KateHashTrait + Default,
 {
-	fn default() -> Self {
-		Self::V1(Default::default())
-	}
+	#[cfg(not(feature = "header-backward-compatibility-test"))]
+	fn default() -> Self { Self::V1(Default::default()) }
+
+	#[cfg(feature = "header-backward-compatibility-test")]
+	fn default() -> Self { Self::VTest(Default::default()) }
 }
 
 impl<Number, Hash> PassBy for Header<Number, Hash>
@@ -238,9 +238,7 @@ where
 	type Hashing = Hash;
 	type Number = Number;
 
-	fn number(&self) -> &Self::Number {
-		forward_to_version!(self, number)
-	}
+	fn number(&self) -> &Self::Number { forward_to_version!(self, number) }
 
 	fn set_number(&mut self, num: Self::Number) {
 		forward_to_version!(self, set_number, num);
@@ -262,29 +260,21 @@ where
 		}
 	}
 
-	fn state_root(&self) -> &Self::Hash {
-		forward_to_version!(self, state_root)
-	}
+	fn state_root(&self) -> &Self::Hash { forward_to_version!(self, state_root) }
 
 	fn set_state_root(&mut self, root: Self::Hash) {
 		forward_to_version!(self, set_state_root, root);
 	}
 
-	fn parent_hash(&self) -> &Self::Hash {
-		forward_to_version!(self, parent_hash)
-	}
+	fn parent_hash(&self) -> &Self::Hash { forward_to_version!(self, parent_hash) }
 
 	fn set_parent_hash(&mut self, hash: Self::Hash) {
 		forward_to_version!(self, set_parent_hash, hash);
 	}
 
-	fn digest(&self) -> &Digest {
-		forward_to_version!(self, digest)
-	}
+	fn digest(&self) -> &Digest { forward_to_version!(self, digest) }
 
-	fn digest_mut(&mut self) -> &mut Digest {
-		forward_to_version!(self, digest_mut)
-	}
+	fn digest_mut(&mut self) -> &mut Digest { forward_to_version!(self, digest_mut) }
 
 	fn new(
 		number: Self::Number,
@@ -294,14 +284,29 @@ where
 		digest: Digest,
 	) -> Self {
 		let extrinsics_root = <<Self as ExtendedHeader>::Root>::new(extrinsics_root_hash);
-		Self::new_v1(
+		let lookup = Default::default();
+
+		#[cfg(not(feature = "header-backward-compatibility-test"))]
+		let header = Self::new_v1(
 			number,
 			extrinsics_root,
 			state_root,
 			parent_hash,
 			digest,
-			Default::default(),
-		)
+			lookup,
+		);
+
+		#[cfg(feature = "header-backward-compatibility-test")]
+		let header = Self::new_v_test(
+			number,
+			extrinsics_root,
+			state_root,
+			parent_hash,
+			digest,
+			lookup,
+		);
+
+		header
 	}
 }
 
@@ -314,53 +319,47 @@ where
 	type Number = N;
 	type Root = KateCommitment<Self::Hash>;
 
-	fn extrinsics_root(&self) -> &Self::Root {
-		forward_to_version!(self, extrinsics_root)
-	}
+	fn extrinsics_root(&self) -> &Self::Root { forward_to_version!(self, extrinsics_root) }
 
 	fn set_extrinsics_root(&mut self, root: Self::Root) {
 		forward_to_version!(self, set_extrinsics_root, root);
 	}
 
-	fn data_root(&self) -> H256 {
-		forward_to_version!(self, data_root)
-	}
+	fn data_root(&self) -> H256 { forward_to_version!(self, data_root) }
 
 	fn set_data_root(&mut self, data_root: H256) {
 		forward_to_version!(self, set_data_root, data_root);
 	}
 
-	fn data_lookup(&self) -> &DataLookup {
-		forward_to_version!(self, data_lookup)
-	}
+	fn data_lookup(&self) -> &DataLookup { forward_to_version!(self, data_lookup) }
 
 	/// Creates new header.
 	fn new(
-		number: Self::Number,
-		extrinsics_root: Self::Root,
-		state_root: Self::Hash,
-		parent_hash: Self::Hash,
+		n: Self::Number,
+		extrinsics: Self::Root,
+		state: Self::Hash,
+		parent: Self::Hash,
 		digest: Digest,
-		app_data_lookup: DataLookup,
+		lookup: DataLookup,
 	) -> Self {
-		Self::new_v1(
-			number,
-			extrinsics_root,
-			state_root,
-			parent_hash,
-			digest,
-			app_data_lookup,
-		)
+		#[cfg(not(feature = "header-backward-compatibility-test"))]
+		let header = Self::new_v1(n, extrinsics, state, parent, digest, lookup);
+
+		#[cfg(feature = "header-backward-compatibility-test")]
+		let header = Self::new_v_test(n, extrinsics, state, parent, digest, lookup);
+
+		header
 	}
 }
 
 #[cfg(test)]
 mod tests {
-	use super::*;
 	use codec::Error;
 	use hex_literal::hex;
 	use sp_runtime::{traits::BlakeTwo256, DigestItem};
 	use test_case::test_case;
+
+	use super::*;
 
 	fn extrinsic_root() -> KateCommitment<H256> {
 		KateCommitment {
@@ -391,9 +390,7 @@ mod tests {
 	}
 
 	#[cfg(not(feature = "header-backward-compatibility-test"))]
-	fn header_test() -> Header<u32, BlakeTwo256> {
-		header_v1()
-	}
+	fn header_test() -> Header<u32, BlakeTwo256> { header_v1() }
 
 	#[cfg(feature = "header-backward-compatibility-test")]
 	fn header_test() -> Header<u32, BlakeTwo256> {

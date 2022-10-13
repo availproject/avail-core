@@ -138,41 +138,23 @@ where
 	type Hashing = Hash;
 	type Number = Number;
 
-	fn number(&self) -> &Self::Number {
-		&self.number
-	}
+	fn number(&self) -> &Self::Number { &self.number }
 
-	fn set_number(&mut self, num: Self::Number) {
-		self.number = num
-	}
+	fn set_number(&mut self, num: Self::Number) { self.number = num }
 
-	fn extrinsics_root(&self) -> &Self::Hash {
-		self.extrinsics_root.hash()
-	}
+	fn extrinsics_root(&self) -> &Self::Hash { self.extrinsics_root.hash() }
 
-	fn set_extrinsics_root(&mut self, _root: Self::Hash) {
-		todo!()
-	}
+	fn set_extrinsics_root(&mut self, _root: Self::Hash) { todo!() }
 
-	fn state_root(&self) -> &Self::Hash {
-		&self.state_root
-	}
+	fn state_root(&self) -> &Self::Hash { &self.state_root }
 
-	fn set_state_root(&mut self, root: Self::Hash) {
-		self.state_root = root
-	}
+	fn set_state_root(&mut self, root: Self::Hash) { self.state_root = root }
 
-	fn parent_hash(&self) -> &Self::Hash {
-		&self.parent_hash
-	}
+	fn parent_hash(&self) -> &Self::Hash { &self.parent_hash }
 
-	fn set_parent_hash(&mut self, hash: Self::Hash) {
-		self.parent_hash = hash
-	}
+	fn set_parent_hash(&mut self, hash: Self::Hash) { self.parent_hash = hash }
 
-	fn digest(&self) -> &Digest {
-		&self.digest
-	}
+	fn digest(&self) -> &Digest { &self.digest }
 
 	fn digest_mut(&mut self) -> &mut Digest {
 		#[cfg(feature = "std")]
@@ -212,25 +194,17 @@ where
 	type Number = N;
 	type Root = KateCommitment<Self::Hash>;
 
-	fn extrinsics_root(&self) -> &Self::Root {
-		&self.extrinsics_root
-	}
+	fn extrinsics_root(&self) -> &Self::Root { &self.extrinsics_root }
 
-	fn set_extrinsics_root(&mut self, root: Self::Root) {
-		self.extrinsics_root = root;
-	}
+	fn set_extrinsics_root(&mut self, root: Self::Root) { self.extrinsics_root = root; }
 
-	fn data_root(&self) -> H256 {
-		self.extrinsics_root.data_root.into()
-	}
+	fn data_root(&self) -> H256 { self.extrinsics_root.data_root.into() }
 
 	fn set_data_root(&mut self, data_root: H256) {
 		self.extrinsics_root.data_root = data_root.into();
 	}
 
-	fn data_lookup(&self) -> &DataLookup {
-		&self.app_data_lookup
-	}
+	fn data_lookup(&self) -> &DataLookup { &self.app_data_lookup }
 
 	/// Creates new header.
 	fn new(
@@ -260,9 +234,7 @@ where
 {
 	/// Convenience helper for computing the hash of the header without having
 	/// to import the trait.
-	pub fn hash(&self) -> Hash::Output {
-		Hash::hash_of(self)
-	}
+	pub fn hash(&self) -> Hash::Output { Hash::hash_of(self) }
 }
 
 #[cfg(all(test, feature = "std"))]
