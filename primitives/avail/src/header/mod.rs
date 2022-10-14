@@ -2,8 +2,6 @@ use codec::{Codec, Decode, Encode};
 #[cfg(feature = "std")]
 use parity_util_mem::{MallocSizeOf, MallocSizeOfOps};
 use scale_info::TypeInfo;
-#[cfg(feature = "std")]
-use serde::{Serialize, Serializer};
 use sp_core::{RuntimeDebug, H256, U256};
 use sp_runtime::{
 	traits::{
@@ -70,6 +68,9 @@ impl<T: MaybeDisplay + Decode + MaybeMallocSizeOf + SimpleBitOps + Ord> KateHash
 pub mod v1;
 #[cfg(feature = "header-backward-compatibility-test")]
 pub mod v_test;
+
+#[cfg(feature = "std")]
+pub mod serde;
 
 const LOG_TARGET: &str = "header";
 
@@ -155,24 +156,6 @@ where
 	/// Convenience helper for computing the hash of the header without having
 	/// to import the trait.
 	pub fn hash(&self) -> H::Output { forward_to_version!(self, hash) }
-}
-
-#[cfg(feature = "std")]
-impl<N, H> Serialize for Header<N, H>
-where
-	N: HeaderNumberTrait + Serialize,
-	H: KateHashTrait,
-{
-	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-	where
-		S: Serializer,
-	{
-		match &self {
-			Self::V1(ref header) => serializer.serialize_newtype_variant("Header", 0, "V1", header),
-			#[cfg(feature = "header-backward-compatibility-test")]
-			Self::VTest(ref header) => serializer.serialize_newtype_variant("Header", 1, "VTest", header),
-		}
-	}
 }
 
 impl<N, H> Default for Header<N, H>
@@ -413,8 +396,18 @@ mod tests {
 	}
 
 	#[test_case( header_v1().encode().as_ref() => Ok(header_v1()) ; "Decode V1 header")]
-	#[test_case( header_test().encode().as_ref() => Ok(header_test()) ; "Decode Theader")]
+	#[test_case( header_test().encode().as_ref() => Ok(header_test()) ; "Decode test header")]
 	fn header_decoding(mut encoded_header: &[u8]) -> Result<Header<u32, BlakeTwo256>, Error> {
 		Header::decode(&mut encoded_header)
+	}
+
+	fn header_serde_encode<N: HeaderNumberTrait, H: KateHashTrait>(header: Header<N, H>) -> String {
+		serde_json::to_string(&header).unwrap_or_default()
+	}
+
+	#[test_case( header_serde_encode(header_v1()) => Ok(header_v1()) ; "Serde V1 header")]
+	#[test_case( header_serde_encode(header_test()) => Ok(header_test()) ; "Serde test header")]
+	fn header_serde(json_header: String) -> Result<Header<u32, BlakeTwo256>, String> {
+		serde_json::from_str(&json_header).map_err(|serde_err| format!("{}", serde_err))
 	}
 }
