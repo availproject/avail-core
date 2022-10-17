@@ -4,7 +4,7 @@ use parity_util_mem::{MallocSizeOf, MallocSizeOfOps};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_core::RuntimeDebug;
+use sp_core::{RuntimeDebug, H256};
 use sp_std::vec::Vec;
 
 use crate::{asdr::DataLookup, header::extension::v1, KateCommitment};
@@ -15,6 +15,10 @@ pub struct HeaderExtension {
 	pub new_field: Vec<u8>,
 	pub commitment: KateCommitment,
 	pub app_lookup: DataLookup,
+}
+
+impl HeaderExtension {
+	pub fn data_root(&self) -> H256 { self.commitment.data_root }
 }
 
 #[cfg(feature = "std")]

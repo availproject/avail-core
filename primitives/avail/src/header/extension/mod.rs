@@ -4,7 +4,7 @@ use parity_util_mem::{MallocSizeOf, MallocSizeOfOps};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_core::RuntimeDebug;
+use sp_core::{RuntimeDebug, H256};
 
 pub mod v1;
 
@@ -38,6 +38,10 @@ macro_rules! forward_to_version {
 			HeaderExtension::VTest(header) => header.$function($arg),
 		}
 	}};
+}
+
+impl HeaderExtension {
+	pub fn data_root(&self) -> H256 { forward_to_version!(self, data_root) }
 }
 
 impl Default for HeaderExtension {
