@@ -1,5 +1,5 @@
 use codec::{Decode, Encode};
-use derive_more::{Add, From};
+use derive_more::{Add, Display, From, Into};
 use frame_support::RuntimeDebug;
 #[cfg(feature = "std")]
 use parity_util_mem::{MallocSizeOf, MallocSizeOfOps};
@@ -19,7 +19,20 @@ mod app_unchecked_extrinsic;
 pub use app_unchecked_extrinsic::*;
 
 #[derive(
-	Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Add, From, TypeInfo, RuntimeDebug, Encode, Decode,
+	Clone,
+	Copy,
+	PartialEq,
+	Eq,
+	PartialOrd,
+	Ord,
+	Add,
+	From,
+	TypeInfo,
+	RuntimeDebug,
+	Encode,
+	Decode,
+	Display,
+	Into,
 )]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct AppId(#[codec(compact)] pub u32);
