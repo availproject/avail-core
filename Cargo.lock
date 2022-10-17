@@ -752,6 +752,7 @@ dependencies = [
 name = "da-primitives"
 version = "0.1.0"
 dependencies = [
+ "derive_more",
  "frame-support",
  "hex-literal",
  "log",
@@ -1681,6 +1682,7 @@ dependencies = [
 name = "kate-recovery"
 version = "0.1.0"
 dependencies = [
+ "da-primitives",
  "dusk-bytes",
  "dusk-plonk",
  "getrandom 0.2.7",
@@ -1688,6 +1690,7 @@ dependencies = [
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "serde",
+ "sp-runtime",
  "thiserror",
 ]
 

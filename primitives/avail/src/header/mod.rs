@@ -163,11 +163,11 @@ where
 	N: HeaderNumberTrait + Default,
 	H: KateHashTrait + Default,
 {
-	#[cfg(not(feature = "header-backward-compatibility-test"))]
+	// #[cfg(not(feature = "header-backward-compatibility-test"))]
 	fn default() -> Self { Self::V1(Default::default()) }
 
-	#[cfg(feature = "header-backward-compatibility-test")]
-	fn default() -> Self { Self::VTest(Default::default()) }
+	// #[cfg(feature = "header-backward-compatibility-test")]
+	// fn default() -> Self { Self::VTest(Default::default()) }
 }
 
 impl<Number, Hash> PassBy for Header<Number, Hash>
