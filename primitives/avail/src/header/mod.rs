@@ -93,9 +93,7 @@ impl<N: HeaderBlockNumber, H: HeaderHash> Header<N, H> {
 	/// Convenience helper for computing the hash of the header without having
 	/// to import the trait.
 	#[inline]
-	pub fn hash(&self) -> H::Output {
-		H::hash_of(self)
-	}
+	pub fn hash(&self) -> H::Output { H::hash_of(self) }
 }
 
 impl<N, H> Default for Header<N, H>
@@ -165,41 +163,23 @@ where
 	type Hashing = Hash;
 	type Number = Number;
 
-	fn number(&self) -> &Self::Number {
-		&self.number
-	}
+	fn number(&self) -> &Self::Number { &self.number }
 
-	fn set_number(&mut self, num: Self::Number) {
-		self.number = num
-	}
+	fn set_number(&mut self, num: Self::Number) { self.number = num }
 
-	fn extrinsics_root(&self) -> &Self::Hash {
-		&self.extrinsics_root
-	}
+	fn extrinsics_root(&self) -> &Self::Hash { &self.extrinsics_root }
 
-	fn set_extrinsics_root(&mut self, root: Self::Hash) {
-		self.extrinsics_root = root
-	}
+	fn set_extrinsics_root(&mut self, root: Self::Hash) { self.extrinsics_root = root }
 
-	fn state_root(&self) -> &Self::Hash {
-		&self.state_root
-	}
+	fn state_root(&self) -> &Self::Hash { &self.state_root }
 
-	fn set_state_root(&mut self, root: Self::Hash) {
-		self.state_root = root
-	}
+	fn set_state_root(&mut self, root: Self::Hash) { self.state_root = root }
 
-	fn parent_hash(&self) -> &Self::Hash {
-		&self.parent_hash
-	}
+	fn parent_hash(&self) -> &Self::Hash { &self.parent_hash }
 
-	fn set_parent_hash(&mut self, hash: Self::Hash) {
-		self.parent_hash = hash
-	}
+	fn set_parent_hash(&mut self, hash: Self::Hash) { self.parent_hash = hash }
 
-	fn digest(&self) -> &Digest {
-		&self.digest
-	}
+	fn digest(&self) -> &Digest { &self.digest }
 
 	fn digest_mut(&mut self) -> &mut Digest {
 		#[cfg(feature = "std")]
@@ -241,13 +221,9 @@ impl<N: HeaderBlockNumber, H: HeaderHash> ExtendedHeader for Header<N, H> {
 		Header::<N, H>::new(n, extrinsics, state, parent, digest, extension)
 	}
 
-	fn extension(&self) -> &HeaderExtension {
-		&self.extension
-	}
+	fn extension(&self) -> &HeaderExtension { &self.extension }
 
-	fn set_extension(&mut self, extension: HeaderExtension) {
-		self.extension = extension;
-	}
+	fn set_extension(&mut self, extension: HeaderExtension) { self.extension = extension; }
 }
 
 #[cfg(test)]
@@ -349,9 +325,7 @@ mod tests {
 	}
 
 	#[cfg(not(feature = "header-backward-compatibility-test"))]
-	fn header_test() -> Header<u32, BlakeTwo256> {
-		header_v1()
-	}
+	fn header_test() -> Header<u32, BlakeTwo256> { header_v1() }
 
 	#[cfg(feature = "header-backward-compatibility-test")]
 	fn header_test() -> Header<u32, BlakeTwo256> {

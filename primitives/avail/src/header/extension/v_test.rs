@@ -7,21 +7,29 @@ use serde::{Deserialize, Serialize};
 use sp_core::RuntimeDebug;
 use sp_std::vec::Vec;
 
-use crate::{asdr::DataLookup, KateCommitment};
+use crate::{asdr::DataLookup, header::extension::v1, KateCommitment};
 
 #[derive(PartialEq, Eq, Clone, RuntimeDebug, TypeInfo, Encode, Decode, Default)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct HeaderExtension {
 	pub new_field: Vec<u8>,
 	pub commitment: KateCommitment,
-	pub app_data_lookup: DataLookup,
+	pub app_lookup: DataLookup,
 }
 
 #[cfg(feature = "std")]
 impl MallocSizeOf for HeaderExtension {
 	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-		self.new_field.size_of(ops)
-			+ self.commitment.size_of(ops)
-			+ self.app_data_lookup.size_of(ops)
+		self.new_field.size_of(ops) + self.commitment.size_of(ops) + self.app_lookup.size_of(ops)
+	}
+}
+
+impl From<v1::HeaderExtension> for HeaderExtension {
+	fn from(ext: v1::HeaderExtension) -> Self {
+		Self {
+			commitment: ext.commitment,
+			app_lookup: ext.app_lookup,
+			new_field: vec![1, 1, 2, 3, 5, 8, 13, 21, 34, 55],
+		}
 	}
 }
