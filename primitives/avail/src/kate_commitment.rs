@@ -23,52 +23,6 @@ pub struct KateCommitment {
 	pub commitment: Vec<u8>,
 }
 
-/*
-/// Marker trait for types `T` that can be use as `Hash` in `ExtrinsicsRoot`.
-pub trait KateExtrinsicHash: Member + Codec {}
-
-impl<T: Member + Codec> KateExtrinsicHash for T {}
-
-impl<HashOutput: KateExtrinsicHash> ExtrinsicsWithCommitment for KateCommitment<HashOutput> {
-	type HashOutput = HashOutput;
-
-	fn hash(&self) -> &Self::HashOutput { &self.hash }
-
-	fn commitment(&self) -> &Vec<u8> { &self.commitment }
-
-	fn data_root(&self) -> &H256 { &self.data_root }
-
-	fn new(hash: HashOutput) -> Self { hash.into() }
-
-	fn new_with_commitment(
-		hash: HashOutput,
-		commitment: Vec<u8>,
-		rows: u16,
-		cols: u16,
-		data_root: H256,
-	) -> Self {
-		Self {
-			hash,
-			commitment,
-			rows,
-			cols,
-			data_root,
-		}
-	}
-}
-
-impl<Hash: KateExtrinsicHash> From<Hash> for KateCommitment<Hash> {
-	fn from(hash: Hash) -> Self {
-		Self {
-			hash,
-			commitment: Default::default(),
-			rows: 0,
-			cols: 0,
-			data_root: Default::default(),
-		}
-	}
-}*/
-
 #[cfg(feature = "std")]
 impl parity_util_mem::MallocSizeOf for KateCommitment {
 	fn size_of(&self, ops: &mut parity_util_mem::MallocSizeOfOps) -> usize {

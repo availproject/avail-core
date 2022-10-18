@@ -8,7 +8,6 @@ use sp_core::{RuntimeDebug, H256};
 
 pub mod v1;
 
-#[cfg(feature = "header-backward-compatibility-test")]
 pub mod v_test;
 
 /// Header extension data.
@@ -16,7 +15,6 @@ pub mod v_test;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum HeaderExtension {
 	V1(v1::HeaderExtension),
-	#[cfg(feature = "header-backward-compatibility-test")]
 	VTest(v_test::HeaderExtension),
 }
 
@@ -26,7 +24,6 @@ macro_rules! forward_to_version {
 	($self:ident, $function:ident) => {{
 		match $self {
 			HeaderExtension::V1(header) => header.$function(),
-			#[cfg(feature = "header-backward-compatibility-test")]
 			HeaderExtension::VTest(header) => header.$function(),
 		}
 	}};
@@ -34,7 +31,6 @@ macro_rules! forward_to_version {
 	($self:ident, $function:ident, $arg:expr) => {{
 		match $self {
 			HeaderExtension::V1(header) => header.$function($arg),
-			#[cfg(feature = "header-backward-compatibility-test")]
 			HeaderExtension::VTest(header) => header.$function($arg),
 		}
 	}};
@@ -60,7 +56,6 @@ impl From<v1::HeaderExtension> for HeaderExtension {
 	fn from(ext: v1::HeaderExtension) -> Self { Self::V1(ext) }
 }
 
-#[cfg(feature = "header-backward-compatibility-test")]
 impl From<v_test::HeaderExtension> for HeaderExtension {
 	#[inline]
 	fn from(ext: v_test::HeaderExtension) -> Self { Self::VTest(ext) }

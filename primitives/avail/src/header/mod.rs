@@ -114,7 +114,7 @@ where
 }
 
 impl<N: HeaderBlockNumber, H: HeaderHash> PassBy for Header<N, H> {
-	type PassBy = PassByCodecImpl<Header<N, H>>;
+	type PassBy = PassByCodecImpl<Self>;
 }
 
 #[cfg(feature = "std")]
@@ -324,10 +324,6 @@ mod tests {
 		}
 	}
 
-	#[cfg(not(feature = "header-backward-compatibility-test"))]
-	fn header_test() -> Header<u32, BlakeTwo256> { header_v1() }
-
-	#[cfg(feature = "header-backward-compatibility-test")]
 	fn header_test() -> Header<u32, BlakeTwo256> {
 		let mut header = header_v1();
 		header.extension = extension::v_test::HeaderExtension {
