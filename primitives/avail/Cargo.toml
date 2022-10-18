@@ -43,4 +43,4 @@ std = [
 	"parity-util-mem/std",
 ]
 
-#header-backward-compatibility-test = []
+header-backward-compatibility-test = []
