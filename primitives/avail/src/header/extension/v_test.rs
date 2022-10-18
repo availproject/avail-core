@@ -33,7 +33,7 @@ impl From<v1::HeaderExtension> for HeaderExtension {
 		Self {
 			commitment: ext.commitment,
 			app_lookup: ext.app_lookup,
-			new_field: vec![1, 1, 2, 3, 5, 8, 13, 21, 34, 55],
+			new_field: [1, 1, 2, 3, 5, 8, 13, 21, 34, 55].into(),
 		}
 	}
 }
