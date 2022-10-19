@@ -299,13 +299,16 @@ where
 			return Err("Invalid transaction version".into());
 		}
 
+		let signature = if is_signed {
+			Some(Decode::decode(input)?)
+		} else {
+			None
+		};
+		let function = Decode::decode(input)?;
+
 		Ok(Self {
-			signature: if is_signed {
-				Some(Decode::decode(input)?)
-			} else {
-				None
-			},
-			function: Decode::decode(input)?,
+			signature,
+			function,
 		})
 	}
 }
