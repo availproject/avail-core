@@ -27,7 +27,7 @@ pub use extension::HeaderExtension;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(deny_unknown_fields, rename_all = "camelCase"))]
 pub struct Header<Number: HeaderBlockNumber, Hash: HeaderHash> {
-	/// The parent hash.:w
+	/// The parent hash.
 	pub parent_hash: Hash::Output,
 	/// The block number.
 	#[cfg_attr(feature = "std", serde(with = "number_serde"))]
