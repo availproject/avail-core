@@ -6,12 +6,10 @@ edition = "2018"
 
 [dependencies]
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
-da-primitives = { path = "../../primitives/avail", default-features = false }
 dusk-bytes = "0.1.6"
 dusk-plonk = { git = "https://github.com/maticnetwork/plonk.git", tag = "v0.12.0-polygon-1" }
 getrandom = { version = "0.2", features = ["js"] }
 serde = { version = "1.0", features = ["derive"] }
-sp-runtime = { version = "4.0.0-dev", default-features = false }
 thiserror = "1.0"
 
 [dev-dependencies]
@@ -20,7 +18,4 @@ rand_chacha = "0.3"
 
 [features]
 default = ["std"]
-std = [
-	"da-primitives/std",
-	"sp-runtime/std",
-]
+std = []

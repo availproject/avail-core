@@ -584,7 +584,7 @@ mod tests {
 		);
 
 		for (res, exp) in res.iter().zip(extrinsics.iter()) {
-			assert_eq!(res.0, exp.app_id);
+			assert_eq!(res.0, *exp.app_id);
 			assert_eq!(res.1[0], exp.data);
 		}
 	}
@@ -673,7 +673,7 @@ mod tests {
 		let index = AppDataIndex::try_from(layout.as_slice()).unwrap();
 		let reconstructed = reconstruct_extrinsics(&index, &extended_dims, columns).unwrap();
 		for (result, xt) in reconstructed.iter().zip(xts) {
-		prop_assert_eq!(result.0, xt.app_id);
+		prop_assert_eq!(result.0, *xt.app_id);
 		prop_assert_eq!(result.1[0].as_slice(), &xt.data);
 		}
 
@@ -759,12 +759,12 @@ get erasure coded to ensure redundancy."#;
 		};
 
 		let index = AppDataIndex::try_from(layout.as_slice()).unwrap();
-		let res_1 = reconstruct_app_extrinsics(&index, &extended_dims, cols_1, 1.into()).unwrap();
+		let res_1 = reconstruct_app_extrinsics(&index, &extended_dims, cols_1, 1).unwrap();
 		assert_eq!(res_1[0], app_id_1_data);
 
 		let cols_2 = sample_cells_from_matrix(&coded, &dims, Some(&[1, 2]));
 
-		let res_2 = reconstruct_app_extrinsics(&index, &extended_dims, cols_2, 2.into()).unwrap();
+		let res_2 = reconstruct_app_extrinsics(&index, &extended_dims, cols_2, 2).unwrap();
 		assert_eq!(res_2[0], app_id_2_data);
 	}
 
@@ -799,7 +799,7 @@ get erasure coded to ensure redundancy."#;
 
 		let index = AppDataIndex::try_from(layout.as_slice()).unwrap();
 		for xt in xts {
-			let positions = app_specific_cells(&index, &extended_dims, xt.app_id).unwrap();
+			let positions = app_specific_cells(&index, &extended_dims, *xt.app_id).unwrap();
 			let cells = positions
 				.iter()
 				.map(|position| kate_recovery::com::DataCell {
@@ -807,12 +807,13 @@ get erasure coded to ensure redundancy."#;
 					data: extended_matrix[position.col as usize][position.row as usize].to_bytes(),
 				})
 				.collect::<Vec<_>>();
-			let data = &decode_app_extrinsics(&index, &extended_dims, cells, xt.app_id).unwrap()[0];
+			let data =
+				&decode_app_extrinsics(&index, &extended_dims, cells, *xt.app_id).unwrap()[0];
 			assert_eq!(data, &xt.data);
 		}
 
 		assert!(matches!(
-			decode_app_extrinsics(&index, &extended_dims, vec![], 0.into()),
+			decode_app_extrinsics(&index, &extended_dims, vec![], 0),
 			Err(ReconstructionError::MissingCell { .. })
 		));
 	}

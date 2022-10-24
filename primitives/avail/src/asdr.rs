@@ -1,5 +1,5 @@
 use codec::{Decode, Encode};
-use derive_more::{Add, Display, From, Into};
+use derive_more::{Add, Deref, Display, From, Into};
 use frame_support::RuntimeDebug;
 #[cfg(feature = "std")]
 use parity_util_mem::{MallocSizeOf, MallocSizeOfOps};
@@ -27,6 +27,7 @@ pub use app_unchecked_extrinsic::*;
 	Ord,
 	Add,
 	From,
+	Deref,
 	TypeInfo,
 	RuntimeDebug,
 	Encode,
