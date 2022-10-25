@@ -4,6 +4,7 @@ use codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use sp_core::H256;
 use sp_runtime::traits::SaturatedConversion;
+use sp_std::vec::Vec;
 
 /// Wrapper of `beefy-merkle-tree::MerkleProof` with codec support.
 #[derive(Clone, Debug, Encode, Decode)]
