@@ -7,7 +7,10 @@ use thiserror::Error;
 #[derive(Debug, Clone, Copy)]
 pub enum VerifyingError {
 	/// Failed proof verification
-	#[error("Proof verification failed. Root is {expected}, produced is {actual}")]
+	#[cfg_attr(
+		feature = "std",
+		error("Proof verification failed. Root is {expected}, produced is {actual}")
+	)]
 	#[allow(dead_code)]
 	VerificationFailed {
 		/// The expected root (this tree's current root)
@@ -22,18 +25,18 @@ pub enum VerifyingError {
 #[cfg_attr(feature = "std", derive(Error))]
 pub enum TreeError {
 	/// Trying to push in a leaf
-	#[error("Trying to push in a leaf")]
+	#[cfg_attr(feature = "std", error("Trying to push in a leaf"))]
 	LeafReached,
 	/// No more space in the MerkleTree
-	#[error("No more space in the MerkleTree")]
+	#[cfg_attr(feature = "std", error("No more space in the MerkleTree"))]
 	MerkleTreeFull,
 	/// MerkleTree is invalid
-	#[error("MerkleTree is invalid")]
+	#[cfg_attr(feature = "std", error("MerkleTree is invalid"))]
 	Invalid,
 	/// Incorrect Depth provided
-	#[error("Incorrect Depth provided")]
+	#[cfg_attr(feature = "std", error("Incorrect Depth provided"))]
 	DepthTooSmall,
 	/// Depth provided too large
-	#[error("Provided tree depth exceeded 32")]
+	#[cfg_attr(feature = "std", error("Provided tree depth exceeded 32"))]
 	DepthTooLarge,
 }

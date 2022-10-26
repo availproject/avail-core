@@ -31,17 +31,17 @@ impl ExtendedMatrixDimensions {
 #[derive(Debug)]
 #[cfg_attr(feature = "std", derive(Error))]
 pub enum ReconstructionError {
-	#[error("Missing cell (col {}, row {})", .position.col, .position.row)]
+	#[cfg_attr(feature = "std", error("Missing cell (col {}, row {})", .position.col, .position.row))]
 	MissingCell { position: Position },
-	#[error("Invalid cell (col {}, row {})", .position.col, .position.row)]
+	#[cfg_attr( feature = "std", error("Invalid cell (col {}, row {})", .position.col, .position.row))]
 	InvalidCell { position: Position },
-	#[error("Duplicate cell found")]
+	#[cfg_attr(feature = "std", error("Duplicate cell found"))]
 	DuplicateCellFound,
-	#[error("Column {0} contains less than half rows")]
+	#[cfg_attr(feature = "std", error("Column {0} contains less than half rows"))]
 	InvalidColumn(u16),
-	#[error("Cannot reconstruct column: {0}")]
+	#[cfg_attr(feature = "std", error("Cannot reconstruct column: {0}"))]
 	ColumnReconstructionError(String),
-	#[error("Cannot decode data: {0}")]
+	#[cfg_attr(feature = "std", error("Cannot decode data: {0}"))]
 	DataDecodingError(String),
 }
 

@@ -28,20 +28,26 @@ type Address = H160;
 #[cfg_attr(feature = "std", derive(Error))]
 pub enum SignatureError {
 	/// Invalid length, secp256k1 signatures are 65 bytes
-	#[error("invalid signature length, got {0}, expected 65")]
+	#[cfg_attr(
+		feature = "std",
+		error("invalid signature length, got {0}, expected 65")
+	)]
 	InvalidLength(usize),
 	/// When parsing a signature from string to hex
-	#[error(transparent)]
+	#[cfg_attr(feature = "std", error(transparent))]
 	DecodingError(#[from] hex::FromHexError),
 	/// Thrown when signature verification failed (i.e. when the address that
 	/// produced the signature did not match the expected address)
-	#[error("Signature verification failed. Expected {0:?}, got {1:?}")]
+	#[cfg_attr(
+		feature = "std",
+		error("Signature verification failed. Expected {0:?}, got {1:?}")
+	)]
 	VerificationError(Address, Address),
 	/// Internal error during signature recovery
-	#[error(transparent)]
+	#[cfg_attr(feature = "std", error(transparent))]
 	K256Error(#[from] K256SignatureError),
 	/// Error in recovering public key from signature
-	#[error("Public key recovery error")]
+	#[cfg_attr(feature = "std", error("Public key recovery error"))]
 	RecoveryError,
 }
 
