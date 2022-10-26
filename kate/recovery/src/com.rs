@@ -477,23 +477,27 @@ pub enum AppDataIndexError {
 	UnsortedLayout,
 }
 
-impl TryFrom<&Vec<(u32, u32)>> for AppDataIndex {
+impl<T> TryFrom<&[(T, u32)]> for AppDataIndex
+where
+	T: Clone + Into<u32>,
+{
 	type Error = AppDataIndexError;
 
-	fn try_from(layout: &Vec<(u32, u32)>) -> Result<Self, Self::Error> {
+	fn try_from(layout: &[(T, u32)]) -> Result<Self, Self::Error> {
 		let mut index = Vec::new();
 		// transactions are ordered by application id
 		// skip transactions with 0 application id - it's not a data txs
 		let mut size = 0u32;
 		let mut prev_app_id = 0u32;
 
-		for &(app_id, data_len) in layout {
+		for (app_id, data_len) in layout {
+			let app_id: u32 = app_id.clone().into();
 			if app_id != 0 && prev_app_id != app_id {
 				index.push((app_id, size));
 			}
 
 			size = size
-				.checked_add(data_len)
+				.checked_add(*data_len)
 				.ok_or(Self::Error::SizeOverflow)?;
 			if prev_app_id > app_id {
 				return Err(Self::Error::UnsortedLayout);
