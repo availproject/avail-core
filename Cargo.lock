@@ -755,7 +755,7 @@ dependencies = [
 
 [[package]]
 name = "da-primitives"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "beefy-merkle-tree",
  "derive_more",
@@ -773,6 +773,7 @@ dependencies = [
  "sp-runtime-interface",
  "sp-std",
  "test-case",
+ "thiserror",
 ]
 
 [[package]]
