@@ -16,38 +16,30 @@ use k256::{
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_core::{Hasher, H160, H256, U256};
-#[cfg(feature = "std")]
-use thiserror::Error;
+use thiserror_no_std::Error;
 
 use crate::utils::hash_message;
 
 type Address = H160;
 
 /// An error involving a signature.
-#[derive(Debug)]
-#[cfg_attr(feature = "std", derive(Error))]
+#[derive(Debug, Error)]
 pub enum SignatureError {
 	/// Invalid length, secp256k1 signatures are 65 bytes
-	#[cfg_attr(
-		feature = "std",
-		error("invalid signature length, got {0}, expected 65")
-	)]
+	#[error("invalid signature length, got {0}, expected 65")]
 	InvalidLength(usize),
 	/// When parsing a signature from string to hex
-	#[cfg_attr(feature = "std", error(transparent))]
+	#[error(transparent)]
 	DecodingError(#[from] hex::FromHexError),
 	/// Thrown when signature verification failed (i.e. when the address that
 	/// produced the signature did not match the expected address)
-	#[cfg_attr(
-		feature = "std",
-		error("Signature verification failed. Expected {0:?}, got {1:?}")
-	)]
+	#[error("Signature verification failed. Expected {0:?}, got {1:?}")]
 	VerificationError(Address, Address),
 	/// Internal error during signature recovery
-	#[cfg_attr(feature = "std", error(transparent))]
+	#[error(transparent)]
 	K256Error(#[from] K256SignatureError),
 	/// Error in recovering public key from signature
-	#[cfg_attr(feature = "std", error("Public key recovery error"))]
+	#[error("Public key recovery error")]
 	RecoveryError,
 }
 

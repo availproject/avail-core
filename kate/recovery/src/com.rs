@@ -9,8 +9,7 @@ use codec::Decode;
 use dusk_bytes::Serializable;
 use dusk_plonk::{fft::EvaluationDomain, prelude::BlsScalar};
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "std")]
-use thiserror::Error;
+use thiserror_no_std::Error;
 
 // TODO: Constants are copy from kate crate, we should move them to common place
 pub const CHUNK_SIZE: usize = 32;
@@ -28,20 +27,19 @@ impl ExtendedMatrixDimensions {
 	}
 }
 
-#[derive(Debug)]
-#[cfg_attr(feature = "std", derive(Error))]
+#[derive(Debug, Error)]
 pub enum ReconstructionError {
-	#[cfg_attr(feature = "std", error("Missing cell (col {}, row {})", .position.col, .position.row))]
+	#[error("Missing cell (col {}, row {})", .position.col, .position.row)]
 	MissingCell { position: Position },
-	#[cfg_attr( feature = "std", error("Invalid cell (col {}, row {})", .position.col, .position.row))]
+	#[error("Invalid cell (col {}, row {})", .position.col, .position.row)]
 	InvalidCell { position: Position },
-	#[cfg_attr(feature = "std", error("Duplicate cell found"))]
+	#[error("Duplicate cell found")]
 	DuplicateCellFound,
-	#[cfg_attr(feature = "std", error("Column {0} contains less than half rows"))]
+	#[error("Column {0} contains less than half rows")]
 	InvalidColumn(u16),
-	#[cfg_attr(feature = "std", error("Cannot reconstruct column: {0}"))]
+	#[error("Cannot reconstruct column: {0}")]
 	ColumnReconstructionError(String),
-	#[cfg_attr(feature = "std", error("Cannot decode data: {0}"))]
+	#[error("Cannot decode data: {0}")]
 	DataDecodingError(String),
 }
 

@@ -773,7 +773,7 @@ dependencies = [
  "sp-runtime-interface",
  "sp-std",
  "test-case",
- "thiserror",
+ "thiserror-no-std",
 ]
 
 [[package]]
@@ -1696,7 +1696,7 @@ dependencies = [
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "serde",
- "thiserror",
+ "thiserror-no-std",
 ]
 
 [[package]]
@@ -1844,7 +1844,7 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "static_assertions",
- "thiserror",
+ "thiserror-no-std",
  "tiny-keccak",
 ]
 
@@ -2901,7 +2901,7 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-std",
- "thiserror",
+ "thiserror-no-std",
  "tiny-keccak",
 ]
 
@@ -3410,6 +3410,26 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "thiserror-impl-no-std"
+version = "2.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "58e6318948b519ba6dc2b442a6d0b904ebfb8d411a3ad3e07843615a72249758"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "thiserror-no-std"
+version = "2.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3ad459d94dd517257cc96add8a43190ee620011bb6e6cdc82dafd97dfafafea"
+dependencies = [
+ "thiserror-impl-no-std",
 ]
 
 [[package]]

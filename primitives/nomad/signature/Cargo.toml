@@ -35,7 +35,7 @@ serde = { version = "1.0", default-features = false, optional = true, features =
 sp-core = { version = "4.0.0-dev", default-features = false }
 sp-io = { version = "4.0.0-dev", default-features = false }
 sp-std = { version = "4.0.0-dev", default-features = false }
-thiserror = { version = "1.0.37", optional = true }
+thiserror-no-std = "2.0.2"
 tiny-keccak = { version = "2.0.2", default-features = false }
 
 [dev-dependencies]
@@ -45,7 +45,6 @@ byte-slice-cast = "1.2.1"
 default = ["std"]
 std = [
 	"serde",
-	"thiserror",
 	"primitive-types/serde",
 	"codec/std",
 	"scale-info/std",

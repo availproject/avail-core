@@ -6,8 +6,7 @@ use serde::{Deserialize, Serialize};
 use sp_core::H256;
 use sp_io::hashing::sha2_256;
 use sp_std::{convert::TryFrom, vec::Vec};
-#[cfg(feature = "std")]
-use thiserror::Error;
+use thiserror_no_std::Error;
 
 /// Sha2 256 wrapper which supports `beefy-merkle-tree::Hasher`.
 #[derive(Copy, Clone)]
@@ -42,29 +41,28 @@ pub struct DataProof {
 }
 
 /// Conversion error from `beefy-merkle-tree::MerkleProof`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "std", derive(Error))]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Error)]
 pub enum DataProofTryFromError {
 	/// Root cannot be converted into `H256`.
-	#[cfg_attr(feature = "std", error("Root cannot be converted into `H256`"))]
+	#[error("Root cannot be converted into `H256`")]
 	InvalidRoot,
 	/// Leaf cannot be converted into `H256`.
-	#[cfg_attr(feature = "std", error("Leaf cannot be converted into `H256`"))]
+	#[error("Leaf cannot be converted into `H256`")]
 	InvalidLeaf,
 	/// The given index of proofs cannot be converted into `H256`.
-	#[cfg_attr(feature = "std", error("Proof at {0} cannot be converted into `H256`"))]
+	#[error("Proof at {0} cannot be converted into `H256`")]
 	InvalidProof(usize),
 	/// Number of leaves overflowed
-	#[cfg_attr(feature = "std", error("Number of leaves overflowed"))]
+	#[error("Number of leaves overflowed")]
 	OverflowedNumberOfLeaves,
 	/// Number of leaves must be greater than zero.
-	#[cfg_attr(feature = "std", error("Number of leaves cannot be zero"))]
+	#[error("Number of leaves cannot be zero")]
 	InvalidNumberOfLeaves,
 	/// Leaf index overflowed
-	#[cfg_attr(feature = "std", error("Leaf index overflowed"))]
+	#[error("Leaf index overflowed")]
 	OverflowedLeafIndex,
 	/// Leaf index overflowed or invalid (greater or equal to `number_of_leaves`)
-	#[cfg_attr(feature = "std", error("Leaf index is invalid"))]
+	#[error("Leaf index is invalid")]
 	InvalidLeafIndex,
 }
 
