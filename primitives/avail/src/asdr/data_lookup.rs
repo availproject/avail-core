@@ -49,7 +49,7 @@ impl MallocSizeOf for DataLookupIndexItem {
 	}
 }
 
-#[derive(PartialEq, RuntimeDebug)]
+#[derive(PartialEq, Eq, RuntimeDebug)]
 /// Errors during the creation from `extrinsics`.
 pub enum TryFromError {
 	/// Size overflows

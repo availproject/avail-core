@@ -1643,7 +1643,7 @@ dependencies = [
 
 [[package]]
 name = "kate"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "bls12_381",
  "criterion",
@@ -1687,7 +1687,7 @@ dependencies = [
 
 [[package]]
 name = "kate-recovery"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "dusk-bytes",
  "dusk-plonk",
@@ -1827,7 +1827,7 @@ checksum = "71d96e3f3c0b6325d8ccd83c33b28acb183edcb6c67938ba104ec546854b0882"
 
 [[package]]
 name = "merkle"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ethers-core",
  "frame-support",
@@ -1844,7 +1844,7 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "static_assertions",
- "thiserror-no-std",
+ "thiserror",
  "tiny-keccak",
 ]
 
@@ -1889,7 +1889,7 @@ checksum = "72ef4a56884ca558e5ddb05a1d1e7e1bfd9a68d9ed024c21704cc98872dae1bb"
 
 [[package]]
 name = "nomad-base"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ethers-signers",
  "frame-support",
@@ -1900,7 +1900,7 @@ dependencies = [
  "primitive-types 0.10.1",
  "scale-info",
  "serde",
- "signature 0.1.0",
+ "signature 0.1.1",
  "sp-core",
  "sp-io",
  "sp-std",
@@ -1909,7 +1909,7 @@ dependencies = [
 
 [[package]]
 name = "nomad-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "ethers-core",
@@ -1921,7 +1921,7 @@ dependencies = [
  "primitive-types 0.10.1",
  "scale-info",
  "serde",
- "signature 0.1.0",
+ "signature 0.1.1",
  "sp-core",
  "sp-io",
  "sp-runtime",
@@ -2879,7 +2879,7 @@ dependencies = [
 
 [[package]]
 name = "signature"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "arrayvec 0.7.2",
  "byte-slice-cast",
@@ -2901,7 +2901,7 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-std",
- "thiserror-no-std",
+ "thiserror",
  "tiny-keccak",
 ]
 
@@ -3410,26 +3410,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "thiserror-impl-no-std"
-version = "2.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58e6318948b519ba6dc2b442a6d0b904ebfb8d411a3ad3e07843615a72249758"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "thiserror-no-std"
-version = "2.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3ad459d94dd517257cc96add8a43190ee620011bb6e6cdc82dafd97dfafafea"
-dependencies = [
- "thiserror-impl-no-std",
 ]
 
 [[package]]

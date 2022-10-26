@@ -59,7 +59,7 @@ const PADDING_TAIL_VALUE: u8 = 0x80;
 /// We assume the input extrinsics are already sorted by app_id, i.e. extrinsics with the same app_id are consecutive.
 /// This function does the same thing as group_by (unstable), just less general.
 fn app_extrinsics_group_by_app_id(extrinsics: &[AppExtrinsic]) -> Vec<(AppId, Vec<Vec<u8>>)> {
-	extrinsics.into_iter().fold(vec![], |mut acc, e| {
+	extrinsics.iter().fold(vec![], |mut acc, e| {
 		match acc.last_mut() {
 			Some((app_id, data)) if e.app_id == *app_id => data.push(e.data.clone()),
 			None | Some(_) => acc.push((e.app_id, vec![e.data.clone()])),
@@ -98,8 +98,7 @@ pub fn flatten_and_pad_block(
 		.into_iter()
 		.flat_map(|e| {
 			e.into_iter()
-				.map(|e| pad_to_chunk(e, chunk_size))
-				.flatten()
+				.flat_map(|e| pad_to_chunk(e, chunk_size))
 				.collect::<Vec<_>>()
 		})
 		.collect::<Vec<_>>();

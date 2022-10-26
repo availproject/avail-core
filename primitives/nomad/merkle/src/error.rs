@@ -1,7 +1,10 @@
 use sp_core::H256;
+#[cfg(feature = "std")]
+use thiserror::Error;
 
 /// Tree Errors
-#[derive(Debug, thiserror_no_std::Error, Clone, Copy)]
+#[cfg_attr(feature = "std", derive(Error))]
+#[derive(Debug, Clone, Copy)]
 pub enum VerifyingError {
 	/// Failed proof verification
 	#[error("Proof verification failed. Root is {expected}, produced is {actual}")]
@@ -15,7 +18,8 @@ pub enum VerifyingError {
 }
 
 /// Error type for merkle tree ops.
-#[derive(Debug, PartialEq, Clone, Copy, thiserror_no_std::Error)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[cfg_attr(feature = "std", derive(Error))]
 pub enum TreeError {
 	/// Trying to push in a leaf
 	#[error("Trying to push in a leaf")]

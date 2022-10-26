@@ -9,6 +9,7 @@ use codec::Decode;
 use dusk_bytes::Serializable;
 use dusk_plonk::{fft::EvaluationDomain, prelude::BlsScalar};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "std")]
 use thiserror::Error;
 
 // TODO: Constants are copy from kate crate, we should move them to common place
@@ -27,7 +28,8 @@ impl ExtendedMatrixDimensions {
 	}
 }
 
-#[derive(Error, Debug)]
+#[derive(Debug)]
+#[cfg_attr(feature = "std", derive(Error))]
 pub enum ReconstructionError {
 	#[error("Missing cell (col {}, row {})", .position.col, .position.row)]
 	MissingCell { position: Position },
@@ -432,7 +434,7 @@ impl AppDataIndex {
 	fn cell_ranges(&self) -> Vec<(u32, Range<usize>)> {
 		// Case if first app_id in index is zero is ignored
 		// since it should be asserted elsewhere
-		let prepend = self.index.get(0).map_or(vec![(0, 0)], |&(_, offset)| {
+		let prepend = self.index.first().map_or(vec![(0, 0)], |&(_, offset)| {
 			if offset == 0 {
 				vec![]
 			} else {
@@ -471,7 +473,7 @@ impl AppDataIndex {
 	}
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum AppDataIndexError {
 	SizeOverflow,
 	UnsortedLayout,

@@ -1,6 +1,6 @@
 [package]
 name = "merkle"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -18,7 +18,7 @@ sp-io = { version = "4.0.0-dev", default-features = false }
 sp-runtime = { version = "4.0.0-dev", default-features = false }
 sp-std = { version = "4.0.0-dev", default-features = false }
 static_assertions = "1.1.0"
-thiserror-no-std = "2.0.2"
+thiserror = { version = "1.0.37", optional = true }
 tiny-keccak = { version = "2.0.2", default-features = false, features = ["keccak"] }
 
 [dev-dependencies]
@@ -36,6 +36,7 @@ features = ["derive"]
 default = ["std"]
 std = [
 	"serde",
+	"thiserror",
 	"nomad-core/std",
 	"primitive-types/serde",
 	"codec/std",

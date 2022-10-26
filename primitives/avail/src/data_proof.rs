@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use sp_core::H256;
 use sp_io::hashing::sha2_256;
 use sp_std::{convert::TryFrom, vec::Vec};
+#[cfg(feature = "std")]
 use thiserror::Error;
 
 /// Sha2 256 wrapper which supports `beefy-merkle-tree::Hasher`.
@@ -13,9 +14,7 @@ use thiserror::Error;
 pub struct HasherSha256 {}
 
 impl Hasher for HasherSha256 {
-	fn hash(data: &[u8]) -> Hash {
-		sha2_256(data)
-	}
+	fn hash(data: &[u8]) -> Hash { sha2_256(data) }
 }
 
 /// Wrapper of `beefy-merkle-tree::MerkleProof` with codec support.
@@ -43,7 +42,8 @@ pub struct DataProof {
 }
 
 /// Conversion error from `beefy-merkle-tree::MerkleProof`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Error)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Error))]
 pub enum DataProofTryFromError {
 	/// Root cannot be converted into `H256`.
 	#[error("Root cannot be converted into `H256`")]
@@ -115,10 +115,10 @@ impl DataProof {
 		let proof = self
 			.proof
 			.into_iter()
-			.map(|proof| proof.to_fixed_bytes().into())
+			.map(|proof| proof.to_fixed_bytes())
 			.collect::<Vec<_>>();
 		MerkleProof {
-			root: self.root.to_fixed_bytes().into(),
+			root: self.root.to_fixed_bytes(),
 			proof,
 			number_of_leaves: self.number_of_leaves as usize,
 			leaf_index: self.leaf_index as usize,

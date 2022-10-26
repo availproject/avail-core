@@ -16,6 +16,7 @@ use k256::{
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_core::{Hasher, H160, H256, U256};
+#[cfg(feature = "std")]
 use thiserror::Error;
 
 use crate::utils::hash_message;
@@ -23,7 +24,8 @@ use crate::utils::hash_message;
 type Address = H160;
 
 /// An error involving a signature.
-#[derive(Debug, Error)]
+#[derive(Debug)]
+#[cfg_attr(feature = "std", derive(Error))]
 pub enum SignatureError {
 	/// Invalid length, secp256k1 signatures are 65 bytes
 	#[error("invalid signature length, got {0}, expected 65")]
@@ -57,7 +59,7 @@ pub enum RecoveryMessage {
 }
 
 /// An ECDSA signature
-#[derive(Clone, Encode, Decode, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct Signature {
 	/// R value
