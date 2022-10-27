@@ -34,13 +34,10 @@ pub use app_unchecked_extrinsic::*;
 	Decode,
 	Display,
 	Into,
+	Default,
 )]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct AppId(#[codec(compact)] pub u32);
-
-impl Default for AppId {
-	fn default() -> Self { Self(Default::default()) }
-}
 
 #[cfg(feature = "std")]
 impl MallocSizeOf for AppId {
