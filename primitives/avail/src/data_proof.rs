@@ -46,9 +46,6 @@ pub enum DataProofTryFromError {
 	/// Root cannot be converted into `H256`.
 	#[error("Root cannot be converted into `H256`")]
 	InvalidRoot,
-	/// Leaf cannot be converted into `H256`.
-	#[error("Leaf cannot be converted into `H256`")]
-	InvalidLeaf,
 	/// The given index of proofs cannot be converted into `H256`.
 	#[error("Proof at {0} cannot be converted into `H256`")]
 	InvalidProof(usize),
@@ -78,9 +75,7 @@ where
 		let root = <[u8; 32]>::try_from(merkle_proof.root.as_ref())
 			.map_err(|_| InvalidRoot)?
 			.into();
-		let leaf = <[u8; 32]>::try_from(merkle_proof.leaf.as_ref())
-			.map_err(|_| InvalidLeaf)?
-			.into();
+		let leaf = HasherSha256::hash(merkle_proof.leaf.as_ref()).into();
 		let proof = merkle_proof
 			.proof
 			.iter()
@@ -108,26 +103,10 @@ where
 	}
 }
 
-impl DataProof {
-	pub fn to_beefy_merkle_proof<T: From<[u8; 32]>>(self) -> MerkleProof<T> {
-		let proof = self
-			.proof
-			.into_iter()
-			.map(|proof| proof.to_fixed_bytes())
-			.collect::<Vec<_>>();
-		MerkleProof {
-			root: self.root.to_fixed_bytes(),
-			proof,
-			number_of_leaves: self.number_of_leaves as usize,
-			leaf_index: self.leaf_index as usize,
-			leaf: self.leaf.to_fixed_bytes().into(),
-		}
-	}
-}
-
 #[cfg(test)]
 mod test {
 	use hex_literal::hex;
+	use sp_core::H512;
 	use sp_std::cmp::min;
 	use test_case::test_case;
 
@@ -135,7 +114,7 @@ mod test {
 
 	fn leaves() -> Vec<Vec<u8>> {
 		(0u8..7)
-			.map(|idx| H256::repeat_byte(idx).to_fixed_bytes().to_vec())
+			.map(|idx| H512::repeat_byte(idx).to_fixed_bytes().to_vec())
 			.collect::<Vec<_>>()
 	}
 
@@ -165,42 +144,42 @@ mod test {
 
 	fn expected_data_proof_1() -> Result<DataProof, DataProofTryFromError> {
 		Ok(DataProof {
-			root: hex!("125c1991d3f1bd871bc65fcdb2f71e867f92303295fcaf83fa182d011c2a9ee0").into(),
+			root: hex!("e18e5f531a15090555c2d3539b5d93a5a872ffc3422bd9b9410776549d71f6f6").into(),
 			proof: vec![
-				hex!("66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925").into(),
-				hex!("10939918674b58bbf7a19e380c334642ef87c5109559c9e9ca0ca24278944d5e").into(),
-				hex!("e6a4d8842ef4253ccaafe54a528696976ab98b91c926278d1f8dbf56fa601c11").into(),
+				hex!("f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b").into(),
+				hex!("e59d380e38bc66ab4e5452df8ee47bb4611e719efb8985c2a5e6598784e3d642").into(),
+				hex!("fc7ad74dc17cb03a8464bbfb12fd037cceaef8ef5973d9f1772b4913503bff6e").into(),
 			],
 			number_of_leaves: 7,
 			leaf_index: 1,
-			leaf: H256::repeat_byte(1).to_fixed_bytes().into(),
+			leaf: HasherSha256::hash(H512::repeat_byte(1).as_bytes()).into(),
 		})
 	}
 
 	fn expected_data_proof_0() -> Result<DataProof, DataProofTryFromError> {
 		Ok(DataProof {
-			root: hex!("125c1991d3f1bd871bc65fcdb2f71e867f92303295fcaf83fa182d011c2a9ee0").into(),
+			root: hex!("e18e5f531a15090555c2d3539b5d93a5a872ffc3422bd9b9410776549d71f6f6").into(),
 			proof: vec![
-				hex!("72cd6e8422c407fb6d098690f1130b7ded7ec2f7f5e1d30bd9d521f015363793").into(),
-				hex!("10939918674b58bbf7a19e380c334642ef87c5109559c9e9ca0ca24278944d5e").into(),
-				hex!("e6a4d8842ef4253ccaafe54a528696976ab98b91c926278d1f8dbf56fa601c11").into(),
+				hex!("7c8975e1e60a5c8337f28edf8c33c3b180360b7279644a9bc1af3c51e6220bf5").into(),
+				hex!("e59d380e38bc66ab4e5452df8ee47bb4611e719efb8985c2a5e6598784e3d642").into(),
+				hex!("fc7ad74dc17cb03a8464bbfb12fd037cceaef8ef5973d9f1772b4913503bff6e").into(),
 			],
 			number_of_leaves: 7,
 			leaf_index: 0,
-			leaf: H256::repeat_byte(0).to_fixed_bytes().into(),
+			leaf: HasherSha256::hash(H512::repeat_byte(0).as_bytes()).into(),
 		})
 	}
 
 	fn expected_data_proof_6() -> Result<DataProof, DataProofTryFromError> {
 		Ok(DataProof {
-			root: hex!("125c1991d3f1bd871bc65fcdb2f71e867f92303295fcaf83fa182d011c2a9ee0").into(),
+			root: hex!("e18e5f531a15090555c2d3539b5d93a5a872ffc3422bd9b9410776549d71f6f6").into(),
 			proof: vec![
-				hex!("f19838ccc7d697a5dfadf94e0b63577b98c1d8e96d0c242a12eca6d95fd8f288").into(),
-				hex!("4fc5f858a182a0445d5ec5bf71477fd9e076bf383f1ba8090e1809eeaacce894").into(),
+				hex!("6b19c42f81575abc499679f91bb649e0aa8af83d9634aab78af04b5e13b04e5f").into(),
+				hex!("e4117bb4906266f46977187ca43a9151b88928ab1aa03283ddf5ead4b33c3e78").into(),
 			],
 			number_of_leaves: 7,
 			leaf_index: 6,
-			leaf: H256::repeat_byte(6).to_fixed_bytes().into(),
+			leaf: HasherSha256::hash(H512::repeat_byte(6).as_bytes()).into(),
 		})
 	}
 
@@ -211,11 +190,6 @@ mod test {
 	#[test_case( invalid_merkle_proof_zero_leaves() => Err(DataProofTryFromError::InvalidNumberOfLeaves); "From invalid number of leaves")]
 	fn from_beefy(beefy_proof: MerkleProof<Vec<u8>>) -> Result<DataProof, DataProofTryFromError> {
 		let data_proof = DataProof::try_from(&beefy_proof)?;
-
-		// Check backward transformation.
-		let new_beefy_proof = data_proof.clone().to_beefy_merkle_proof::<Vec<u8>>();
-		assert_eq!(beefy_proof, new_beefy_proof);
-
 		Ok(data_proof)
 	}
 }
