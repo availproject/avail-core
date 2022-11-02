@@ -6,7 +6,7 @@ use sp_std::{mem::size_of, vec::Vec};
 pub const NON_BODY_LENGTH: usize = 3 * size_of::<u32>() + 2 * size_of::<H256>();
 
 /// A full Nomad message
-#[derive(Clone, Encode, Decode, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo)]
 pub struct NomadMessage<S: Get<u32>> {
 	/// 4   SLIP-44 ID
 	pub origin: u32,
@@ -25,14 +25,14 @@ pub struct NomadMessage<S: Get<u32>> {
 impl<S: Get<u32>> NomadMessage<S> {
 	/// Serialize to a vec
 	pub fn to_vec(&self) -> Vec<u8> {
-		let size = NON_BODY_LENGTH + (&self.body).len();
+		let size = NON_BODY_LENGTH + self.body.len();
 		let mut buf = Vec::<u8>::with_capacity(size);
 
 		buf.extend_from_slice(&self.origin.to_be_bytes());
-		buf.extend_from_slice(&self.sender.as_ref());
+		buf.extend_from_slice(self.sender.as_ref());
 		buf.extend_from_slice(&self.nonce.to_be_bytes());
 		buf.extend_from_slice(&self.destination.to_be_bytes());
-		buf.extend_from_slice(&self.recipient.as_ref());
+		buf.extend_from_slice(self.recipient.as_ref());
 		buf.extend_from_slice(&self.body);
 
 		buf

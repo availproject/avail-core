@@ -16,7 +16,7 @@ use k256::{
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_core::{Hasher, H160, H256, U256};
-use thiserror::Error;
+use thiserror_no_std::Error;
 
 use crate::utils::hash_message;
 
@@ -57,7 +57,7 @@ pub enum RecoveryMessage {
 }
 
 /// An ECDSA signature
-#[derive(Clone, Encode, Decode, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct Signature {
 	/// R value
