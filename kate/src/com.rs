@@ -775,9 +775,12 @@ mod tests {
 		let public_params = testnet::public_params(dims.cols);
 		let extended_dims = Dimensions::new(dims.rows as u16, dims.cols as u16);
 
+		let ind = index.clone();
+		let ext_dim = extended_dims.clone();
+
 		for xt in xts {
 			let rows = &scalars_to_rows(xt.app_id.0, &index, &extended_dims, &matrix);
-			prop_assert!(kate_recovery::commitments::verify_equality(&public_params, &commitments, dims.cols as usize, rows).unwrap());
+			prop_assert!(kate_recovery::commitments::verify_equality(&public_params, &commitments, dims.cols as usize, rows,ind.clone(),ext_dim.clone(),xt.app_id.0).unwrap());
 		}
 	}
 	}

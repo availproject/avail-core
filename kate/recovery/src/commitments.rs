@@ -7,7 +7,7 @@ use dusk_plonk::{
 };
 use thiserror::Error;
 
-use crate::config;
+use crate::{com, config, index, matrix};
 
 #[derive(Error, Debug)]
 pub enum DataError {
@@ -96,6 +96,9 @@ pub fn verify_equality(
 	commitments: &[u8],
 	cols_num: usize,
 	rows: &[Option<Vec<u8>>],
+	index: index::AppDataIndex,
+	dimension: matrix::Dimensions,
+	app_id: u32,
 ) -> Result<bool, Error> {
 	if commitments.len() / config::COMMITMENT_SIZE != rows.len() {
 		return Err(Error::InvalidData(DataError::RowAndCommitmentsMismatch));
@@ -103,6 +106,30 @@ pub fn verify_equality(
 
 	if commitments.len() % config::COMMITMENT_SIZE > 0 {
 		return Err(Error::InvalidData(DataError::BadCommitmentsData));
+	}
+
+	let rows_num = com::app_specific_rows(&index, &dimension, app_id);
+	let rows_count = rows.iter().filter(|r| r.is_some()).count();
+	let rows_num_2: Vec<_> = rows
+		.iter()
+		.enumerate()
+		.filter(|(_, i)| i.is_some())
+		.map(|(e, _)| e as u32)
+		.collect();
+	let _row_num_3 = rows_num.iter().map(|i| {
+		rows.iter().nth(*i as usize).map(|r| {
+			Ok(match r {
+				Some(_) => true,
+				None => return Err(Error::InvalidData(DataError::BadCommitmentsData)),
+			})
+		})
+	});
+	if rows_count != rows_num.len() {
+		return Err(Error::InvalidData(DataError::RowAndCommitmentsMismatch));
+	}
+
+	if rows_num != rows_num_2 {
+		return Err(Error::InvalidData(DataError::RowAndCommitmentsMismatch));
 	}
 
 	let (prover_key, _) = public_params.trim(cols_num)?;
