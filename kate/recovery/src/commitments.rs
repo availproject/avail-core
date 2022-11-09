@@ -94,10 +94,9 @@ fn row_commitment(
 pub fn verify_equality(
 	public_params: &PublicParameters,
 	commitments: &[u8],
-	cols_num: usize,
 	rows: &[Option<Vec<u8>>],
-	index: index::AppDataIndex,
-	dimension: matrix::Dimensions,
+	index: &index::AppDataIndex,
+	dimension: &matrix::Dimensions,
 	app_id: u32,
 ) -> Result<bool, Error> {
 	if commitments.len() / config::COMMITMENT_SIZE != rows.len() {
@@ -132,8 +131,8 @@ pub fn verify_equality(
 		return Err(Error::InvalidData(DataError::RowAndCommitmentsMismatch));
 	}
 
-	let (prover_key, _) = public_params.trim(cols_num)?;
-	let domain = EvaluationDomain::new(cols_num)?;
+	let (prover_key, _) = public_params.trim(dimension.cols as usize)?;
+	let domain = EvaluationDomain::new(dimension.cols as usize)?;
 
 	let verifications = commitments
 		.chunks_exact(config::COMMITMENT_SIZE)
