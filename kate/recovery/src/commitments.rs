@@ -108,26 +108,9 @@ pub fn verify_equality(
 	}
 
 	let rows_num = com::app_specific_rows(&index, &dimension, app_id);
-	let rows_count = rows.iter().filter(|r| r.is_some()).count();
-	let rows_num_2: Vec<_> = rows
-		.iter()
-		.enumerate()
-		.filter(|(_, i)| i.is_some())
-		.map(|(e, _)| e as u32)
-		.collect();
-	let _row_num_3 = rows_num.iter().map(|i| {
-		rows.iter().nth(*i as usize).map(|r| {
-			Ok(match r {
-				Some(_) => true,
-				None => return Err(Error::InvalidData(DataError::BadCommitmentsData)),
-			})
-		})
-	});
-	if rows_count != rows_num.len() {
-		return Err(Error::InvalidData(DataError::RowAndCommitmentsMismatch));
-	}
 
-	if rows_num != rows_num_2 {
+	let row_check = rows.iter().enumerate().filter(| (_,r)| r.is_some()).map(|(e,_)| e as u32).collect::<Vec<_>>().iter().zip(rows_num.iter()).all(|(a,b)| a == b);
+	if row_check == false {
 		return Err(Error::InvalidData(DataError::RowAndCommitmentsMismatch));
 	}
 
