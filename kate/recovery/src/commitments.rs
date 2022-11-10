@@ -1,9 +1,9 @@
-use std::{array::TryFromSliceError, convert::TryFrom};
 use dusk_bytes::Serializable;
 use dusk_plonk::{
 	fft::{EvaluationDomain, Evaluations},
 	prelude::{BlsScalar, CommitKey, PublicParameters},
 };
+use std::{array::TryFromSliceError, convert::TryFrom};
 use thiserror::Error;
 
 use crate::{com, config, index, matrix};
@@ -106,16 +106,16 @@ pub fn verify_equality(
 		return Err(Error::InvalidData(DataError::BadCommitmentsData));
 	}
 
-	let rows_num = com::app_specific_rows(&index, &dimension, app_id);
+	let app_rows = com::app_specific_rows(index, dimension, app_id);
 
-	let row_check = rows
+	let all_rows_present = rows
 		.iter()
-		.enumerate()
-		.filter(|(_, r)| r.is_some())
-		.zip(rows_num.iter())
-		.all(|((a,_), &b)| a as u32 == b);
+		.zip(0u32..)
+		.filter(|(row, _)| row.is_some())
+		.zip(app_rows.iter())
+		.all(|((_, a), &b)| a == b);
 
-	if row_check == false {
+	if !all_rows_present {
 		return Err(Error::InvalidData(DataError::RowAndCommitmentsMismatch));
 	}
 
@@ -134,29 +134,36 @@ pub fn verify_equality(
 	Ok(verifications.iter().all(|&v| v))
 }
 
-
-
 #[cfg(test)]
 
-mod tests{
+mod tests {
 
-	fn test_rows(rows: &[Option<Vec<u8>>],index: Vec<u32>) -> bool{
+	fn test_rows(rows: &[Option<Vec<u8>>], index: Vec<u32>) -> bool {
 		let row_check = rows
-		.iter()
-		.enumerate()
-		.filter(|(_, r)| r.is_some())
-		.zip(index.iter())
-		.all(|((a,_), &b)| a as u32 == b);
+			.iter()
+			.enumerate()
+			.filter(|(_, r)| r.is_some())
+			.zip(index.iter())
+			.all(|((a, _), &b)| a as u32 == b);
 		row_check
 	}
 
 	#[test]
-	fn test_row_equality(){
-		let rows = [None,None,Some([4, 33, 9, 145, 132, 120, 81, 13, 85, 123, 154, 44, 155, 51, 203, 55].to_vec())].to_vec();
-		println!("{:?}",rw);
-		let index:Vec<u32> = vec![2];
-		let index_1:Vec<u32> = vec![1];
-		assert_eq!(test_rows(&rows,index_1),false);
+	fn test_row_equality() {
+		let rows = [
+			None,
+			None,
+			Some(
+				[
+					4, 33, 9, 145, 132, 120, 81, 13, 85, 123, 154, 44, 155, 51, 203, 55,
+				]
+				.to_vec(),
+			),
+		]
+		.to_vec();
+		let index: Vec<u32> = vec![2];
+		let index_1: Vec<u32> = vec![1];
+		assert_eq!(test_rows(&rows, index_1), false);
 		assert_eq!(test_rows(&rows, index), true);
 	}
 }
