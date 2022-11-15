@@ -56,6 +56,8 @@ pub enum InvalidTransactionCustomId {
 	InvalidAppId = 137,
 	/// Extrinsic is not allowed for the given `AppId`.
 	ForbiddenAppId,
+	/// Max padded length was exceeded.
+	MaxPaddedLenExceeded,
 }
 
 /// Provides an implementation of [`frame_support::traits::Randomness`] that should only be used in
