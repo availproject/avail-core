@@ -1,9 +1,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use std::convert::TryInto;
+
 use da_primitives::{BlockLengthColumns, BlockLengthRows};
 #[cfg(feature = "std")]
 pub use dusk_plonk::{commitment_scheme::kzg10::PublicParameters, prelude::BlsScalar};
 use frame_support::sp_runtime::SaturatedConversion;
+use kate_recovery::matrix::Dimensions;
 use static_assertions::const_assert_ne;
 
 use crate::config::DATA_CHUNK_SIZE;
@@ -96,6 +99,17 @@ impl BlockDimensions {
 			cols: cols.into(),
 			chunk_size,
 		}
+	}
+}
+
+impl TryInto<Dimensions> for BlockDimensions {
+	type Error = std::num::TryFromIntError;
+
+	fn try_into(self) -> Result<Dimensions, Self::Error> {
+		let rows = self.rows.0.try_into()?;
+		let cols = self.cols.0.try_into()?;
+
+		Ok(Dimensions { rows, cols })
 	}
 }
 
