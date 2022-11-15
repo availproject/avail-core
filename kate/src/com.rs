@@ -7,7 +7,7 @@ use std::{
 use codec::Encode;
 use da_primitives::{
 	asdr::{AppExtrinsic, AppId},
-	BlockLenghtColumns, BlockLenghtRows,
+	BlockLengthColumns, BlockLengthRows,
 };
 use derive_more::Constructor;
 use dusk_bytes::Serializable;
@@ -38,9 +38,9 @@ use crate::{
 #[derive(Serialize, Deserialize, Constructor, Clone, Copy)]
 pub struct Cell {
 	#[serde(flatten)]
-	pub row: BlockLenghtRows,
+	pub row: BlockLengthRows,
 	#[serde(flatten)]
-	pub col: BlockLenghtColumns,
+	pub col: BlockLengthColumns,
 }
 
 #[derive(Debug)]
@@ -75,8 +75,8 @@ fn app_extrinsics_group_by_app_id(extrinsics: &[AppExtrinsic]) -> Vec<(AppId, Ve
 }
 
 pub fn flatten_and_pad_block(
-	max_rows: BlockLenghtRows,
-	max_cols: BlockLenghtColumns,
+	max_rows: BlockLengthRows,
+	max_cols: BlockLengthColumns,
 	chunk_size: u32,
 	extrinsics: &[AppExtrinsic],
 	rng_seed: Seed,
@@ -132,8 +132,8 @@ pub fn flatten_and_pad_block(
 
 pub fn get_block_dimensions(
 	block_size: u32,
-	max_rows: BlockLenghtRows,
-	max_cols: BlockLenghtColumns,
+	max_rows: BlockLengthRows,
+	max_cols: BlockLengthColumns,
 	chunk_size: u32,
 ) -> Result<BlockDimensions, Error> {
 	let max_block_dimensions = BlockDimensions::new(max_rows, max_cols, chunk_size);
@@ -158,7 +158,7 @@ pub fn get_block_dimensions(
 	// we must minimize number of rows, to minimize header size
 	// (performance wise it doesn't matter)
 	let (cols, rows) = if total_cells > max_cols.0 {
-		(max_cols, BlockLenghtRows(total_cells / max_cols.0))
+		(max_cols, BlockLengthRows(total_cells / max_cols.0))
 	} else {
 		(total_cells.into(), 1.into())
 	};
@@ -204,7 +204,7 @@ fn pad_iec_9797_1(mut data: Vec<u8>) -> Vec<DataChunk> {
 
 fn extend_column_with_zeros(
 	column: &[BlsScalar],
-	extended_rows: BlockLenghtRows,
+	extended_rows: BlockLengthRows,
 ) -> Vec<BlsScalar> {
 	let extended_rows_num = extended_rows.as_usize();
 	let mut result = Vec::with_capacity(column.len() + extended_rows_num);
@@ -352,8 +352,8 @@ pub fn build_proof(
 
 #[cfg(feature = "std")]
 pub fn par_build_commitments(
-	rows: BlockLenghtRows,
-	cols: BlockLenghtColumns,
+	rows: BlockLengthRows,
+	cols: BlockLengthColumns,
 	chunk_size: u32,
 	extrinsics_by_key: &[AppExtrinsic],
 	rng_seed: Seed,
@@ -482,8 +482,8 @@ mod tests {
 	#[test_case(2097155, 256, 256 => panics "BlockTooBig" ; "too much data")]
 	fn test_get_block_dimensions<R, C>(size: u32, rows: R, cols: C) -> BlockDimensions
 	where
-		R: Into<BlockLenghtRows>,
-		C: Into<BlockLenghtColumns>,
+		R: Into<BlockLengthRows>,
+		C: Into<BlockLengthColumns>,
 	{
 		get_block_dimensions(size, rows.into(), cols.into(), 32).unwrap()
 	}
@@ -519,7 +519,7 @@ mod tests {
 		})
 		.collect::<Vec<_>>();
 
-		let block_dims = BlockDimensions::new(BlockLenghtRows(2), BlockLenghtColumns(4), 32);
+		let block_dims = BlockDimensions::new(BlockLengthRows(2), BlockLengthColumns(4), 32);
 		let block = (0..=247)
 			.collect::<Vec<u8>>()
 			.chunks_exact(DATA_CHUNK_SIZE)
@@ -659,8 +659,8 @@ mod tests {
 	}
 
 	fn random_cells(
-		max_cols: BlockLenghtColumns,
-		max_rows: BlockLenghtRows,
+		max_cols: BlockLengthColumns,
+		max_rows: BlockLengthRows,
 		percents: usize,
 	) -> Vec<Cell> {
 		assert!(percents > 0 && percents <= 100);
@@ -673,7 +673,7 @@ mod tests {
 		(0..max_cols)
 			.flat_map(move |col| {
 				(0..max_rows)
-					.map(move |row| Cell::new(BlockLenghtRows(row), BlockLenghtColumns(col)))
+					.map(move |row| Cell::new(BlockLengthRows(row), BlockLengthColumns(col)))
 			})
 			.choose_multiple(rng, amount)
 	}
@@ -683,7 +683,7 @@ mod tests {
 	#[test]
 	fn test_build_and_reconstruct(ref xts in app_extrinsics_strategy())  {
 		let (layout, commitments, dims, matrix) = par_build_commitments(
-			BlockLenghtRows(64), BlockLenghtColumns(16), 32, xts, Seed::default()).unwrap();
+			BlockLengthRows(64), BlockLengthColumns(16), 32, xts, Seed::default()).unwrap();
 
 		let columns = sample_cells_from_matrix(&matrix, &dims, None);
 		let extended_dims = ExtendedMatrixDimensions{cols: dims.cols.0, rows: dims.rows.0 * 2};
@@ -713,8 +713,8 @@ mod tests {
 	#[test]
 	// Test build_commitments() function with a predefined input
 	fn test_build_commitments_simple_commitment_check() {
-		let block_rows = BlockLenghtRows(256);
-		let block_cols = BlockLenghtColumns(256);
+		let block_rows = BlockLengthRows(256);
+		let block_cols = BlockLengthColumns(256);
 		let chunk_size = 32;
 		let original_data = br#"test"#;
 		let hash: Seed = [
@@ -766,8 +766,8 @@ get erasure coded to ensure redundancy."#;
 		let chunk_size = 32;
 
 		let (layout, data, dims) = flatten_and_pad_block(
-			BlockLenghtRows(32),
-			BlockLenghtColumns(4),
+			BlockLengthRows(32),
+			BlockLengthColumns(4),
 			chunk_size,
 			&xts,
 			hash,
@@ -813,8 +813,8 @@ get erasure coded to ensure redundancy."#;
 		let chunk_size = 32;
 
 		let (layout, data, dims) = flatten_and_pad_block(
-			BlockLenghtRows(32),
-			BlockLenghtColumns(4),
+			BlockLengthRows(32),
+			BlockLengthColumns(4),
 			chunk_size,
 			&xts,
 			hash,
@@ -861,8 +861,8 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 		let hash = Seed::default();
 		let chunk_size = 32;
 		let (layout, data, dims) = flatten_and_pad_block(
-			BlockLenghtRows(128),
-			BlockLenghtColumns(2),
+			BlockLengthRows(128),
+			BlockLengthColumns(2),
 			chunk_size,
 			&[AppExtrinsic::from(orig_data.to_vec())],
 			hash,
@@ -904,8 +904,8 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 		let hash = Seed::default();
 		let chunk_size = 32;
 		let (layout, data, dims) = flatten_and_pad_block(
-			BlockLenghtRows(128),
-			BlockLenghtColumns(2),
+			BlockLengthRows(128),
+			BlockLengthColumns(2),
 			chunk_size,
 			&xts,
 			hash,
@@ -1001,7 +1001,7 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 				data: data.clone(),
 			})
 			.collect::<Vec<_>>();
-		par_build_commitments(BlockLenghtRows(4), BlockLenghtColumns(4), 32, &xts, hash).unwrap();
+		par_build_commitments(BlockLengthRows(4), BlockLengthColumns(4), 32, &xts, hash).unwrap();
 	}
 
 	#[test]
@@ -1013,6 +1013,6 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 			app_id: AppId(0),
 			data: vec![0; 31 * 8],
 		}];
-		par_build_commitments(BlockLenghtRows(4), BlockLenghtColumns(4), 32, &xts, hash).unwrap();
+		par_build_commitments(BlockLengthRows(4), BlockLengthColumns(4), 32, &xts, hash).unwrap();
 	}
 }

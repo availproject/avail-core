@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use da_primitives::{BlockLenghtColumns, BlockLenghtRows};
+use da_primitives::{BlockLengthColumns, BlockLengthRows};
 #[cfg(feature = "std")]
 pub use dusk_plonk::{commitment_scheme::kzg10::PublicParameters, prelude::BlsScalar};
 use frame_support::sp_runtime::SaturatedConversion;
@@ -12,25 +12,25 @@ pub const LOG_TARGET: &str = "kate";
 pub type Seed = [u8; 32];
 
 pub mod config {
-	use super::{BlockLenghtColumns, BlockLenghtRows};
+	use super::{BlockLengthColumns, BlockLengthRows};
 
 	pub const SCALAR_SIZE_WIDE: usize = 64;
 	pub const SCALAR_SIZE: usize = 32;
 	pub const DATA_CHUNK_SIZE: usize = 31; // Actual chunk size is 32 after 0 padding is done
-	pub const EXTENSION_FACTOR: BlockLenghtRows = BlockLenghtRows(2);
-	pub const PROVER_KEY_SIZE: BlockLenghtRows = BlockLenghtRows(48);
+	pub const EXTENSION_FACTOR: BlockLengthRows = BlockLengthRows(2);
+	pub const PROVER_KEY_SIZE: BlockLengthRows = BlockLengthRows(48);
 	pub const PROOF_SIZE: usize = 48;
 	// MINIMUM_BLOCK_SIZE, MAX_BLOCK_ROWS and MAX_BLOCK_COLUMNS have to be a power of 2 because of the FFT functions requirements
 	pub const MINIMUM_BLOCK_SIZE: usize = 128;
-	pub const MAX_BLOCK_ROWS: BlockLenghtRows = if cfg!(feature = "extended-columns") {
-		BlockLenghtRows(128)
+	pub const MAX_BLOCK_ROWS: BlockLengthRows = if cfg!(feature = "extended-columns") {
+		BlockLengthRows(128)
 	} else {
-		BlockLenghtRows(256)
+		BlockLengthRows(256)
 	};
-	pub const MAX_BLOCK_COLUMNS: BlockLenghtColumns = if cfg!(feature = "extended-columns") {
-		BlockLenghtColumns(512)
+	pub const MAX_BLOCK_COLUMNS: BlockLengthColumns = if cfg!(feature = "extended-columns") {
+		BlockLengthColumns(512)
 	} else {
-		BlockLenghtColumns(256)
+		BlockLengthColumns(256)
 	};
 	pub const MAXIMUM_BLOCK_SIZE: bool = cfg!(feature = "maximum-block-size");
 }
@@ -73,8 +73,8 @@ pub fn padded_len(len: u32, chunk_size: u32) -> u32 {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct BlockDimensions {
-	pub rows: BlockLenghtRows,
-	pub cols: BlockLenghtColumns,
+	pub rows: BlockLengthRows,
+	pub cols: BlockLengthColumns,
 	pub chunk_size: u32,
 }
 
@@ -88,8 +88,8 @@ impl BlockDimensions {
 
 	pub fn new<R, C>(rows: R, cols: C, chunk_size: u32) -> Self
 	where
-		R: Into<BlockLenghtRows>,
-		C: Into<BlockLenghtColumns>,
+		R: Into<BlockLengthRows>,
+		C: Into<BlockLengthColumns>,
 	{
 		Self {
 			rows: rows.into(),
@@ -103,7 +103,7 @@ impl BlockDimensions {
 pub mod testnet {
 	use std::{collections::HashMap, sync::Mutex};
 
-	use da_primitives::BlockLenghtColumns;
+	use da_primitives::BlockLengthColumns;
 	use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
 	use once_cell::sync::Lazy;
 	use rand::SeedableRng;
@@ -112,7 +112,7 @@ pub mod testnet {
 	static SRS_DATA: Lazy<Mutex<HashMap<usize, PublicParameters>>> =
 		Lazy::new(|| Mutex::new(HashMap::new()));
 
-	pub fn public_params(max_degree: BlockLenghtColumns) -> PublicParameters {
+	pub fn public_params(max_degree: BlockLengthColumns) -> PublicParameters {
 		let max_degree = max_degree.as_usize();
 		let mut srs_data_locked = SRS_DATA.lock().unwrap();
 		srs_data_locked

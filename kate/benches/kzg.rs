@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use da_primitives::{asdr::AppExtrinsic, BlockLenghtColumns, BlockLenghtRows};
+use da_primitives::{asdr::AppExtrinsic, BlockLengthColumns, BlockLengthRows};
 use itertools::Itertools;
 use kate::{
 	com::{build_proof, par_build_commitments, Cell},
@@ -82,8 +82,8 @@ fn bench_par_build_commitments(c: &mut Criterion) {
 			|b| {
 				b.iter(|| {
 					let (_, _, _, _) = par_build_commitments(
-						black_box(BlockLenghtRows(dim.0)),
-						black_box(BlockLenghtColumns(dim.1)),
+						black_box(BlockLengthRows(dim.0)),
+						black_box(BlockLengthColumns(dim.1)),
 						black_box(CHUNK),
 						black_box(&txs),
 						black_box(seed),
@@ -113,11 +113,11 @@ fn bench_build_proof(c: &mut Criterion) {
 		let tx = AppExtrinsic::from(data.to_vec());
 		let txs = [tx];
 
-		let public_params = crate::testnet::public_params(BlockLenghtColumns(dim.1));
+		let public_params = crate::testnet::public_params(BlockLengthColumns(dim.1));
 
 		let (_, _, dims, mat) = par_build_commitments(
-			BlockLenghtRows(dim.0),
-			BlockLenghtColumns(dim.1),
+			BlockLengthRows(dim.0),
+			BlockLengthColumns(dim.1),
 			CHUNK,
 			&txs,
 			seed,
@@ -134,8 +134,8 @@ fn bench_build_proof(c: &mut Criterion) {
 			|b| {
 				b.iter(|| {
 					let cell = Cell::new(
-						BlockLenghtRows(rng.next_u32() % dims.rows.0),
-						BlockLenghtColumns(rng.next_u32() % dims.cols.0),
+						BlockLengthRows(rng.next_u32() % dims.rows.0),
+						BlockLengthColumns(rng.next_u32() % dims.cols.0),
 					);
 
 					let proof = build_proof(&public_params, dims, &mat, &[cell]).unwrap();
@@ -164,19 +164,19 @@ fn bench_verify_proof(c: &mut Criterion) {
 		let tx = AppExtrinsic::from(data.to_vec());
 		let txs = [tx];
 
-		let pp = crate::testnet::public_params(BlockLenghtColumns(dim.1));
+		let pp = crate::testnet::public_params(BlockLengthColumns(dim.1));
 
 		let (_, comms, dims, mat) = par_build_commitments(
-			BlockLenghtRows(dim.0),
-			BlockLenghtColumns(dim.1),
+			BlockLengthRows(dim.0),
+			BlockLengthColumns(dim.1),
 			CHUNK,
 			&txs,
 			seed,
 		)
 		.unwrap();
 
-		let row = BlockLenghtRows(rng.next_u32() % dims.rows.0);
-		let col = BlockLenghtColumns(rng.next_u32() % dims.cols.0);
+		let row = BlockLengthRows(rng.next_u32() % dims.rows.0);
+		let col = BlockLengthColumns(rng.next_u32() % dims.cols.0);
 
 		let proof = build_proof(&pp, dims, &mat, &[Cell { row, col }]).unwrap();
 		assert_eq!(proof.len(), 80);

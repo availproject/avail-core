@@ -100,9 +100,9 @@ where
 	Constructor,
 )]
 #[mul(forward)]
-pub struct BlockLenghtColumns(#[codec(compact)] pub u32);
+pub struct BlockLengthColumns(#[codec(compact)] pub u32);
 
-impl BlockLenghtColumns {
+impl BlockLengthColumns {
 	#[inline]
 	pub fn as_usize(&self) -> usize { self.0 as usize }
 }
@@ -128,9 +128,9 @@ impl BlockLenghtColumns {
 	Constructor,
 )]
 #[mul(forward)]
-pub struct BlockLenghtRows(#[codec(compact)] pub u32);
+pub struct BlockLengthRows(#[codec(compact)] pub u32);
 
-impl BlockLenghtRows {
+impl BlockLengthRows {
 	#[inline]
 	pub fn as_usize(&self) -> usize { self.0 as usize }
 }
