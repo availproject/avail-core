@@ -2,28 +2,29 @@ use std::{
 	collections::HashMap,
 	convert::{TryFrom, TryInto},
 	iter::once,
-	ops::Range,
 };
 
 use codec::Decode;
+use derive_more::Constructor;
 use dusk_bytes::Serializable;
 use dusk_plonk::{fft::EvaluationDomain, prelude::BlsScalar};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 // TODO: Constants are copy from kate crate, we should move them to common place
-pub const CHUNK_SIZE: usize = 32;
+pub const CHUNK_SIZE: u32 = 32;
 pub const DATA_CHUNK_SIZE: usize = 31;
 const PADDING_TAIL_VALUE: u8 = 0x80;
 
+#[derive(Copy, Clone, Constructor)]
 pub struct ExtendedMatrixDimensions {
-	pub rows: usize,
-	pub cols: usize,
+	pub rows: u32,
+	pub cols: u32,
 }
 
 impl ExtendedMatrixDimensions {
 	fn contains(&self, position: &Position) -> bool {
-		(position.row as usize) < self.rows && (position.col as usize) < self.cols
+		(position.row as u32) < self.rows && (position.col as u32) < self.cols
 	}
 }
 
@@ -41,6 +42,8 @@ pub enum ReconstructionError {
 	ColumnReconstructionError(String),
 	#[error("Cannot decode data: {0}")]
 	DataDecodingError(String),
+	#[error("Column reconstruction supports up to {}", u16::MAX)]
+	RowCountExceeded,
 }
 
 /// Creates hash map of columns, each being hash map of cells, from vector of cells.
@@ -82,14 +85,20 @@ pub fn app_specific_cells(
 
 	let (_, range) = ranges.into_iter().find(|&(id, _)| app_id == id)?;
 
-	let result = range
-		.map(|cell_number| Position {
-			col: (cell_number * 2 / dimensions.rows) as u16,
-			row: (cell_number * 2 % dimensions.rows) as u16,
-		})
-		.collect::<Vec<_>>();
+	range
+		.map(|cell_number| {
+			let col: u16 = cell_number
+				.checked_mul(2)?
+				.checked_div(dimensions.rows)?
+				.try_into()
+				.ok()?;
+			let row: u16 = (cell_number.checked_mul(2)? % dimensions.rows)
+				.try_into()
+				.ok()?;
 
-	Some(result)
+			Some(Position { col, row })
+		})
+		.collect::<Option<Vec<_>>>()
 }
 
 /// Generates cell positions of columns related to specified application ID.
@@ -180,13 +189,17 @@ fn reconstruct_available(
 	let cells_map = map_cells(dimensions, cells)?;
 	for column_number in 0..dimensions.cols as u16 {
 		match cells_map.get(&column_number) {
-			None => data.extend(vec![0; dimensions.rows / 2 * CHUNK_SIZE]),
+			None => data.extend(vec![0; (dimensions.rows / 2 * CHUNK_SIZE) as usize]),
 			Some(column_cells) => {
-				if column_cells.len() < dimensions.rows / 2 {
+				if column_cells.len() < (dimensions.rows / 2) as usize {
 					return Err(ReconstructionError::InvalidColumn(column_number));
 				}
 				let cells = column_cells.values().cloned().collect::<Vec<_>>();
-				let scalars = reconstruct_column(dimensions.rows, &cells)
+				let row_count: u16 = dimensions
+					.rows
+					.try_into()
+					.map_err(|_| ReconstructionError::RowCountExceeded)?;
+				let scalars = reconstruct_column(row_count, &cells)
 					.map_err(ReconstructionError::ColumnReconstructionError)?;
 				let column_data = scalars.iter().flat_map(|e| e.to_bytes());
 				column_numbers.push(column_number);
@@ -237,7 +250,7 @@ pub fn decode_app_extrinsics(
 				.and_then(|column| column.get(&row_number))
 				.filter(|cell| !cell.data.is_empty())
 			{
-				None => app_data.extend(vec![0; CHUNK_SIZE]),
+				None => app_data.extend(vec![0; CHUNK_SIZE as usize]),
 				Some(cell) => app_data.extend(&cell.data),
 			}
 		}
@@ -257,17 +270,17 @@ pub fn decode_app_extrinsics(
 
 // Removes both extrinsics and block padding (iec_9797 and seeded random data)
 pub fn unflatten_padded_data(
-	ranges: Vec<(u32, Range<usize>)>,
+	ranges: Vec<(u32, AppDataRange)>,
 	data: Vec<u8>,
-	chunk_size: usize,
+	chunk_size: u32,
 ) -> Result<Vec<(u32, Vec<Vec<u8>>)>, String> {
-	if data.len() % chunk_size > 0 {
+	if data.len() % chunk_size as usize > 0 {
 		return Err("Invalid data size".to_string());
 	}
 
 	fn trim_to_data_chunks(range_data: &[u8]) -> Result<Vec<u8>, String> {
 		range_data
-			.chunks_exact(CHUNK_SIZE)
+			.chunks_exact(CHUNK_SIZE as usize)
 			.map(|chunk| chunk.get(0..DATA_CHUNK_SIZE))
 			.collect::<Option<Vec<&[u8]>>>()
 			.map(|data_chunks| data_chunks.concat())
@@ -294,6 +307,7 @@ pub fn unflatten_padded_data(
 	ranges
 		.into_iter()
 		.map(|(app_id, range)| {
+			let range = range.start as usize..range.end as usize;
 			trim_to_data_chunks(&data[range])
 				.and_then(trim_padding)
 				.and_then(decode_extrinsics)
@@ -425,11 +439,12 @@ pub struct AppDataIndex {
 	pub size: u32,
 	pub index: Vec<(u32, u32)>,
 }
+pub type AppDataRange = std::ops::Range<u32>;
 
 impl AppDataIndex {
 	/// Calculates cell range per application from extrinsic offsets.
 	/// Range is from start index to end index in matrix.
-	fn cell_ranges(&self) -> Vec<(u32, Range<usize>)> {
+	fn cell_ranges(&self) -> Vec<(u32, AppDataRange)> {
 		// Case if first app_id in index is zero is ignored
 		// since it should be asserted elsewhere
 		let prepend = self.index.first().map_or(vec![(0, 0)], |&(_, offset)| {
@@ -451,20 +466,19 @@ impl AppDataIndex {
 
 		starts
 			.zip(ends)
-			.map(|(&(app_id, start), end)| (app_id, start as usize, end as usize))
-			.map(|(app_id, start, end)| (app_id, Range { start, end }))
+			.map(|(&(app_id, start), end)| (app_id, AppDataRange { start, end }))
 			.collect::<Vec<_>>()
 	}
 
 	/// Calculates data range per application from extrinsics layout.
 	/// Range is from start index to end index in matrix flattened as byte array.
-	pub fn data_ranges(&self) -> Vec<(u32, Range<usize>)> {
+	pub fn data_ranges(&self) -> Vec<(u32, AppDataRange)> {
 		self.cell_ranges()
 			.into_iter()
 			.map(|(app_id, range)| {
-				(app_id, Range {
-					start: range.start * CHUNK_SIZE,
-					end: range.end * CHUNK_SIZE,
+				(app_id, AppDataRange {
+					start: range.start.saturating_mul(CHUNK_SIZE),
+					end: range.end.saturating_mul(CHUNK_SIZE),
 				})
 			})
 			.collect::<Vec<_>>()
@@ -566,7 +580,7 @@ impl From<Cell> for DataCell {
 //
 // performing one round of ifft should reveal original data which were
 // coded together
-pub fn reconstruct_column(row_count: usize, cells: &[DataCell]) -> Result<Vec<BlsScalar>, String> {
+pub fn reconstruct_column(row_count: u16, cells: &[DataCell]) -> Result<Vec<BlsScalar>, String> {
 	// just ensures all rows are from same column !
 	// it's required as that's how it's erasure coded during
 	// construction in validator node
@@ -578,29 +592,24 @@ pub fn reconstruct_column(row_count: usize, cells: &[DataCell]) -> Result<Vec<Bl
 
 	// given row index in column of interest, finds it if present
 	// and returns back wrapped in `Some`, otherwise returns `None`
-	fn find_row_by_index(idx: usize, cells: &[DataCell]) -> Option<BlsScalar> {
-		for cell in cells {
-			if cell.position.row == idx as u16 {
-				return Some(
-					BlsScalar::from_bytes(
-						&cell.data[..]
-							.try_into()
-							.expect("didn't find u8 array of length 32"),
-					)
-					.unwrap(),
-				);
-			}
-		}
-		None
+	fn find_row_by_index(idx: u16, cells: &[DataCell]) -> Option<BlsScalar> {
+		cells
+			.iter()
+			.find(|cell| cell.position.row == idx)
+			.map(|cell| {
+				<[u8; BlsScalar::SIZE]>::try_from(&cell.data[..])
+					.expect("didn't find u8 array of length 32")
+			})
+			.and_then(|data| BlsScalar::from_bytes(&data).ok())
 	}
 
 	// row count of data matrix must be power of two !
-	assert!(row_count & (row_count - 1) == 0);
-	assert!(cells.len() >= row_count / 2 && cells.len() <= row_count);
+	assert!(row_count % 2 == 0);
+	assert!(cells.len() >= (row_count / 2) as usize && cells.len() <= row_count as usize);
 	check_cells(cells);
 
-	let eval_domain = EvaluationDomain::new(row_count).unwrap();
-	let mut subset: Vec<Option<BlsScalar>> = Vec::with_capacity(row_count);
+	let eval_domain = EvaluationDomain::new(row_count as usize).unwrap();
+	let mut subset: Vec<Option<BlsScalar>> = Vec::with_capacity(row_count as usize);
 
 	// fill up vector in ordered fashion
 	// @note the way it's done should be improved
@@ -629,28 +638,21 @@ mod tests {
 					size: 8,
 					index: vec![],
 				},
-				vec![(0, Range { start: 0, end: 8 })],
+				vec![(0, 0..8)],
 			),
 			(
 				AppDataIndex {
 					size: 4,
 					index: vec![(1, 0), (2, 2)],
 				},
-				vec![
-					(1, Range { start: 0, end: 2 }),
-					(2, Range { start: 2, end: 4 }),
-				],
+				vec![(1, 0..2), (2, 2..4)],
 			),
 			(
 				AppDataIndex {
 					size: 15,
 					index: vec![(1, 3), (12, 8)],
 				},
-				vec![
-					(0, Range { start: 0, end: 3 }),
-					(1, Range { start: 3, end: 8 }),
-					(12, Range { start: 8, end: 15 }),
-				],
+				vec![(0, 0..3), (1, 3..8), (12, 8..15)],
 			),
 		];
 
@@ -667,37 +669,21 @@ mod tests {
 					size: 8,
 					index: vec![],
 				},
-				vec![(0, Range { start: 0, end: 256 })],
+				vec![(0, 0..256)],
 			),
 			(
 				AppDataIndex {
 					size: 4,
 					index: vec![(1, 0), (2, 2)],
 				},
-				vec![
-					(1, Range { start: 0, end: 64 }),
-					(2, Range {
-						start: 64,
-						end: 128,
-					}),
-				],
+				vec![(1, 0..64), (2, 64..128)],
 			),
 			(
 				AppDataIndex {
 					size: 15,
 					index: vec![(1, 3), (12, 8)],
 				},
-				vec![
-					(0, Range { start: 0, end: 96 }),
-					(1, Range {
-						start: 96,
-						end: 256,
-					}),
-					(12, Range {
-						start: 256,
-						end: 480,
-					}),
-				],
+				vec![(0, 0..96), (1, 96..256), (12, 256..480)],
 			),
 		];
 
@@ -1008,6 +994,28 @@ mod tests {
 		}
 	}
 
+	fn build_coded_eval_domain() -> (Vec<BlsScalar>, u16, u16) {
+		let domain_size = 1u16 << 2;
+		let row_count = domain_size.checked_mul(2).unwrap();
+		let eval_domain = EvaluationDomain::new(domain_size as usize).unwrap();
+
+		let mut src: Vec<BlsScalar> = Vec::with_capacity(row_count as usize);
+		for i in 0..domain_size {
+			src.push(BlsScalar::from(1 << (i + 1)));
+		}
+		eval_domain.ifft_slice(src.as_mut_slice());
+		for _ in domain_size..row_count {
+			src.push(BlsScalar::zero());
+		}
+
+		// erasure coded all data
+		let eval_domain = EvaluationDomain::new(row_count as usize).unwrap();
+		let coded = eval_domain.fft(&src);
+		assert!(coded.len() == row_count as usize);
+
+		(coded, row_count, domain_size)
+	}
+
 	// Following test cases attempt to figure out any loop holes
 	// I might be leaving, when reconstructing whole column of data
 	// matrix when >= 50% of those cells along a certain column
@@ -1019,24 +1027,7 @@ mod tests {
 		//
 		// In general it should be the way how this
 		// function should be used
-
-		let domain_size = 1usize << 2;
-		let row_count = 2 * domain_size;
-		let eval_domain = EvaluationDomain::new(domain_size).unwrap();
-
-		let mut src: Vec<BlsScalar> = Vec::with_capacity(row_count);
-		for i in 0..domain_size {
-			src.push(BlsScalar::from(1 << (i + 1)));
-		}
-		eval_domain.ifft_slice(src.as_mut_slice());
-		for _ in domain_size..row_count {
-			src.push(BlsScalar::zero());
-		}
-
-		// erasure coded all data
-		let eval_domain = EvaluationDomain::new(row_count).unwrap();
-		let coded = eval_domain.fft(&src);
-		assert!(coded.len() == row_count);
+		let (coded, row_count, domain_size) = build_coded_eval_domain();
 
 		let cells = vec![
 			DataCell {
@@ -1059,7 +1050,12 @@ mod tests {
 
 		let reconstructed = reconstruct_column(row_count, &cells[..]).unwrap();
 		for i in 0..domain_size {
-			assert_eq!(coded[i * 2], reconstructed[i], "{} elem doesn't match", i);
+			assert_eq!(
+				coded[i as usize * 2],
+				reconstructed[i as usize],
+				"{} elem doesn't match",
+				i
+			);
 		}
 	}
 
@@ -1069,24 +1065,7 @@ mod tests {
 		// Notice how I attempt to construct `cells`
 		// vector, I'm intentionally keeping duplicate data
 		// so it must fail to reconstruct back [ will panic !]
-
-		let domain_size = 1usize << 2;
-		let row_count = 2 * domain_size;
-		let eval_domain = EvaluationDomain::new(domain_size).unwrap();
-
-		let mut src: Vec<BlsScalar> = Vec::with_capacity(row_count);
-		for i in 0..domain_size {
-			src.push(BlsScalar::from(1 << (i + 1)));
-		}
-		eval_domain.ifft_slice(src.as_mut_slice());
-		for _ in domain_size..row_count {
-			src.push(BlsScalar::zero());
-		}
-
-		// erasure coded all data
-		let eval_domain = EvaluationDomain::new(row_count).unwrap();
-		let coded = eval_domain.fft(&src);
-		assert!(coded.len() == row_count);
+		let (coded, row_count, domain_size) = build_coded_eval_domain();
 
 		let cells = vec![
 			DataCell {
@@ -1109,7 +1088,7 @@ mod tests {
 
 		let reconstructed = reconstruct_column(row_count, &cells[..]).unwrap();
 		for i in 0..domain_size {
-			assert_eq!(coded[i * 2], reconstructed[i]);
+			assert_eq!(coded[i as usize * 2], reconstructed[i as usize]);
 		}
 	}
 
@@ -1119,24 +1098,7 @@ mod tests {
 		// Again notice how I'm constructing `cells`
 		// vector, it must have at least 50% data available
 		// to be able to reconstruct whole data back properly
-
-		let domain_size = 1usize << 2;
-		let row_count = 2 * domain_size;
-		let eval_domain = EvaluationDomain::new(domain_size).unwrap();
-
-		let mut src: Vec<BlsScalar> = Vec::with_capacity(row_count);
-		for i in 0..domain_size {
-			src.push(BlsScalar::from(1 << (i + 1)));
-		}
-		eval_domain.ifft_slice(src.as_mut_slice());
-		for _ in domain_size..row_count {
-			src.push(BlsScalar::zero());
-		}
-
-		// erasure coded all data
-		let eval_domain = EvaluationDomain::new(row_count).unwrap();
-		let coded = eval_domain.fft(&src);
-		assert!(coded.len() == row_count);
+		let (coded, row_count, domain_size) = build_coded_eval_domain();
 
 		let cells = vec![
 			DataCell {
@@ -1155,7 +1117,7 @@ mod tests {
 
 		let reconstructed = reconstruct_column(row_count, &cells[..]).unwrap();
 		for i in 0..domain_size {
-			assert_eq!(coded[i * 2], reconstructed[i]);
+			assert_eq!(coded[i as usize * 2], reconstructed[i as usize]);
 		}
 	}
 
@@ -1165,24 +1127,7 @@ mod tests {
 		// Again check how I construct `cells` vector
 		// where I put wrong row's data in place of wrong
 		// row index [ will panic !]
-
-		let domain_size = 1usize << 2;
-		let row_count = 2 * domain_size;
-		let eval_domain = EvaluationDomain::new(domain_size).unwrap();
-
-		let mut src: Vec<BlsScalar> = Vec::with_capacity(row_count);
-		for i in 0..domain_size {
-			src.push(BlsScalar::from(1 << (i + 1)));
-		}
-		eval_domain.ifft_slice(src.as_mut_slice());
-		for _ in domain_size..row_count {
-			src.push(BlsScalar::zero());
-		}
-
-		// erasure coded all data
-		let eval_domain = EvaluationDomain::new(row_count).unwrap();
-		let coded = eval_domain.fft(&src);
-		assert!(coded.len() == row_count);
+		let (coded, row_count, domain_size) = build_coded_eval_domain();
 
 		let cells = vec![
 			DataCell {
@@ -1205,7 +1150,7 @@ mod tests {
 
 		let reconstructed = reconstruct_column(row_count, &cells[..]).unwrap();
 		for i in 0..domain_size {
-			assert_eq!(coded[i * 2], reconstructed[i]);
+			assert_eq!(coded[i as usize * 2], reconstructed[i as usize]);
 		}
 	}
 }

@@ -755,7 +755,7 @@ dependencies = [
 
 [[package]]
 name = "da-primitives"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "beefy-merkle-tree",
  "derive_more",
@@ -1648,6 +1648,7 @@ dependencies = [
  "bls12_381",
  "criterion",
  "da-primitives",
+ "derive_more",
  "dusk-bytes",
  "dusk-plonk",
  "frame-support",
@@ -1689,6 +1690,7 @@ dependencies = [
 name = "kate-recovery"
 version = "0.2.0"
 dependencies = [
+ "derive_more",
  "dusk-bytes",
  "dusk-plonk",
  "getrandom 0.2.7",

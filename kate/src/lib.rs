@@ -1,7 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use da_primitives::{BlockLenghtColumns, BlockLenghtRows};
 #[cfg(feature = "std")]
 pub use dusk_plonk::{commitment_scheme::kzg10::PublicParameters, prelude::BlsScalar};
+use frame_support::sp_runtime::SaturatedConversion;
 use static_assertions::const_assert_ne;
 
 use crate::config::DATA_CHUNK_SIZE;
@@ -10,23 +12,25 @@ pub const LOG_TARGET: &str = "kate";
 pub type Seed = [u8; 32];
 
 pub mod config {
+	use super::{BlockLenghtColumns, BlockLenghtRows};
+
 	pub const SCALAR_SIZE_WIDE: usize = 64;
 	pub const SCALAR_SIZE: usize = 32;
 	pub const DATA_CHUNK_SIZE: usize = 31; // Actual chunk size is 32 after 0 padding is done
-	pub const EXTENSION_FACTOR: usize = 2;
-	pub const PROVER_KEY_SIZE: usize = 48;
+	pub const EXTENSION_FACTOR: BlockLenghtRows = BlockLenghtRows(2);
+	pub const PROVER_KEY_SIZE: BlockLenghtRows = BlockLenghtRows(48);
 	pub const PROOF_SIZE: usize = 48;
 	// MINIMUM_BLOCK_SIZE, MAX_BLOCK_ROWS and MAX_BLOCK_COLUMNS have to be a power of 2 because of the FFT functions requirements
 	pub const MINIMUM_BLOCK_SIZE: usize = 128;
-	pub const MAX_BLOCK_ROWS: u32 = if cfg!(feature = "extended-columns") {
-		128
+	pub const MAX_BLOCK_ROWS: BlockLenghtRows = if cfg!(feature = "extended-columns") {
+		BlockLenghtRows(128)
 	} else {
-		256
+		BlockLenghtRows(256)
 	};
-	pub const MAX_BLOCK_COLUMNS: u32 = if cfg!(feature = "extended-columns") {
-		512
+	pub const MAX_BLOCK_COLUMNS: BlockLenghtColumns = if cfg!(feature = "extended-columns") {
+		BlockLenghtColumns(512)
 	} else {
-		256
+		BlockLenghtColumns(256)
 	};
 	pub const MAXIMUM_BLOCK_SIZE: bool = cfg!(feature = "maximum-block-size");
 }
@@ -40,8 +44,11 @@ pub mod com;
 /// IEC 9797 1 algorithm we implemented. See `fn pad_iec_9797_1`
 #[inline]
 fn padded_len_of_pad_iec_9797_1(len: u32) -> u32 {
-	(len + 1)
-		+ (DATA_CHUNK_SIZE as u32 - ((len + 1) % DATA_CHUNK_SIZE as u32)) % DATA_CHUNK_SIZE as u32
+	let len_plus_one = len.saturating_add(1);
+	let offset = (DATA_CHUNK_SIZE - (len_plus_one as usize % DATA_CHUNK_SIZE)) % DATA_CHUNK_SIZE;
+	let offset: u32 = offset.saturated_into();
+
+	len_plus_one.saturating_add(offset)
 }
 
 /// Calculates the padded len based of initial `len`.
@@ -66,16 +73,29 @@ pub fn padded_len(len: u32, chunk_size: u32) -> u32 {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct BlockDimensions {
-	pub rows: usize,
-	pub cols: usize,
-	pub chunk_size: usize,
+	pub rows: BlockLenghtRows,
+	pub cols: BlockLenghtColumns,
+	pub chunk_size: u32,
 }
 
 impl BlockDimensions {
 	pub fn size(&self) -> usize {
 		self.rows
-			.saturating_mul(self.cols)
-			.saturating_mul(self.chunk_size)
+			.0
+			.saturating_mul(self.cols.0)
+			.saturating_mul(self.chunk_size) as usize
+	}
+
+	pub fn new<R, C>(rows: R, cols: C, chunk_size: u32) -> Self
+	where
+		R: Into<BlockLenghtRows>,
+		C: Into<BlockLenghtColumns>,
+	{
+		Self {
+			rows: rows.into(),
+			cols: cols.into(),
+			chunk_size,
+		}
 	}
 }
 
@@ -83,6 +103,7 @@ impl BlockDimensions {
 pub mod testnet {
 	use std::{collections::HashMap, sync::Mutex};
 
+	use da_primitives::BlockLenghtColumns;
 	use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
 	use once_cell::sync::Lazy;
 	use rand::SeedableRng;
@@ -91,7 +112,8 @@ pub mod testnet {
 	static SRS_DATA: Lazy<Mutex<HashMap<usize, PublicParameters>>> =
 		Lazy::new(|| Mutex::new(HashMap::new()));
 
-	pub fn public_params(max_degree: usize) -> PublicParameters {
+	pub fn public_params(max_degree: BlockLenghtColumns) -> PublicParameters {
+		let max_degree = max_degree.as_usize();
 		let mut srs_data_locked = SRS_DATA.lock().unwrap();
 		srs_data_locked
 			.entry(max_degree)

@@ -1,5 +1,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use codec::{Decode, Encode};
+use derive_more::{Add, Constructor, Display, From, Into, Mul};
+use scale_info::TypeInfo;
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 use sp_runtime::Perbill;
 
 /// Customized headers.
@@ -70,4 +75,60 @@ where
 			T::default(),
 		)
 	}
+}
+
+/// Strong type for `BlockLength::cols`
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(
+	Clone,
+	Copy,
+	Debug,
+	From,
+	Into,
+	Add,
+	Mul,
+	Display,
+	PartialEq,
+	Eq,
+	Encode,
+	Decode,
+	TypeInfo,
+	PartialOrd,
+	Ord,
+	Constructor,
+)]
+#[mul(forward)]
+pub struct BlockLenghtColumns(#[codec(compact)] pub u32);
+
+impl BlockLenghtColumns {
+	#[inline]
+	pub fn as_usize(&self) -> usize { self.0 as usize }
+}
+
+/// Strong type for `BlockLength::rows`
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(
+	Clone,
+	Copy,
+	Debug,
+	From,
+	Into,
+	Add,
+	Mul,
+	Display,
+	PartialEq,
+	Eq,
+	Encode,
+	Decode,
+	TypeInfo,
+	PartialOrd,
+	Ord,
+	Constructor,
+)]
+#[mul(forward)]
+pub struct BlockLenghtRows(#[codec(compact)] pub u32);
+
+impl BlockLenghtRows {
+	#[inline]
+	pub fn as_usize(&self) -> usize { self.0 as usize }
 }
