@@ -1,11 +1,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use std::convert::TryInto;
-
 use da_primitives::{BlockLengthColumns, BlockLengthRows};
 #[cfg(feature = "std")]
 pub use dusk_plonk::{commitment_scheme::kzg10::PublicParameters, prelude::BlsScalar};
 use frame_support::sp_runtime::SaturatedConversion;
+#[cfg(feature = "std")]
 use kate_recovery::matrix::Dimensions;
 use static_assertions::const_assert_ne;
 
@@ -102,8 +101,9 @@ impl BlockDimensions {
 	}
 }
 
-impl TryInto<Dimensions> for BlockDimensions {
-	type Error = std::num::TryFromIntError;
+#[cfg(feature = "std")]
+impl sp_std::convert::TryInto<Dimensions> for BlockDimensions {
+	type Error = sp_std::num::TryFromIntError;
 
 	fn try_into(self) -> Result<Dimensions, Self::Error> {
 		let rows = self.rows.0.try_into()?;

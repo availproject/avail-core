@@ -248,15 +248,13 @@ pub fn to_bls_scalar(chunk: &[u8]) -> Result<BlsScalar, Error> {
 /// This means that extension factor has to be multiple of 2,
 /// and that original data will be interleaved with erasure codes,
 /// instead of being in first k chunks of a column.
-#[cfg(feature = "alloc")]
+#[cfg(feature = "std")]
 pub fn par_extend_data_matrix(
 	block_dims: BlockDimensions,
 	block: &[u8],
 ) -> Result<Vec<BlsScalar>, Error> {
-	use kate_recovery::matrix::Dimensions;
-
 	let start = Instant::now();
-	let dimensions: Dimensions = block_dims.try_into().map_err(|_| Error::BlockTooBig)?;
+	let dimensions: matrix::Dimensions = block_dims.try_into().map_err(|_| Error::BlockTooBig)?;
 	let rows_num: usize = dimensions.rows.into();
 	let extended_rows_num = BlockLengthRows(dimensions.extended_rows());
 	let chunks = block.par_chunks_exact(block_dims.chunk_size as usize);
