@@ -147,7 +147,7 @@ fn reconstruct_available(
 				}
 				let cells = column_cells.values().cloned().collect::<Vec<_>>();
 				let row_count: u16 = dimensions
-					.rows
+					.extended_rows()
 					.try_into()
 					.map_err(|_| ReconstructionError::RowCountExceeded)?;
 
