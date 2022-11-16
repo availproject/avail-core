@@ -50,7 +50,7 @@ pub struct Dimensions {
 impl Dimensions {
 	/// Creates new matrix dimensions.
 	/// Data layout is assumed to be row-wise.
-	pub fn new(rows: u16, cols: u16) -> Self { Dimensions { rows, cols } }
+	pub const fn new(rows: u16, cols: u16) -> Self { Dimensions { rows, cols } }
 
 	/// Matrix size.
 	pub fn size(&self) -> u32 { self.rows as u32 * self.cols as u32 }
