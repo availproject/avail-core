@@ -1668,6 +1668,7 @@ dependencies = [
  "rand_core 0.5.1",
  "rayon",
  "serde",
+ "serde_json",
  "sp-core",
  "sp-std",
  "static_assertions",

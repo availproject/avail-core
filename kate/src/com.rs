@@ -37,11 +37,9 @@ use crate::{
 	padded_len_of_pad_iec_9797_1, BlockDimensions, Seed, LOG_TARGET,
 };
 
-#[derive(Serialize, Deserialize, Constructor, Clone, Copy)]
+#[derive(Serialize, Deserialize, Constructor, Clone, Copy, PartialEq, Debug)]
 pub struct Cell {
-	#[serde(flatten)]
 	pub row: BlockLengthRows,
-	#[serde(flatten)]
 	pub col: BlockLengthColumns,
 }
 
@@ -1124,4 +1122,8 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 		}];
 		par_build_commitments(BlockLengthRows(4), BlockLengthColumns(4), 32, &xts, hash).unwrap();
 	}
+
+	#[test_case( r#"{ "row": 42, "col": 99 }"# => Cell::new(42.into(),99.into()) ; "Simple" )]
+	#[test_case( r#"{ "row": 4294967295, "col": 99 }"# => Cell::new(4_294_967_295.into(),99.into()) ; "Max row" )]
+	fn serde_block_length_types_untagged(data: &str) -> Cell { serde_json::from_str(data).unwrap() }
 }
