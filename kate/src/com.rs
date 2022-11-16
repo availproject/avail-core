@@ -62,7 +62,6 @@ pub type XtsLayout = Vec<(AppId, u32)>;
 type FlatData = Vec<u8>;
 type DataChunk = [u8; DATA_CHUNK_SIZE];
 const PADDING_TAIL_VALUE: u8 = 0x80;
-
 /// Helper which groups extrinsics data that share the same app_id.
 /// We assume the input extrinsics are already sorted by app_id, i.e. extrinsics with the same app_id are consecutive.
 /// This function does the same thing as group_by (unstable), just less general.
@@ -308,7 +307,11 @@ pub fn build_proof(
 	cells: &[Cell],
 ) -> Result<Vec<u8>, Error> {
 	let cols_num = block_dims.cols.as_usize();
-	let extended_rows_num = (block_dims.rows * EXTENSION_FACTOR).as_usize();
+	let extended_rows_num = block_dims
+		.rows
+		.0
+		.checked_mul(EXTENSION_FACTOR)
+		.ok_or(Error::BlockTooBig)?;
 
 	const SPROOF_SIZE: usize = PROOF_SIZE + SCALAR_SIZE;
 
@@ -342,7 +345,7 @@ pub fn build_proof(
 		.zip(result_bytes.par_chunks_exact_mut(SPROOF_SIZE))
 		.for_each(|(cell, res)| {
 			let r_index = cell.row.as_usize();
-			if (r_index >= extended_rows_num) || (cell.col >= block_dims.cols) {
+			if (r_index >= extended_rows_num as usize) || (cell.col >= block_dims.cols) {
 				res.fill(0); // for bad cell identifier, fill whole proof with zero bytes !
 			} else {
 				let c_index = cell.col.as_usize();
@@ -350,7 +353,7 @@ pub fn build_proof(
 				// construct polynomial per extended matrix row
 				let row = (0..cols_num)
 					.into_par_iter()
-					.map(|j| ext_data_matrix[r_index + j * extended_rows_num])
+					.map(|j| ext_data_matrix[r_index + j * extended_rows_num as usize])
 					.collect::<Vec<BlsScalar>>();
 
 				// row has to be a power of 2, otherwise interpolate() function panics
@@ -359,7 +362,7 @@ pub fn build_proof(
 				match prover_key.commit(&witness) {
 					Ok(commitment_to_witness) => {
 						let evaluated_point =
-							ext_data_matrix[r_index + c_index * extended_rows_num];
+							ext_data_matrix[r_index + c_index * extended_rows_num as usize];
 
 						res[0..PROOF_SIZE].copy_from_slice(&commitment_to_witness.to_bytes());
 						res[PROOF_SIZE..].copy_from_slice(&evaluated_point.to_bytes());
@@ -404,7 +407,11 @@ pub fn par_build_commitments(
 	);
 
 	let ext_data_matrix = par_extend_data_matrix(block_dims, &block)?;
-	let extended_rows_num = block_dims.rows * EXTENSION_FACTOR;
+	let extended_rows_num = block_dims
+		.rows
+		.0
+		.checked_mul(EXTENSION_FACTOR)
+		.ok_or(Error::BlockTooBig)?;
 
 	info!(target: LOG_TARGET, "Time to prepare {:?}", start.elapsed());
 
@@ -428,7 +435,9 @@ pub fn par_build_commitments(
 	let row_eval_domain = EvaluationDomain::new(block_dims.cols.as_usize()).map_err(Error::from)?;
 
 	let mut result_bytes: Vec<u8> = Vec::new();
-	let result_bytes_len = (PROVER_KEY_SIZE * extended_rows_num).as_usize();
+	let result_bytes_len = extended_rows_num
+		.checked_mul(PROVER_KEY_SIZE)
+		.ok_or(Error::BlockTooBig)? as usize;
 	result_bytes.reserve_exact(result_bytes_len);
 	unsafe {
 		result_bytes.set_len(result_bytes_len);
@@ -442,10 +451,17 @@ pub fn par_build_commitments(
 
 	let start = Instant::now();
 
-	(0..extended_rows_num.as_usize())
+	(0..extended_rows_num)
 		.into_par_iter()
-		.map(|i| row(&ext_data_matrix, i, block_dims.cols, extended_rows_num))
-		.zip(result_bytes.par_chunks_exact_mut(PROVER_KEY_SIZE.as_usize()))
+		.map(|i| {
+			row(
+				&ext_data_matrix,
+				i as usize,
+				block_dims.cols,
+				BlockLengthRows(extended_rows_num),
+			)
+		})
+		.zip(result_bytes.par_chunks_exact_mut(PROVER_KEY_SIZE as usize))
 		.map(|(row, res)| commit(&prover_key, row_eval_domain, row, res))
 		.collect::<Result<_, _>>()?;
 

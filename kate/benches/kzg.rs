@@ -84,7 +84,7 @@ fn bench_par_build_commitments(c: &mut Criterion) {
 					let (_, _, _, _) = par_build_commitments(
 						black_box(BlockLengthRows(dim.0)),
 						black_box(BlockLengthColumns(dim.1)),
-						black_box(CHUNK),
+						black_box(CHUNK.try_into().unwrap()),
 						black_box(&txs),
 						black_box(seed),
 					)
@@ -118,7 +118,7 @@ fn bench_build_proof(c: &mut Criterion) {
 		let (_, _, dims, mat) = par_build_commitments(
 			BlockLengthRows(dim.0),
 			BlockLengthColumns(dim.1),
-			CHUNK,
+			CHUNK.try_into().unwrap(),
 			&txs,
 			seed,
 		)
@@ -169,7 +169,7 @@ fn bench_verify_proof(c: &mut Criterion) {
 		let (_, comms, dims, mat) = par_build_commitments(
 			BlockLengthRows(dim.0),
 			BlockLengthColumns(dim.1),
-			CHUNK,
+			CHUNK.try_into().unwrap(),
 			&txs,
 			seed,
 		)
