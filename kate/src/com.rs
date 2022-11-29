@@ -810,7 +810,7 @@ mod tests {
 		let extended_dims = dims.try_into().unwrap();
 		for xt in xts {
 			let rows = &scalars_to_rows(xt.app_id.0, &index, &extended_dims, &matrix);
-			let (_, missing) = commitments::verify_equality(&public_params, &commitments, rows, &index, &extended_dims, xt.app_id.0).unwrap();
+			let (_, missing) = commitments::verify_equality(&public_params, &commitments, rows, &index, &extended_dims, xt.app_id.0, 5000).unwrap();
 			prop_assert!(missing.is_empty());
 		}
 	}
@@ -829,7 +829,7 @@ mod tests {
 			let mut rows = scalars_to_rows(xt.app_id.0, &index, &extended_dims, &matrix);
 			let app_row_index = rows.iter().position(Option::is_some).unwrap();
 			rows.remove(app_row_index);
-			let (_, missing) = commitments::verify_equality(&public_params, &commitments, &rows,&index,&extended_dims,xt.app_id.0).unwrap();
+			let (_, missing) = commitments::verify_equality(&public_params, &commitments, &rows,&index,&extended_dims,xt.app_id.0, 5000).unwrap();
 			prop_assert!(!missing.is_empty());
 		}
 	}

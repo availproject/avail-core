@@ -102,6 +102,7 @@ pub fn verify_equality(
 	index: &index::AppDataIndex,
 	dimensions: &matrix::Dimensions,
 	app_id: u32,
+	threshold: usize,
 ) -> Result<(Vec<u32>, Vec<u32>), Error> {
 	if commitments.len() % config::COMMITMENT_SIZE > 0 {
 		return Err(Error::InvalidData(DataError::BadCommitmentsData));
@@ -138,6 +139,12 @@ pub fn verify_equality(
 		.collect::<Result<Vec<u32>, Error>>()?;
 
 	app_rows.retain(|row| !verified.contains(row));
+	
+	let possible_no_of_cells_miss = app_rows.len() * dimensions.cols() as usize ;
+	// let total_no_cells = dimensions.rows() * dimensions.cols() ; 
+	if possible_no_of_cells_miss > threshold{
+		return Err(Error::InvalidData(DataError::BadLen));
+	}
 
 	Ok((verified, app_rows))
 }
@@ -168,6 +175,7 @@ mod tests {
 			&index::AppDataIndex::default(),
 			&matrix::Dimensions::new(1, 1).unwrap(),
 			0,
+			5000
 		)
 		.is_err());
 	}
@@ -192,6 +200,7 @@ mod tests {
 			&AppDataIndex { size, index },
 			&matrix::Dimensions::new(4, 32).unwrap(),
 			1,
+			5000
 		);
 		assert_eq!(result.unwrap(), (vec![0, 2, 4], vec![]));
 
@@ -205,6 +214,7 @@ mod tests {
 			&AppDataIndex { size, index },
 			&matrix::Dimensions::new(4, 32).unwrap(),
 			1,
+			5000
 		);
 		assert_eq!(result.unwrap(), (vec![0], vec![2, 4]));
 
@@ -218,6 +228,7 @@ mod tests {
 			&AppDataIndex { size, index },
 			&matrix::Dimensions::new(4, 32).unwrap(),
 			1,
+			5000
 		);
 		assert_eq!(result.unwrap(), (vec![], vec![0, 2, 4]));
 	}
