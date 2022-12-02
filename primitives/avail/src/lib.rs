@@ -18,7 +18,9 @@ pub use kate_commitment::*;
 /// Application Specific Data Retrieval
 pub mod asdr;
 
+pub mod sha2;
 pub mod traits;
+pub use sha2::ShaTwo256;
 
 pub mod data_proof;
 pub use data_proof::DataProof;
