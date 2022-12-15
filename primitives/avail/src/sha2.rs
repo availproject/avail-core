@@ -4,6 +4,7 @@ use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use sp_core::{storage::StateVersion, Hasher};
 use sp_runtime::traits::Hash;
+use sp_std::vec::Vec;
 use sp_trie::{LayoutV0, LayoutV1, TrieConfiguration as _};
 
 /// Sha2 256 wrapper which supports `beefy-merkle-tree::Hasher`.

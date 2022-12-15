@@ -15,4 +15,5 @@ sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkad
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.33" }
 sp-trie = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.33" }
 sp-runtime-interface = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.33" }
+sp-weights = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.33" }
 frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.33" }
