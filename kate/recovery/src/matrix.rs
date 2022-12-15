@@ -7,7 +7,7 @@ use crate::config;
 const EXTENSION_FACTOR_U32: u32 = config::EXTENSION_FACTOR as u32;
 
 /// Position of a cell in the the matrix.
-#[derive(Default, Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Default, Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Position {
 	pub row: u32,
 	pub col: u16,
@@ -96,6 +96,17 @@ impl Dimensions {
 		(first_row..=last_row)
 			.step_by(config::EXTENSION_FACTOR)
 			.collect::<Vec<u32>>()
+	}
+
+	/// Cell positions for given column in extended matrix.
+	/// Empty if column index is not valid.
+	pub fn col_positions(&self, col: u16) -> Vec<Position> {
+		if self.cols() <= col {
+			return vec![];
+		}
+		(0..self.extended_rows())
+			.map(|row| Position { col, row })
+			.collect::<Vec<_>>()
 	}
 
 	/// Cell positions for given rows in extended matrix.
