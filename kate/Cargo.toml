@@ -18,6 +18,7 @@ hex = { version = "0.4", default-features = false, features = ["alloc"] }
 kate-recovery = { path = "recovery", default-features = false, optional = true }
 log = { version = "0.4.8", optional = true }
 num_cpus = { version = "1.13.0", optional = true }
+once_cell = { version = "1.8.0", optional = true }
 rand = { version = "0.8.4", default-features = false, optional = true }
 rand_chacha = { version = "0.3", default-features = false, optional = true }
 rand_core = { version = "0.6", default-features = false }
@@ -42,6 +43,7 @@ alloc = ["dusk-plonk/alloc"]
 std = [
 	"kate-recovery/std",
 	"hex/std",
+	"once_cell",
 	"codec/std",
 	"alloc",
 	"serde",

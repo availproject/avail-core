@@ -1679,6 +1679,7 @@ dependencies = [
  "kate-recovery",
  "log",
  "num_cpus",
+ "once_cell",
  "parity-scale-codec",
  "proptest",
  "rand 0.8.5",
