@@ -1,14 +1,12 @@
 use codec::{Codec, Decode, Encode};
-#[cfg(feature = "std")]
-use parity_util_mem::{MallocSizeOf, MallocSizeOfOps};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_core::{RuntimeDebug, U256};
 use sp_runtime::{
 	traits::{
-		AtLeast32BitUnsigned, Hash as HashT, Header as HeaderT, MaybeDisplay, MaybeMallocSizeOf,
-		MaybeSerialize, MaybeSerializeDeserialize, Member, SimpleBitOps,
+		AtLeast32BitUnsigned, Hash as HashT, Header as HeaderT, MaybeDisplay, MaybeSerialize,
+		MaybeSerializeDeserialize, Member, SimpleBitOps,
 	},
 	Digest,
 };
@@ -119,21 +117,6 @@ impl<N: HeaderBlockNumber, H: HeaderHash> PassBy for Header<N, H> {
 	type PassBy = PassByCodecImpl<Header<N, H>>;
 }
 
-#[cfg(feature = "std")]
-impl<N: HeaderBlockNumber, H: HeaderHash> MallocSizeOf for Header<N, H>
-where
-	H::Output: MallocSizeOf,
-{
-	fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-		self.parent_hash.size_of(ops)
-			+ self.number.size_of(ops)
-			+ self.state_root.size_of(ops)
-			+ self.extrinsics_root.size_of(ops)
-			+ self.digest.size_of(ops)
-			+ self.extension.size_of(ops)
-	}
-}
-
 impl<Number, Hash> HeaderT for Header<Number, Hash>
 where
 	Number: Member
@@ -146,8 +129,7 @@ where
 		+ Copy
 		+ Into<U256>
 		+ TryFrom<U256>
-		+ sp_std::str::FromStr
-		+ MaybeMallocSizeOf,
+		+ sp_std::str::FromStr,
 	Hash: HashT,
 	Hash::Output: Default
 		+ sp_std::hash::Hash
@@ -158,8 +140,7 @@ where
 		+ Debug
 		+ MaybeDisplay
 		+ SimpleBitOps
-		+ Codec
-		+ MaybeMallocSizeOf,
+		+ Codec,
 {
 	type Hash = <Hash as HashT>::Output;
 	type Hashing = Hash;
