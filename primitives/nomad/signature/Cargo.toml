@@ -1,6 +1,6 @@
 [package]
 name = "nomad-signature"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Luke Tchang <luke@nomad.xyz>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"

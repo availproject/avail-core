@@ -818,7 +818,7 @@ dependencies = [
 
 [[package]]
 name = "da-primitives"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "beefy-merkle-tree",
  "derive_more",
@@ -1774,7 +1774,7 @@ dependencies = [
 
 [[package]]
 name = "kate"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "criterion",
  "da-primitives",
@@ -2048,7 +2048,7 @@ dependencies = [
 
 [[package]]
 name = "nomad-base"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "ethers-signers",
  "frame-support",
@@ -2066,7 +2066,7 @@ dependencies = [
 
 [[package]]
 name = "nomad-core"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "async-trait",
  "ethers-core",
@@ -2086,7 +2086,7 @@ dependencies = [
 
 [[package]]
 name = "nomad-merkle"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ethers-core",
  "frame-support",
@@ -2108,7 +2108,7 @@ dependencies = [
 
 [[package]]
 name = "nomad-signature"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "byte-slice-cast",
  "elliptic-curve",
