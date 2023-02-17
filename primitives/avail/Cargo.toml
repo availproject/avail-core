@@ -52,5 +52,5 @@ std = [
 
 header-backward-compatibility-test = []
 try-runtime = [
-	"sp-runtime/try-runtime"
+	"sp-runtime/try-runtime",
 ]
