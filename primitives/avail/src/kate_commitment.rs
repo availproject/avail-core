@@ -69,23 +69,7 @@ pub mod v2 {
 	#[cfg(feature = "std")]
 	impl parity_util_mem::MallocSizeOf for KateCommitment {
 		fn size_of(&self, ops: &mut parity_util_mem::MallocSizeOfOps) -> usize {
-			self.commitment.size_of(ops)
-				+ self.rows.size_of(ops)
-				+ self.cols.size_of(ops)
+			self.commitment.size_of(ops) + self.rows.size_of(ops) + self.cols.size_of(ops)
 		}
 	}
-
-	// #[cfg(test)]
-	// mod tests {
-	// 	use super::*;
-	// 	use test_case::test_case;
-
-		// Double check that zero data root is compressed to `None`.
-		// #[test_case( H256([0u8;32]) => None; "Zero data root")]
-		// #[test_case( H256([1u8;32]) => Some(H256([1u8;32])); "NonZero data root")]
-		// fn compression_on_new(data_root: H256) -> Option<H256> {
-		// 	let kate = KateCommitment::new(1, 1, data_root, vec![]);
-		// 	kate.data_root
-		// }
-	// }
 }
