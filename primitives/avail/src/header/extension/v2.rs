@@ -13,10 +13,19 @@ use crate::{asdr::DataLookup, v2::KateCommitment};
 pub struct HeaderExtension {
 	pub app_lookup: DataLookup,
 	pub commitment: KateCommitment,
-	pub data_root: Option<H256>,
+	data_root: Option<H256>,
 }
 
 impl HeaderExtension {
+	pub fn new(commitment: KateCommitment, app_lookup: DataLookup, data_root: H256) -> Self {
+		let data_root = (!data_root.is_zero()).then_some(data_root);
+		Self {
+			commitment,
+			app_lookup,
+			data_root,
+		}
+	}
+
 	pub fn data_root(&self) -> H256 {
 		self.data_root.unwrap_or_default()
 	}
