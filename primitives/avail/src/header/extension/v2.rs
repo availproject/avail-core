@@ -13,15 +13,15 @@ use crate::{asdr::DataLookup, v2::KateCommitment};
 pub struct HeaderExtension {
 	pub app_lookup: DataLookup,
 	pub commitment: KateCommitment,
-	data_root: Option<H256>,
+	pub data_root: Option<H256>,
 }
 
 impl HeaderExtension {
 	pub fn new(commitment: KateCommitment, app_lookup: DataLookup, data_root: H256) -> Self {
 		let data_root = (!data_root.is_zero()).then_some(data_root);
 		Self {
-			commitment,
 			app_lookup,
+			commitment,
 			data_root,
 		}
 	}
