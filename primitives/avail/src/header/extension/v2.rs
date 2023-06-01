@@ -11,13 +11,13 @@ use crate::{asdr::DataLookup, v2::KateCommitment};
 #[derive(PartialEq, Eq, Clone, RuntimeDebug, TypeInfo, Encode, Decode, Default)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct HeaderExtension {
-	pub commitment: KateCommitment,
 	pub app_lookup: DataLookup,
+	pub commitment: KateCommitment,
 }
 
 impl HeaderExtension {
 	pub fn data_root(&self) -> H256 {
-		self.commitment.data_root.unwrap_or_default()
+		self.commitment.data_root
 	}
 
 	pub fn app_lookup(&self) -> &DataLookup {

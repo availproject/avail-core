@@ -1,0 +1,81 @@
+[1mdiff --git a/primitives/avail/src/header/extension/v2.rs b/primitives/avail/src/header/extension/v2.rs[m
+[1mindex f7a6855..e581470 100644[m
+[1m--- a/primitives/avail/src/header/extension/v2.rs[m
+[1m+++ b/primitives/avail/src/header/extension/v2.rs[m
+[36m@@ -11,13 +11,13 @@[m [muse crate::{asdr::DataLookup, v2::KateCommitment};[m
+ #[derive(PartialEq, Eq, Clone, RuntimeDebug, TypeInfo, Encode, Decode, Default)][m
+ #[cfg_attr(feature = "std", derive(Serialize, Deserialize))][m
+ pub struct HeaderExtension {[m
+[31m-	pub commitment: KateCommitment,[m
+ 	pub app_lookup: DataLookup,[m
+[32m+[m	[32mpub commitment: KateCommitment,[m
+ }[m
+ [m
+ impl HeaderExtension {[m
+ 	pub fn data_root(&self) -> H256 {[m
+[31m-		self.commitment.data_root.unwrap_or_default()[m
+[32m+[m		[32mself.commitment.data_root[m
+ 	}[m
+ [m
+ 	pub fn app_lookup(&self) -> &DataLookup {[m
+[1mdiff --git a/primitives/avail/src/kate_commitment.rs b/primitives/avail/src/kate_commitment.rs[m
+[1mindex 14d11a5..1ab0e1a 100644[m
+[1m--- a/primitives/avail/src/kate_commitment.rs[m
+[1m+++ b/primitives/avail/src/kate_commitment.rs[m
+[36m@@ -66,20 +66,20 @@[m [mpub mod v2 {[m
+ 		/// Cols[m
+ 		#[codec(compact)][m
+ 		pub cols: u16,[m
+[31m-		/// The merkle root of the data submitted[m
+[31m-		pub data_root: Option<H256>,[m
+ 		/// Plonk commitment.[m
+ 		pub commitment: Vec<u8>,[m
+[32m+[m		[32m/// The merkle root of the data submitted[m
+[32m+[m		[32mpub data_root: H256,[m
+ 	}[m
+ [m
+ 	impl KateCommitment {[m
+ 		pub fn new(rows: u16, cols: u16, data_root: H256, commitment: Vec<u8>) -> Self {[m
+[31m-			let data_root = (!data_root.is_zero()).then_some(data_root);[m
+[32m+[m			[32m//let data_root = (!data_root.is_zero()).then_some(data_root);[m
+ 			Self {[m
+ 				rows,[m
+ 				cols,[m
+[31m-				data_root,[m
+ 				commitment,[m
+[32m+[m				[32mdata_root,[m
+ 			}[m
+ 		}[m
+ 	}[m
+[36m@@ -88,11 +88,7 @@[m [mpub mod v2 {[m
+ 	impl fmt::Debug for KateCommitment {[m
+ 		fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {[m
+ 			let commitment = self.commitment.as_slice();[m
+[31m-			let data_root = self[m
+[31m-				.data_root[m
+[31m-				.as_ref()[m
+[31m-				.map(AsRef::as_ref)[m
+[31m-				.unwrap_or_default();[m
+[32m+[m			[32mlet data_root = self.data_root.as_ref();[m
+ [m
+ 			f.debug_struct("KateCommitment(v2)")[m
+ 				.field("rows", &self.rows)[m
+[36m@@ -112,18 +108,4 @@[m [mpub mod v2 {[m
+ 				+ self.data_root.size_of(ops)[m
+ 		}[m
+ 	}[m
+[31m-[m
+[31m-	#[cfg(test)][m
+[31m-	mod tests {[m
+[31m-		use super::*;[m
+[31m-		use test_case::test_case;[m
+[31m-[m
+[31m-		/// Double check that zero data root is compressed to `None`.[m
+[31m-		#[test_case( H256([0u8;32]) => None; "Zero data root")][m
+[31m-		#[test_case( H256([1u8;32]) => Some(H256([1u8;32])); "NonZero data root")][m
+[31m-		fn compression_on_new(data_root: H256) -> Option<H256> {[m
+[31m-			let kate = KateCommitment::new(1, 1, data_root, vec![]);[m
+[31m-			kate.data_root[m
+[31m-		}[m
+[31m-	}[m
+ }[m
