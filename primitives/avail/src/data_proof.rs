@@ -4,7 +4,7 @@ use frame_support::ensure;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_core::H256;
-use sp_io::hashing::sha2_256;
+use sp_io::hashing::keccak_256;
 use sp_std::{convert::TryFrom, vec::Vec};
 use thiserror_no_std::Error;
 
@@ -68,7 +68,7 @@ where
 		let root = <[u8; 32]>::try_from(merkle_proof.root.as_ref())
 			.map_err(|_| InvalidRoot)?
 			.into();
-		let leaf = sha2_256(merkle_proof.leaf.as_ref()).into();
+		let leaf = keccak_256(merkle_proof.leaf.as_ref()).into();
 		let proof = merkle_proof
 			.proof
 			.iter()
@@ -146,7 +146,7 @@ mod test {
 			],
 			number_of_leaves: 7,
 			leaf_index: 1,
-			leaf: sha2_256(H512::repeat_byte(1).as_bytes()).into(),
+			leaf: keccak_256(H512::repeat_byte(1).as_bytes()).into(),
 		})
 	}
 
@@ -160,7 +160,7 @@ mod test {
 			],
 			number_of_leaves: 7,
 			leaf_index: 0,
-			leaf: sha2_256(H512::repeat_byte(0).as_bytes()).into(),
+			leaf: keccak_256(H512::repeat_byte(0).as_bytes()).into(),
 		})
 	}
 
@@ -173,7 +173,7 @@ mod test {
 			],
 			number_of_leaves: 7,
 			leaf_index: 6,
-			leaf: sha2_256(H512::repeat_byte(6).as_bytes()).into(),
+			leaf: keccak_256(H512::repeat_byte(6).as_bytes()).into(),
 		})
 	}
 
