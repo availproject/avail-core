@@ -124,7 +124,11 @@ impl EvaluationGrid {
 			.flat_map(|(_, scalars)| scalars)
 			.chain(iter::repeat_with(|| random_scalar(&mut rng)));
 
-		let row_major_evals = DMatrix::from_row_iterator(rows, cols, grid);
+		// `DMatrix` is column major, so we transpose it by 2 steps.
+		// - Transpose dimensions
+		// - Load `grid`'s rows into `DMatrix`'s columns.
+		let (t_rows, t_cols) = (cols, rows);
+		let row_major_evals = DMatrix::from_iterator(t_rows, t_cols, grid);
 
 		Ok(EvaluationGrid {
 			lookup,
@@ -133,16 +137,16 @@ impl EvaluationGrid {
 	}
 
 	/// Get the row `y` of the evaluation.
-	pub fn row(&self, y: usize) -> Option<Vec<ArkScalar>> {
-		let (rows, _cols) = self.evals.shape();
-		(y < rows).then(|| self.evals.row(y).iter().cloned().collect())
+	pub fn row(&self, y: usize) -> Option<&[ArkScalar]> {
+		let (_t_rows, t_cols) = self.evals.shape();
+		(y < t_cols).then(|| self.evals.column(y).data.into_slice())
 	}
 
 	pub fn dims(&self) -> Dimensions {
-		let (rows, cols) = self.evals.shape();
+		let (t_rows, t_cols) = self.evals.shape();
 		// SAFETY: We cannot construct an `EvaluationGrid` with any dimension `< 1` or `> u16::MAX`
-		debug_assert!(rows <= usize::from(u16::MAX) && cols <= usize::from(u16::MAX));
-		unsafe { Dimensions::new_unchecked(rows as u16, cols as u16) }
+		debug_assert!(t_rows <= usize::from(u16::MAX) && t_cols <= usize::from(u16::MAX));
+		unsafe { Dimensions::new_unchecked(t_cols as u16, t_rows as u16) }
 	}
 
 	#[inline]
@@ -151,7 +155,8 @@ impl EvaluationGrid {
 		usize: From<R>,
 		usize: From<C>,
 	{
-		self.evals.get::<(usize, usize)>((row.into(), col.into()))
+		let (t_row, t_col): (usize, usize) = (col.into(), row.into());
+		self.evals.get((t_row, t_col))
 	}
 
 	/// Returns a list of `(index, row)` pairs for the underlying rows of an application.
@@ -202,7 +207,7 @@ impl EvaluationGrid {
 
 		let app_rows = (new_start_y..=new_end_y)
 			.step_by(h_mul)
-			.map(|y| self.row(y).map(|a| (y, a)))
+			.map(|y| self.row(y).map(|a| (y, a.to_vec())))
 			.collect();
 
 		Ok(app_rows)
@@ -222,32 +227,32 @@ impl EvaluationGrid {
 			GeneralEvaluationDomain::<ArkScalar>::new(new_rows).ok_or(Error::DomainSizeInvalid)?;
 		ensure!(domain_new.size() == new_rows, Error::DomainSizeInvalid);
 
-		let new_data = self.evals.column_iter().flat_map(|col| {
-			let mut col = col.iter().cloned().collect::<Vec<_>>();
-			domain.ifft_in_place(&mut col);
-			domain_new.fft_in_place(&mut col);
-			col
+		let ext_rows = self.evals.row_iter().flat_map(|view| {
+			let mut data = view.iter().cloned().collect::<Vec<_>>();
+			domain.ifft_in_place(&mut data);
+			domain_new.fft_in_place(&mut data);
+			data
 		});
 
-		let row_major_evals = DMatrix::from_iterator(new_rows, new_cols, new_data);
-		debug_assert!(row_major_evals.shape() == (new_rows, new_cols));
+		let ext_evals = DMatrix::from_row_iterator(new_rows, new_cols, ext_rows);
+		debug_assert!(ext_evals.shape() == (new_rows, new_cols));
 		Ok(Self {
 			lookup: self.lookup.clone(),
-			evals: row_major_evals,
+			evals: ext_evals,
 		})
 	}
 
 	pub fn make_polynomial_grid(&self) -> Result<PolynomialGrid, Error> {
-		let (_rows, cols): (usize, usize) = self.evals.shape();
+		let (_rows, cols): (usize, usize) = self.dims().into();
 		let domain =
 			GeneralEvaluationDomain::<ArkScalar>::new(cols).ok_or(Error::DomainSizeInvalid)?;
 
 		let inner = self
 			.evals
-			.row_iter()
+			.column_iter()
 			.map(|view| {
-				let row = view.iter().cloned().collect::<Vec<_>>();
-				domain.ifft(&row)
+				let data = view.data.into_slice();
+				domain.ifft(data)
 			})
 			.collect::<Vec<_>>();
 
