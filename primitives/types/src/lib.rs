@@ -19,6 +19,7 @@ pub use get_app_id::*;
 #[cfg_attr(all(feature = "std", not(feature = "substrate")), derive(Debug))]
 pub struct AppExtrinsic {
 	pub app_id: AppId,
+	#[cfg_attr(feature = "std", serde(with = "hex"))]
 	pub data: Vec<u8>,
 }
 #[cfg(feature = "substrate")]
