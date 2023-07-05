@@ -32,11 +32,23 @@ pub fn verify(
 	commitment: &[u8; COMMITMENT_SIZE],
 	cell: &Cell,
 ) -> Result<bool, Error> {
-	let commitment_to_witness = G1Affine::from_bytes(&cell.proof()).map(Commitment::from)?;
+	let commitment_to_witness = G1Affine::from_bytes(&cell.proof()).map(Commitment::from).map_err(|e| Error::from(e)).map_err(|e| match e {
+    Error::InvalidData(_) => {
+		let pos = cell.position.clone();
+		Error::InvalidData(format!("commitment_to_witness, pos: {pos:?}"))
+	},
+    _ => e
+})?;
 
-	let evaluated_point = BlsScalar::from_bytes(&cell.data())?;
+	let evaluated_point = BlsScalar::from_bytes(&cell.data()).map_err(|e| Error::from(e)).map_err(|e| match e {
+		Error::InvalidData(_) => Error::InvalidData("evaluated_point".to_string()),
+		_ => e
+	})?;
 
-	let commitment_to_polynomial = G1Affine::from_bytes(commitment).map(Commitment::from)?;
+	let commitment_to_polynomial = G1Affine::from_bytes(commitment).map(Commitment::from).map_err(|e| Error::from(e)).map_err(|e| match e {
+		Error::InvalidData(_) => Error::InvalidData("commitment_to_polynomial".to_string()),
+		_ => e
+	})?;
 
 	let proof = Proof {
 		commitment_to_witness,

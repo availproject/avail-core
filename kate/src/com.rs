@@ -358,6 +358,7 @@ pub fn build_proof<M: Metrics>(
 		.for_each(|(cell, res)| {
 			let r_index = cell.row.as_usize();
 			if (r_index >= extended_rows_num as usize) || (cell.col >= block_dims.cols) {
+				eprintln!("r_i: {r_index}, e_r_n:{extended_rows_num}, c_col: {ccol}, c_n: {c_n}", ccol=cell.col, c_n=block_dims.cols);
 				res.fill(0); // for bad cell identifier, fill whole proof with zero bytes !
 			} else {
 				let c_index = cell.col.as_usize();
@@ -380,6 +381,7 @@ pub fn build_proof<M: Metrics>(
 						res[PROOF_SIZE..].copy_from_slice(&evaluated_point.to_bytes());
 					},
 					Err(_) => {
+						eprintln!("PERA2");
 						res.fill(0); // for bad cell identifier, fill whole proof with zero bytes !
 					},
 				};
