@@ -160,8 +160,7 @@ impl<Number, Hash> HeaderT for Header<Number, Hash>
 where
 	Number: Member
 		+ MaybeSerializeDeserialize
-		+ MaybeFromStr
-		+ Debug
+		+ fmt::Debug
 		+ Default
 		+ sp_std::hash::Hash
 		+ MaybeDisplay
@@ -171,6 +170,7 @@ where
 		+ MaxEncodedLen
 		+ Into<U256>
 		+ TryFrom<U256>
+		+ sp_std::str::FromStr
 		+ TypeInfo,
 	Hash: HashT,
 	Hash::Output: Default
