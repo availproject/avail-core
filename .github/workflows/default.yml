@@ -30,10 +30,10 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Install Rust toolchain 1.64 
+      - name: Install Rust toolchain 1.70.0 
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: 1.64
+            toolchain: 1.70.0
             components: clippy, llvm-tools-preview
             default: true
             profile: minimal
