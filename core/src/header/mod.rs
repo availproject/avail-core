@@ -18,6 +18,7 @@
 //! Data-Avail implementation of a block header.
 
 use codec::{Codec, Decode, Encode};
+use codec::{FullCodec, MaxEncodedLen};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -41,7 +42,8 @@ pub mod extension;
 pub use extension::HeaderExtension;
 
 /// Abstraction over a block header for a substrate chain.
-#[derive(PartialEq, Eq, Clone, TypeInfo, Encode, Decode)]
+#[derive(Encode, Decode, PartialEq, Eq, Clone, sp_core::RuntimeDebug, TypeInfo)]
+#[scale_info(skip_type_params(Hash))]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(deny_unknown_fields, rename_all = "camelCase"))]
 pub struct Header<Number: HeaderBlockNumber, Hash: HeaderHash> {
@@ -158,15 +160,18 @@ impl<Number, Hash> HeaderT for Header<Number, Hash>
 where
 	Number: Member
 		+ MaybeSerializeDeserialize
-		+ fmt::Debug
+		+ MaybeFromStr
+		+ Debug
+		+ Default
 		+ sp_std::hash::Hash
 		+ MaybeDisplay
 		+ AtLeast32BitUnsigned
-		+ Codec
+		+ FullCodec
 		+ Copy
+		+ MaxEncodedLen
 		+ Into<U256>
 		+ TryFrom<U256>
-		+ sp_std::str::FromStr,
+		+ TypeInfo,
 	Hash: HashT,
 	Hash::Output: Default
 		+ sp_std::hash::Hash
