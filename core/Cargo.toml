@@ -16,7 +16,7 @@ static_assertions = "1.1.0"
 thiserror-no-std = "2.0.2"
 
 # Substrate
-beefy-merkle-tree = { git = "https://github.com/paritytech/substrate.git/", branch = "polkadot-v0.9.37", default-features = false, optional = true }
+beefy-merkle-tree = { git = "https://github.com/paritytech/substrate.git/", package  = "binary-merkle-tree", branch = "polkadot-v1.0.0", default-features = false, optional = true }
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive", "max-encoded-len"] }
 scale-info = { version = "2", default-features = false, features = ["derive"] }
 sp-arithmetic = { version = "*", default-features = false }
@@ -27,8 +27,8 @@ sp-trie = { version = "*", default-features = false }
 
 # Substrate Runtime
 frame-support = { version = "4.0.0-dev", default-features = false, optional = true }
-sp-runtime = { version = "7", default-features = false, optional = true }
-sp-runtime-interface = { version = "7", default-features = false, optional = true }
+sp-runtime = { version = "*", default-features = false, optional = true }
+sp-runtime-interface = { version = "*", default-features = false, optional = true }
 
 [dev-dependencies]
 hex-literal = "0.3.4"
