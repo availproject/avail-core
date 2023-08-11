@@ -136,6 +136,10 @@ impl EvaluationGrid {
 		(y < rows).then(|| self.evals.row(y).iter().cloned().collect())
 	}
 
+    pub fn lookup(&self) -> &DataLookup {
+        &self.lookup
+    }
+
 	pub fn dims(&self) -> Dimensions {
 		let (rows, cols) = self.evals.shape();
 		// SAFETY: We cannot construct an `EvaluationGrid` with any dimension `< 1` or `> u16::MAX`
