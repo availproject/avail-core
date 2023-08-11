@@ -136,9 +136,9 @@ impl EvaluationGrid {
 		(y < rows).then(|| self.evals.row(y).iter().cloned().collect())
 	}
 
-    pub fn lookup(&self) -> &DataLookup {
-        &self.lookup
-    }
+	pub fn lookup(&self) -> &DataLookup {
+		&self.lookup
+	}
 
 	pub fn dims(&self) -> Dimensions {
 		let (rows, cols) = self.evals.shape();
