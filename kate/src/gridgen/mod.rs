@@ -17,10 +17,7 @@ use poly_multiproof::{
 	m1_blst::Proof,
 	traits::{KZGProof, PolyMultiProofNoPrecomp},
 };
-use rand_chacha::{
-	rand_core::{RngCore, SeedableRng},
-	ChaChaRng,
-};
+use rand_chacha::{rand_core::SeedableRng, ChaChaRng};
 use static_assertions::const_assert;
 use std::collections::BTreeMap;
 use thiserror_no_std::Error;
@@ -460,15 +457,10 @@ pub(crate) fn pad_to_bls_scalar(a: impl AsRef<[u8]>) -> Result<ArkScalar, Error>
 
 #[allow(clippy::integer_arithmetic)]
 pub(crate) fn random_scalar(rng: &mut ChaChaRng) -> ArkScalar {
-	let mut raw_scalar = [0u8; SCALAR_SIZE];
+	use rand::Rng as _;
 
-	const_assert!(SCALAR_SIZE >= 1);
-	rng.try_fill_bytes(&mut raw_scalar).expect("ChaChaRng::try_fill_bytes failed");
-	raw_scalar[SCALAR_SIZE - 1] = 0u8;
-	debug_assert!(raw_scalar[SCALAR_SIZE - 1] == 0u8);
-
-	ArkScalar::from_bytes(&raw_scalar)
-		.expect("ArkScalar can be generated from SCALAR_SIZE -1 bytes .qed")
+	let rnd_values: [u8; SCALAR_SIZE - 1] = rng.gen();
+	pad_to_bls_scalar(rnd_values).unwrap()
 }
 
 #[cfg(test)]
