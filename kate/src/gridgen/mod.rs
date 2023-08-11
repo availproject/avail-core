@@ -463,8 +463,8 @@ pub(crate) fn random_scalar(rng: &mut ChaChaRng) -> ArkScalar {
 	let mut raw_scalar = [0u8; SCALAR_SIZE];
 
 	const_assert!(SCALAR_SIZE >= 1);
-	rng.try_fill_bytes(&mut raw_scalar[..SCALAR_SIZE - 1])
-		.expect("ChaChaRng::try_fill_bytes failed");
+	rng.try_fill_bytes(&mut raw_scalar).expect("ChaChaRng::try_fill_bytes failed");
+	raw_scalar[SCALAR_SIZE - 1] = 0u8;
 	debug_assert!(raw_scalar[SCALAR_SIZE - 1] == 0u8);
 
 	ArkScalar::from_bytes(&raw_scalar)
