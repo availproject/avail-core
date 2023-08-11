@@ -17,6 +17,7 @@ use poly_multiproof::{
 	m1_blst::Proof,
 	traits::{KZGProof, PolyMultiProofNoPrecomp},
 };
+use rand::Rng;
 use rand_chacha::{
 	rand_core::{RngCore, SeedableRng},
 	ChaChaRng,
@@ -110,11 +111,16 @@ impl EvaluationGrid {
 			get_block_dims(grid_size, min_width, max_width, max_height)?.into();
 
 		// Flatten the grid
-		let mut rng = ChaChaRng::from_seed(rng_seed);
-		let grid = scalars_by_app
+		let mut grid = scalars_by_app
 			.into_iter()
 			.flat_map(|(_, scalars)| scalars)
-			.chain(iter::repeat_with(|| random_scalar(&mut rng)));
+			.collect::<Vec<_>>();
+
+		let mut rng = ChaChaRng::from_seed(rng_seed);
+		while grid.len() != rows * cols {
+			let rnd_values: [u8; SCALAR_SIZE - 1] = rng.gen();
+			grid.push(pad_to_bls_scalar(rnd_values)?);
+		}
 
 		let row_major_evals = DMatrix::from_row_iterator(rows, cols, grid);
 
