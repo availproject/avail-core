@@ -18,10 +18,7 @@ use poly_multiproof::{
 	traits::{KZGProof, PolyMultiProofNoPrecomp},
 };
 use rand::Rng;
-use rand_chacha::{
-	rand_core::{RngCore, SeedableRng},
-	ChaChaRng,
-};
+use rand_chacha::{rand_core::SeedableRng, ChaChaRng};
 use static_assertions::const_assert;
 use std::collections::BTreeMap;
 use thiserror_no_std::Error;
@@ -110,17 +107,15 @@ impl EvaluationGrid {
 		let (rows, cols): (usize, usize) =
 			get_block_dims(grid_size, min_width, max_width, max_height)?.into();
 
+		let mut rng = ChaChaRng::from_seed(rng_seed);
 		// Flatten the grid
-		let mut grid = scalars_by_app
+		let grid = scalars_by_app
 			.into_iter()
 			.flat_map(|(_, scalars)| scalars)
-			.collect::<Vec<_>>();
-
-		let mut rng = ChaChaRng::from_seed(rng_seed);
-		while grid.len() != rows * cols {
-			let rnd_values: [u8; SCALAR_SIZE - 1] = rng.gen();
-			grid.push(pad_to_bls_scalar(rnd_values)?);
-		}
+			.chain(iter::repeat(0).map(|_| {
+				let rnd_values: [u8; SCALAR_SIZE - 1] = rng.gen();
+				pad_to_bls_scalar(rnd_values).expect("less than SCALAR_SIZE values, can't fail")
+			}));
 
 		let row_major_evals = DMatrix::from_row_iterator(rows, cols, grid);
 
@@ -158,6 +153,7 @@ impl EvaluationGrid {
 
 	/// Returns a list of `(index, row)` pairs for the underlying rows of an application.
 	/// Returns `None` if the `app_id` cannot be found, or if the provided `orig_dims` are invalid.
+	#[allow(clippy::type_complexity)]
 	pub fn app_rows(
 		&self,
 		app_id: AppId,
@@ -466,19 +462,6 @@ pub(crate) fn pad_to_bls_scalar(a: impl AsRef<[u8]>) -> Result<ArkScalar, Error>
 	buf[0..bytes.len()].copy_from_slice(bytes);
 
 	ArkScalar::from_bytes(&buf).map_err(Error::MultiproofError)
-}
-
-#[allow(clippy::integer_arithmetic)]
-pub(crate) fn random_scalar(rng: &mut ChaChaRng) -> ArkScalar {
-	let mut raw_scalar = [0u8; SCALAR_SIZE];
-
-	const_assert!(SCALAR_SIZE >= 1);
-	rng.try_fill_bytes(&mut raw_scalar[..SCALAR_SIZE - 1])
-		.expect("ChaChaRng::try_fill_bytes failed");
-	debug_assert!(raw_scalar[SCALAR_SIZE - 1] == 0u8);
-
-	ArkScalar::from_bytes(&raw_scalar)
-		.expect("ArkScalar can be generated from SCALAR_SIZE -1 bytes .qed")
 }
 
 #[cfg(test)]
