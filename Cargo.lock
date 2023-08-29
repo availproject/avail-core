@@ -231,7 +231,7 @@ checksum = "2dabbe35f96fb9507f7330793dc490461b2962659ac5d427181e451a623751d1"
 [[package]]
 name = "beefy-merkle-tree"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "sp-api",
  "sp-beefy",
@@ -1268,7 +1268,7 @@ dependencies = [
 [[package]]
 name = "frame-support"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "bitflags",
  "frame-metadata",
@@ -1300,7 +1300,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "Inflector",
  "cfg-expr",
@@ -1314,7 +1314,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural-tools"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "frame-support-procedural-tools-derive",
  "proc-macro-crate",
@@ -1326,7 +1326,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural-tools-derive"
 version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3119,7 +3119,7 @@ checksum = "a507befe795404456341dfab10cef66ead4c041f62b8b11bbb92bffe5d0953e0"
 [[package]]
 name = "sp-api"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "hash-db",
  "log",
@@ -3137,7 +3137,7 @@ dependencies = [
 [[package]]
 name = "sp-api-proc-macro"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "blake2",
  "proc-macro-crate",
@@ -3149,7 +3149,7 @@ dependencies = [
 [[package]]
 name = "sp-application-crypto"
 version = "7.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -3162,7 +3162,7 @@ dependencies = [
 [[package]]
 name = "sp-arithmetic"
 version = "6.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "integer-sqrt",
  "num-traits",
@@ -3176,7 +3176,7 @@ dependencies = [
 [[package]]
 name = "sp-beefy"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -3193,7 +3193,7 @@ dependencies = [
 [[package]]
 name = "sp-core"
 version = "7.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "array-bytes",
  "base58 0.2.0",
@@ -3235,7 +3235,7 @@ dependencies = [
 [[package]]
 name = "sp-core-hashing"
 version = "5.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "blake2",
  "byteorder",
@@ -3249,7 +3249,7 @@ dependencies = [
 [[package]]
 name = "sp-core-hashing-proc-macro"
 version = "5.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3260,7 +3260,7 @@ dependencies = [
 [[package]]
 name = "sp-debug-derive"
 version = "5.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3270,7 +3270,7 @@ dependencies = [
 [[package]]
 name = "sp-externalities"
 version = "0.13.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "environmental",
  "parity-scale-codec",
@@ -3281,7 +3281,7 @@ dependencies = [
 [[package]]
 name = "sp-inherents"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "async-trait",
  "impl-trait-for-tuples",
@@ -3295,7 +3295,7 @@ dependencies = [
 [[package]]
 name = "sp-io"
 version = "7.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "bytes",
  "ed25519",
@@ -3320,7 +3320,7 @@ dependencies = [
 [[package]]
 name = "sp-keystore"
 version = "0.13.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "async-trait",
  "futures",
@@ -3336,7 +3336,7 @@ dependencies = [
 [[package]]
 name = "sp-mmr-primitives"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "ckb-merkle-mountain-range",
  "log",
@@ -3354,7 +3354,7 @@ dependencies = [
 [[package]]
 name = "sp-panic-handler"
 version = "5.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "backtrace",
  "lazy_static",
@@ -3364,7 +3364,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime"
 version = "7.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "either",
  "hash256-std-hasher",
@@ -3386,7 +3386,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface"
 version = "7.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "bytes",
  "impl-trait-for-tuples",
@@ -3404,7 +3404,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface-proc-macro"
 version = "6.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "Inflector",
  "proc-macro-crate",
@@ -3416,7 +3416,7 @@ dependencies = [
 [[package]]
 name = "sp-staking"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -3428,7 +3428,7 @@ dependencies = [
 [[package]]
 name = "sp-state-machine"
 version = "0.13.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "hash-db",
  "log",
@@ -3454,12 +3454,12 @@ checksum = "14804d6069ee7a388240b665f17908d98386ffb0b5d39f89a4099fc7a2a4c03f"
 [[package]]
 name = "sp-std"
 version = "5.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 
 [[package]]
 name = "sp-storage"
 version = "7.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "impl-serde",
  "parity-scale-codec",
@@ -3472,7 +3472,7 @@ dependencies = [
 [[package]]
 name = "sp-tracing"
 version = "6.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "parity-scale-codec",
  "sp-std 5.0.0",
@@ -3484,7 +3484,7 @@ dependencies = [
 [[package]]
 name = "sp-trie"
 version = "7.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "ahash 0.7.6",
  "hash-db",
@@ -3507,7 +3507,7 @@ dependencies = [
 [[package]]
 name = "sp-version"
 version = "5.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "impl-serde",
  "parity-scale-codec",
@@ -3524,7 +3524,7 @@ dependencies = [
 [[package]]
 name = "sp-version-proc-macro"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "parity-scale-codec",
  "proc-macro2",
@@ -3535,7 +3535,7 @@ dependencies = [
 [[package]]
 name = "sp-wasm-interface"
 version = "7.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "impl-trait-for-tuples",
  "log",
@@ -3548,7 +3548,7 @@ dependencies = [
 [[package]]
 name = "sp-weights"
 version = "4.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.37#946507ba9ef13e263534176b7b74e26fc56efbd4"
+source = "git+https://github.com/availproject/substrate.git?branch=polkadot-v0.9.37-patch#d1c21ca78a4709c595b538a9066a0b57f076dd97"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
