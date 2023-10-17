@@ -220,12 +220,15 @@ impl EvaluationGrid {
 			GeneralEvaluationDomain::<ArkScalar>::new(new_rows).ok_or(Error::DomainSizeInvalid)?;
 		ensure!(domain_new.size() == new_rows, Error::DomainSizeInvalid);
 
-		let new_data = self.evals.column_iter().flat_map(|col| {
-			let mut col = col.iter().cloned().collect::<Vec<_>>();
-			domain.ifft_in_place(&mut col);
-			domain_new.fft_in_place(&mut col);
-			col
-		});
+		let col_idxs = self.evals.column_iter().collect::<Vec<_>>();
+		let new_data = cfg_iter!(col_idxs)
+			.flat_map(|col| {
+				let mut col = col.iter().cloned().collect::<Vec<_>>();
+				domain.ifft_in_place(&mut col);
+				domain_new.fft_in_place(&mut col);
+				col
+			})
+			.collect::<Vec<_>>();
 
 		let row_major_evals = DMatrix::from_iterator(new_rows, new_cols, new_data);
 		debug_assert!(row_major_evals.shape() == (new_rows, new_cols));
@@ -240,9 +243,8 @@ impl EvaluationGrid {
 		let domain =
 			GeneralEvaluationDomain::<ArkScalar>::new(cols).ok_or(Error::DomainSizeInvalid)?;
 
-		let inner = self
-			.evals
-			.row_iter()
+		let row_idxs = self.evals.row_iter().collect::<Vec<_>>();
+		let inner = cfg_iter!(row_idxs)
 			.map(|view| {
 				let row = view.iter().cloned().collect::<Vec<_>>();
 				domain.ifft(&row)

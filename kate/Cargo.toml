@@ -84,3 +84,8 @@ maximum-block-size = []
 [[bench]]
 name = "reconstruct"
 harness = false
+
+[[bench]]
+name = "grid"
+harness = false
+
