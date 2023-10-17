@@ -10,14 +10,16 @@ use poly_multiproof::traits::KZGProof;
 use rand::{thread_rng, RngCore, SeedableRng};
 
 fn grids(c: &mut Criterion) {
-	let mut data = [52u8; 65536 * 64 * 31];
+	let mut data = vec![0u8; 65536 * 64 * 31];
     thread_rng().fill_bytes(&mut data);
 	let pmp = poly_multiproof::m1_blst::M1NoPrecomp::new(65536, 256, &mut thread_rng());
 	for (w, h) in vec![(256, 256), (1024, 1024), (65536, 64)] {
 		let mut g = c.benchmark_group(format!("W{}_H{}", w, h));
+        g.measurement_time(Duration::from_secs(10));
+        g.sample_size(10);
 		let ext = AppExtrinsic {
 			app_id: avail_core::AppId(1),
-			data: data[..w * h * 31 - 4].to_vec(),
+			data: data[..(w * h-1) * 31].to_vec(),
 		};
 		let eval_grid = EvaluationGrid::from_extrinsics(vec![ext], 4, w, h, [42u8; 32]).unwrap();
 		assert_eq!(eval_grid.dims().width(), w);

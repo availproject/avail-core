@@ -11,7 +11,7 @@ use core::{
 	iter,
 	num::NonZeroU16,
 };
-use kate_recovery::{config::PADDING_TAIL_VALUE, matrix::Dimensions};
+use kate_recovery::config::PADDING_TAIL_VALUE;
 use nalgebra::base::DMatrix;
 use poly_multiproof::{
 	m1_blst::Proof,
@@ -28,6 +28,27 @@ use crate::{
 	config::DATA_CHUNK_SIZE,
 	Seed,
 };
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Dimensions {
+	rows: usize,
+	cols: usize,
+}
+
+impl Dimensions {
+	pub fn width(&self) -> usize {
+		self.cols
+	}
+	pub fn height(&self) -> usize {
+		self.rows
+	}
+}
+
+impl From<Dimensions> for (usize, usize) {
+	fn from(d: Dimensions) -> Self {
+		(d.rows, d.cols)
+	}
+}
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
@@ -139,7 +160,7 @@ impl EvaluationGrid {
 		let (rows, cols) = self.evals.shape();
 		// SAFETY: We cannot construct an `EvaluationGrid` with any dimension `< 1` or `> u16::MAX`
 		debug_assert!(rows <= usize::from(u16::MAX) && cols <= usize::from(u16::MAX));
-		unsafe { Dimensions::new_unchecked(rows as u16, cols as u16) }
+		Dimensions { rows, cols }
 	}
 
 	#[inline]
@@ -164,10 +185,7 @@ impl EvaluationGrid {
 
 		// Ensure `origin_dims` is divisible by `dims` if some.
 		let orig_dims = match maybe_orig_dims {
-			Some(d) => {
-				ensure!(d.divides(&dims), AppRowError::OrigDimNotDivisible);
-				d
-			},
+			Some(d) => d,
 			None => dims,
 		};
 
@@ -175,7 +193,7 @@ impl EvaluationGrid {
 		// Compiler checks that `Dimensions::rows()` returns a `NonZeroU16` using the expression
 		// `NonZeroU16::get(x)` instead of `x.get()`.
 		#[allow(clippy::arithmetic_side_effects)]
-		let h_mul: usize = rows / usize::from(NonZeroU16::get(orig_dims.rows()));
+		let h_mul: usize = rows / orig_dims.rows;
 		#[allow(clippy::arithmetic_side_effects)]
 		let row_from_lineal_index = |cols, lineal_index| {
 			let lineal_index =
@@ -189,8 +207,14 @@ impl EvaluationGrid {
 			.lookup
 			.range_of(app_id)
 			.ok_or(AppRowError::IdNotFound(app_id))?;
-		let start_y: usize = row_from_lineal_index(orig_dims.cols(), range.start)?;
-		let end_y: usize = row_from_lineal_index(orig_dims.cols(), range.end.saturating_sub(1))?;
+		let start_y: usize = row_from_lineal_index(
+			NonZeroU16::new(orig_dims.cols.try_into().unwrap()).unwrap(),
+			range.start,
+		)?;
+		let end_y: usize = row_from_lineal_index(
+			NonZeroU16::new(orig_dims.cols.try_into().unwrap()).unwrap(),
+			range.end.saturating_sub(1),
+		)?;
 
 		// SAFETY: This won't overflow because `h_mul = rows / orig_dim.rows()`  and `*_y < rows)
 		debug_assert!(start_y < rows);
@@ -208,10 +232,8 @@ impl EvaluationGrid {
 
 	pub fn extend_columns(&self, row_factor: NonZeroU16) -> Result<Self, Error> {
 		let dims = self.dims();
-		let (new_rows, new_cols): (usize, usize) = dims
-			.extend(row_factor, unsafe { NonZeroU16::new_unchecked(1) })
-			.ok_or(Error::CellLengthExceeded)?
-			.into();
+		let new_cols = dims.cols;
+		let new_rows = dims.rows * usize::from(row_factor.get());
 		let (rows, _cols): (usize, usize) = dims.into();
 
 		let domain =
@@ -381,8 +403,8 @@ pub fn multiproof_block(
 	}
 
 	// SAFETY: Division is safe because `cols() != 0 && rows() != 0`.
-	let block_width = g_cols / usize::from(NonZeroU16::get(mp_grid_dims.cols()));
-	let block_height = g_rows / usize::from(NonZeroU16::get(mp_grid_dims.rows()));
+	let block_width = g_cols / mp_grid_dims.cols;
+	let block_height = g_rows / mp_grid_dims.rows;
 
 	// SAFETY: values never overflow since `x` and `y` are always less than grid_dims.{width,height}().
 	// This is because x,y < mp_grid_dims.{width, height} and block width is the quotient of
@@ -399,13 +421,13 @@ pub fn multiproof_block(
 /// `target_dims` must cleanly divide `grid_dims`.
 #[allow(clippy::arithmetic_side_effects)]
 pub fn multiproof_dims(grid: Dimensions, target: Dimensions) -> Option<Dimensions> {
-	let cols = min(grid.cols(), target.cols());
-	let rows = min(grid.rows(), target.rows());
-	if grid.cols().get() % cols != 0 || grid.rows().get() % rows != 0 {
+	let cols = min(grid.cols, target.cols);
+	let rows = min(grid.rows, target.rows);
+	if grid.cols % cols != 0 || grid.rows % rows != 0 {
 		return None;
 	}
 
-	Dimensions::new(rows, cols)
+	Some(Dimensions { rows, cols })
 }
 
 pub fn get_block_dims(
@@ -424,11 +446,14 @@ pub fn get_block_dims(
 				.ok_or(Error::BlockTooBig)?,
 			min_width,
 		);
-		let height = unsafe { NonZeroU16::new_unchecked(1) };
+		let height = 1;
 
-		Dimensions::new_from(height, width).ok_or(Error::ZeroDimension)
+		Ok(Dimensions {
+			rows: height,
+			cols: width,
+		})
 	} else {
-		let width = NonZeroU16::try_from(u16::try_from(max_width)?)?;
+		let width = max_width;
 		let current_height = round_up_to_multiple(n_scalars, width)
 			.checked_div(max_width)
 			.expect("`max_width` is non zero, checked one line before");
@@ -439,7 +464,10 @@ pub fn get_block_dims(
 		// Error if height too big
 		ensure!(height <= max_height, Error::BlockTooBig);
 
-		Dimensions::new_from(height, width).ok_or(Error::ZeroDimension)
+		Ok(Dimensions {
+			rows: height,
+			cols: width,
+		})
 	}
 }
 
@@ -450,8 +478,8 @@ pub fn domain_points(n: usize) -> Result<Vec<ArkScalar>, Error> {
 
 /// SAFETY: As `multiple` is a `NonZeroU16` we can safetly make the following ops.
 #[allow(clippy::arithmetic_side_effects)]
-fn round_up_to_multiple(input: usize, multiple: NonZeroU16) -> usize {
-	let multiple: usize = multiple.get().into();
+fn round_up_to_multiple(input: usize, multiple: usize) -> usize {
+	let multiple: usize = multiple;
 	let n_multiples = input.saturating_add(multiple - 1) / multiple;
 	n_multiples.saturating_mul(multiple)
 }
