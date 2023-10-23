@@ -13,6 +13,7 @@ use crate::asdr::AppId;
 
 #[derive(PartialEq, Eq, Clone, RuntimeDebug, Encode, Decode, Default, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct DataLookup {
 	/// size of the look up
 	#[codec(compact)]
@@ -23,6 +24,7 @@ pub struct DataLookup {
 
 #[derive(PartialEq, Eq, Copy, Clone, RuntimeDebug, Encode, Decode, Default, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct DataLookupIndexItem {
 	pub app_id: AppId,
 	#[codec(compact)]

@@ -11,6 +11,7 @@ use crate::{asdr::DataLookup, header::extension::v1, KateCommitment};
 
 #[derive(PartialEq, Eq, Clone, RuntimeDebug, TypeInfo, Encode, Decode, Default)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct HeaderExtension {
 	pub new_field: Vec<u8>,
 	pub commitment: KateCommitment,
