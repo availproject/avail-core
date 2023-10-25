@@ -393,7 +393,7 @@ pub fn multiproof_block(
 	})
 }
 
-/// Dimensions of the multiproof grid. These are guarenteed to cleanly divide `grid_dims`.
+/// Dimensions of the multiproof grid. These are guaranteed to cleanly divide `grid_dims`.
 /// `target_dims` must cleanly divide `grid_dims`.
 #[allow(clippy::arithmetic_side_effects)]
 pub fn multiproof_dims(grid: Dimensions, target: Dimensions) -> Option<Dimensions> {

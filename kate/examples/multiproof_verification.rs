@@ -20,7 +20,7 @@ enum AppError {
 
 fn main() -> Result<(), AppError> {
 	let verified = multiproof_verification()?;
-	println!("Multiproof verfication is {verified}");
+	println!("Multiproof verification is {verified}");
 
 	Ok(())
 }

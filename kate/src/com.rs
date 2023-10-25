@@ -91,7 +91,7 @@ impl From<TryFromBlockDimensionsError> for Error {
 	}
 }
 
-/// We cannot derive `PartialEq` becasue `PlonkError` does not support it in the current version.
+/// We cannot derive `PartialEq` because `PlonkError` does not support it in the current version.
 /// and we only need to double check its discriminat for testing.
 /// Only needed on tests by now.
 #[cfg(test)]
