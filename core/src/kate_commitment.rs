@@ -80,9 +80,7 @@ pub mod v2 {
 	impl fmt::Debug for KateCommitment {
 		fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 			let commitment = self.commitment.as_slice();
-			let data_root = self
-				.data_root
-				.as_ref();
+			let data_root = self.data_root.as_ref();
 
 			f.debug_struct("KateCommitment(v2)")
 				.field("rows", &self.rows)
@@ -92,5 +90,4 @@ pub mod v2 {
 				.finish()
 		}
 	}
-
 }
