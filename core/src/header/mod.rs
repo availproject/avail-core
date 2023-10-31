@@ -508,7 +508,7 @@ mod tests {
 				ext.commitment.data_root = H256::repeat_byte(1u8);
 			},
 			extension::HeaderExtension::V2(ref mut ext) => {
-				ext.commitment.data_root = Some(H256::repeat_byte(2u8));
+				ext.commitment.data_root = H256::repeat_byte(2u8);
 			},
 		};
 
