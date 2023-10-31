@@ -404,24 +404,19 @@ mod tests {
 		}
 	}
 
-	// /// It creates a corrupted V2 header and the associated error on decodification.
-	// fn corrupted_header() -> (Vec<u8>, Error) {
-	// 	let mut encoded = header_v1().encode();
+	/// It creates a corrupted V2 header and the associated error on decodification.
+	fn corrupted_header() -> (Vec<u8>, Error) {
+		let mut encoded = header_v1().encode();
+		encoded.remove(110);
 
-	// 	// Change the discriminator
-	// 	let discriminator = encoded.get_mut(98).expect("Discriminator at position 98");
-	// 	assert_eq!(*discriminator, 1u8);
-	// 	*discriminator = 0u8;
-	// 	assert_eq!(*discriminator, 0u8);
+		let error = THeader::decode(&mut encoded.as_slice()).unwrap_err();
 
-	// 	let error = THeader::decode(&mut encoded.as_slice()).unwrap_err();
-
-	// 	(encoded, error)
-	// }
+		(encoded, error)
+	}
 
 	#[test_case( header_v1().encode().as_ref() => Ok(header_v1()) ; "Decode V1 header")]
 	#[test_case( header_v2().encode().as_ref() => Ok(header_v2()) ; "Decode V2 header")]
-	// #[test_case( corrupted_header().0.as_ref() => Err(corrupted_header().1) ; "Decode corrupted header")]
+	#[test_case( corrupted_header().0.as_ref() => Err(corrupted_header().1) ; "Decode corrupted header")]
 	fn header_decoding(mut encoded_header: &[u8]) -> Result<THeader, Error> {
 		Header::decode(&mut encoded_header)
 	}
