@@ -17,10 +17,10 @@ pub struct KateCommitment {
 	/// Cols
 	#[codec(compact)]
 	pub cols: u16,
-	/// The merkle root of the data submitted
-	pub data_root: H256,
 	/// Plonk commitment.
 	pub commitment: Vec<u8>,
+	/// The merkle root of the data submitted
+	pub data_root: H256,
 }
 
 #[cfg(feature = "std")]
