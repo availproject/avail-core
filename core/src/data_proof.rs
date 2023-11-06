@@ -67,6 +67,7 @@ where
 		use DataProofTryFromError::*;
 
 		use sp_io::hashing::keccak_256;
+		log::info!("Leaf before try from {}", merkle_proof.leaf_index);
 
 		let root = <[u8; 32]>::try_from(merkle_proof.root.as_ref())
 			.map_err(|_| InvalidRoot)?
@@ -89,6 +90,8 @@ where
 
 		let leaf_index = u32::try_from(merkle_proof.leaf_index).map_err(|_| OverflowedLeafIndex)?;
 		ensure!(leaf_index < number_of_leaves, InvalidLeafIndex);
+
+		log::info!("Leaf index after try from {}", leaf_index);
 
 		Ok(Self {
 			proof,
