@@ -19,16 +19,16 @@ thiserror-no-std = "2.0.2"
 binary-merkle-tree = { git = "https://github.com/paritytech/substrate.git/", branch = "polkadot-v1.0.0", default-features = false, optional = true }
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive", "max-encoded-len"] }
 scale-info = { version = "2", default-features = false, features = ["derive"] }
-sp-arithmetic = { version = "*", default-features = false }
-sp-core = { version = "*", default-features = false }
-sp-io = { version = "*", default-features = false }
-sp-std = { version = "*", default-features = false }
-sp-trie = { version = "*", default-features = false }
+sp-arithmetic = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0", default-features = false }
+sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0", default-features = false }
+sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0", default-features = false }
+sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0", default-features = false }
+sp-trie = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0", default-features = false }
 
 # Substrate Runtime
-frame-support = { version = "4.0.0-dev", default-features = false, optional = true }
+frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0", default-features = false, optional = true }
 sp-runtime = { version = "24", default-features = false, optional = true }
-sp-runtime-interface = { version = "17", default-features = false, optional = true }
+sp-runtime-interface = {git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0", default-features = false, optional = true }
 
 [dev-dependencies]
 hex-literal = "0.3.4"

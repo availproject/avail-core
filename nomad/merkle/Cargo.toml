@@ -15,7 +15,7 @@ codec = { package = "parity-scale-codec", version = "3", default-features = fals
 scale-info = { version = "2", default-features = false, features = ["derive"] }
 sp-core = { version = "*", default-features = false }
 
-frame-support = { version = "4.0.0-dev", default-features = false, optional = true }
+frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0", default-features = false, optional = true }
 
 # 3rd-party
 hex-literal = "0.3.4"
