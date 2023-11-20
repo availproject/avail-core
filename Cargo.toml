@@ -9,15 +9,6 @@ members = [
 	"nomad/base",
 	"nomad/merkle",
 ]
-[patch.crates-io]
-# Substrate  (polkadot-v1.0.0).
-sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0" }
-sp-core-hashing = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0" }
-sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0" }
-sp-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0" }
-sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0" }
-sp-application-crypto = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0" }
-sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0" }
 
 [profile.dev.package]
 nalgebra = { opt-level = 3 }
