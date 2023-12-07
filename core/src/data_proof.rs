@@ -140,14 +140,14 @@ mod test {
         (proof, H256::zero())
     }
 
-    fn invalid_merkle_proof_zero_leaves() -> MerkleProof<H256, Vec<u8>> {
-        MerkleProof {
+    fn invalid_merkle_proof_zero_leaves() -> (MerkleProof<H256, Vec<u8>>, H256) {
+        (MerkleProof {
             root: H256::default(),
             proof: vec![],
             number_of_leaves: 0,
             leaf_index: 0,
             leaf: H256::default().to_fixed_bytes().to_vec(),
-        }
+        }, H256::zero())
     }
 
     fn expected_data_proof_1() -> Result<DataProof, DataProofTryFromError> {
@@ -200,9 +200,10 @@ mod test {
     #[test_case(merkle_proof_idx(7) => Err(DataProofTryFromError::InvalidLeafIndex); "From invalid leaf index")]
     #[test_case(invalid_merkle_proof_zero_leaves() => Err(DataProofTryFromError::InvalidNumberOfLeaves); "From invalid number of leaves")]
     fn from_binary(
-        binary_proof: (&MerkleProof<H256, Vec<u8>>, H256),
+        binary_proof: (MerkleProof<H256, Vec<u8>>, H256),
     ) -> Result<DataProof, DataProofTryFromError> {
-        let data_proof = DataProof::try_from(binary_proof)?;
+        let (merkle, hash) = binary_proof;
+        let data_proof = DataProof::try_from((&merkle, hash))?;
         Ok(data_proof)
     }
 }
