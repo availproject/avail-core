@@ -404,7 +404,7 @@ checksum = "2dabbe35f96fb9507f7330793dc490461b2962659ac5d427181e451a623751d1"
 [[package]]
 name = "binary-merkle-tree"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "hash-db",
  "log",
@@ -1542,7 +1542,7 @@ dependencies = [
 [[package]]
 name = "frame-support"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "bitflags 1.3.2",
  "environmental",
@@ -1576,7 +1576,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "Inflector",
  "cfg-expr",
@@ -1594,7 +1594,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural-tools"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "frame-support-procedural-tools-derive",
  "proc-macro-crate",
@@ -1606,7 +1606,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural-tools-derive"
 version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3572,7 +3572,7 @@ checksum = "62bb4feee49fdd9f707ef802e22365a35de4b7b299de4763d44bfea899442ff9"
 [[package]]
 name = "sp-api"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "hash-db",
  "log",
@@ -3593,7 +3593,7 @@ dependencies = [
 [[package]]
 name = "sp-api-proc-macro"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "Inflector",
  "blake2",
@@ -3607,7 +3607,7 @@ dependencies = [
 [[package]]
 name = "sp-application-crypto"
 version = "23.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -3620,7 +3620,7 @@ dependencies = [
 [[package]]
 name = "sp-arithmetic"
 version = "16.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "integer-sqrt",
  "num-traits",
@@ -3634,7 +3634,7 @@ dependencies = [
 [[package]]
 name = "sp-core"
 version = "21.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "array-bytes",
  "bitflags 1.3.2",
@@ -3679,7 +3679,7 @@ dependencies = [
 [[package]]
 name = "sp-core-hashing"
 version = "9.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "blake2b_simd",
  "byteorder",
@@ -3692,7 +3692,7 @@ dependencies = [
 [[package]]
 name = "sp-core-hashing-proc-macro"
 version = "9.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "quote",
  "sp-core-hashing",
@@ -3702,7 +3702,7 @@ dependencies = [
 [[package]]
 name = "sp-debug-derive"
 version = "8.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3712,7 +3712,7 @@ dependencies = [
 [[package]]
 name = "sp-externalities"
 version = "0.19.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "environmental",
  "parity-scale-codec",
@@ -3723,7 +3723,7 @@ dependencies = [
 [[package]]
 name = "sp-inherents"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "async-trait",
  "impl-trait-for-tuples",
@@ -3737,7 +3737,7 @@ dependencies = [
 [[package]]
 name = "sp-io"
 version = "23.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "bytes",
  "ed25519",
@@ -3762,7 +3762,7 @@ dependencies = [
 [[package]]
 name = "sp-keystore"
 version = "0.27.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "parity-scale-codec",
  "parking_lot",
@@ -3774,7 +3774,7 @@ dependencies = [
 [[package]]
 name = "sp-metadata-ir"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "frame-metadata",
  "parity-scale-codec",
@@ -3785,7 +3785,7 @@ dependencies = [
 [[package]]
 name = "sp-panic-handler"
 version = "8.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "backtrace",
  "lazy_static",
@@ -3795,7 +3795,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime"
 version = "24.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "either",
  "hash256-std-hasher",
@@ -3817,7 +3817,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface"
 version = "17.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "bytes",
  "impl-trait-for-tuples",
@@ -3835,7 +3835,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface-proc-macro"
 version = "11.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "Inflector",
  "proc-macro-crate",
@@ -3847,7 +3847,7 @@ dependencies = [
 [[package]]
 name = "sp-staking"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "impl-trait-for-tuples",
  "parity-scale-codec",
@@ -3861,7 +3861,7 @@ dependencies = [
 [[package]]
 name = "sp-state-machine"
 version = "0.28.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "hash-db",
  "log",
@@ -3882,12 +3882,12 @@ dependencies = [
 [[package]]
 name = "sp-std"
 version = "8.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 
 [[package]]
 name = "sp-storage"
 version = "13.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "impl-serde",
  "parity-scale-codec",
@@ -3900,7 +3900,7 @@ dependencies = [
 [[package]]
 name = "sp-tracing"
 version = "10.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "parity-scale-codec",
  "sp-std",
@@ -3912,7 +3912,7 @@ dependencies = [
 [[package]]
 name = "sp-trie"
 version = "22.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "ahash 0.8.3",
  "hash-db",
@@ -3935,7 +3935,7 @@ dependencies = [
 [[package]]
 name = "sp-version"
 version = "22.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "impl-serde",
  "parity-scale-codec",
@@ -3952,7 +3952,7 @@ dependencies = [
 [[package]]
 name = "sp-version-proc-macro"
 version = "8.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "parity-scale-codec",
  "proc-macro2",
@@ -3963,7 +3963,7 @@ dependencies = [
 [[package]]
 name = "sp-wasm-interface"
 version = "14.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "anyhow",
  "impl-trait-for-tuples",
@@ -3976,7 +3976,7 @@ dependencies = [
 [[package]]
 name = "sp-weights"
 version = "20.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v1.0.0#948fbd2fd1233dc26dbb9f9bbc1d2cca2c03945d"
+source = "git+https://github.com/leouarz/substrate.git?branch=ghali/data-increase-2#f61c58243f49390c85df6d8e8897aa0124dddc08"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
