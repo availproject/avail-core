@@ -436,16 +436,13 @@ pub fn get_block_dims(
 		Dimensions::new_from(height, width).ok_or(Error::ZeroDimension)
 	} else {
 		let width = NonZeroU16::try_from(u16::try_from(max_width)?)?;
-		log::info!("AAAAAAA - width - {}", width);
 		let current_height = round_up_to_multiple(n_scalars, width)
 			.checked_div(max_width)
 			.expect("`max_width` is non zero, checked one line before");
-		log::info!("AAAAAAA - current_height - {}", current_height);
 		// Round the height up to a power of 2 for ffts
 		let height = current_height
 			.checked_next_power_of_two()
 			.ok_or(Error::BlockTooBig)?;
-		log::info!("AAAAAAA - height - {}", height);
 		// Error if height too big
 		ensure!(height <= max_height, Error::BlockTooBig);
 
