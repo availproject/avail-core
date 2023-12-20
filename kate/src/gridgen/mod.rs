@@ -76,8 +76,6 @@ impl EvaluationGrid {
 	) -> Result<Self, Error> {
 		// Group extrinsics by app id, also sorted by app id.
 		// Using a BTreeMap here will still iter in sorted order. Sweet!
-		log::info!("AAAAAAAA - 1");
-		println!("AAAAAAAA - 1");
 		let grouped = extrinsics.into_iter().fold::<BTreeMap<AppId, Vec<_>>, _>(
 			BTreeMap::default(),
 			|mut acc, e| {
@@ -85,9 +83,6 @@ impl EvaluationGrid {
 				acc
 			},
 		);
-		log::info!("AAAAAAAA - 2");
-		println!("AAAAAAAA - 2");
-
 		// Convert each grup of extrinsics into scalars
 		let scalars_by_app = grouped
 			.into_iter()
@@ -100,30 +95,39 @@ impl EvaluationGrid {
 					.map(|scalars| (id, scalars))
 			})
 			.collect::<Result<Vec<_>, _>>()?;
-		log::info!("AAAAAAAA - 3");
-		println!("AAAAAAAA - 3");
 
 		let len_by_app = scalars_by_app
 			.iter()
 			.map(|(app, scalars)| (*app, scalars.len()));
 
-		log::info!("AAAAAAAA - 4");
-		println!("AAAAAAAA - 4");
+
+		log::info!("111AAAAAAAA - 4 - len_by_app : {:?}", len_by_app);
+		println!("AAAAAAAA - 4 - len_by_app : {:?}", len_by_app);
 		// make the index of app info
 		let lookup = DataLookup::from_id_and_len_iter(len_by_app)?;
-		log::info!("AAAAAAAA - 5");
-		println!("AAAAAAAA - 5");
+		log::info!("111AAAAAAAA - 5 - lookup : {:?}", lookup);
+		println!("AAAAAAAA - 5 - lookup : {:?}", lookup);
 		let grid_size = usize::try_from(lookup.len())?;
-		log::info!("AAAAAAAA - 6");
-		println!("AAAAAAAA - 6");
+		log::info!(
+			"AAAAAAAA - 6 - inputs : {} - {} - {} - {}",
+			grid_size,
+			min_width,
+			max_width,
+			max_height
+		);
+		println!(
+			"AAAAAAAA - 6 - inputs : {} - {} - {} - {}",
+			grid_size,
+			min_width,
+			max_width,
+			max_height
+		);
 		let (rows, cols): (usize, usize) =
 			get_block_dims(grid_size, min_width, max_width, max_height)?.into();
 		log::info!("AAAAAAAA - 7");
 		println!("AAAAAAAA - 7");
 
 		let mut rng = ChaChaRng::from_seed(rng_seed);
-		log::info!("AAAAAAAA - 8");
-		println!("AAAAAAAA - 8");
 		// Flatten the grid
 		let grid = scalars_by_app
 			.into_iter()
@@ -133,13 +137,8 @@ impl EvaluationGrid {
 				pad_to_bls_scalar(rnd_values).expect("less than SCALAR_SIZE values, can't fail")
 			}));
 
-		log::info!("AAAAAAAA - 9");
-		println!("AAAAAAAA - 9");
-
 		let row_major_evals = DMatrix::from_row_iterator(rows, cols, grid);
 
-		log::info!("AAAAAAAA - 10");
-		println!("AAAAAAAA - 10");
 		Ok(EvaluationGrid {
 			lookup,
 			evals: row_major_evals,
