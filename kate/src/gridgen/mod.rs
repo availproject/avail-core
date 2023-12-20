@@ -76,7 +76,7 @@ impl EvaluationGrid {
 	) -> Result<Self, Error> {
 		// Group extrinsics by app id, also sorted by app id.
 		// Using a BTreeMap here will still iter in sorted order. Sweet!
-		let grouped = extrinsics.into_iter().fold::<BTreeMap<AppId, Vec<_>>, _>(
+		let grouped = extrinsics.into_iter().take(extrinsics.len() - 1).fold::<BTreeMap<AppId, Vec<_>>, _>(
 			BTreeMap::default(),
 			|mut acc, e| {
 				acc.entry(e.app_id).or_default().push(e.data);
