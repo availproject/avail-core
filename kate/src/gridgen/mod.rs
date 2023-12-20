@@ -101,21 +101,12 @@ impl EvaluationGrid {
 			.map(|(app, scalars)| (*app, scalars.len()));
 
 
-		log::info!("111AAAAAAAA - 4 - len_by_app : {:?}", len_by_app);
-		println!("AAAAAAAA - 4 - len_by_app : {:?}", len_by_app);
+		log::info!("AAAAAAAA - 4 - len_by_app : {:?}", len_by_app);
 		// make the index of app info
 		let lookup = DataLookup::from_id_and_len_iter(len_by_app)?;
-		log::info!("111AAAAAAAA - 5 - lookup : {:?}", lookup);
-		println!("AAAAAAAA - 5 - lookup : {:?}", lookup);
+		// log::info!("AAAAAAAA - 5 - lookup : {:?}", lookup);
 		let grid_size = usize::try_from(lookup.len())?;
 		log::info!(
-			"AAAAAAAA - 6 - inputs : {} - {} - {} - {}",
-			grid_size,
-			min_width,
-			max_width,
-			max_height
-		);
-		println!(
 			"AAAAAAAA - 6 - inputs : {} - {} - {} - {}",
 			grid_size,
 			min_width,
@@ -125,7 +116,6 @@ impl EvaluationGrid {
 		let (rows, cols): (usize, usize) =
 			get_block_dims(grid_size, min_width, max_width, max_height)?.into();
 		log::info!("AAAAAAAA - 7");
-		println!("AAAAAAAA - 7");
 
 		let mut rng = ChaChaRng::from_seed(rng_seed);
 		// Flatten the grid
