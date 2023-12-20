@@ -76,13 +76,14 @@ impl EvaluationGrid {
 	) -> Result<Self, Error> {
 		// Group extrinsics by app id, also sorted by app id.
 		// Using a BTreeMap here will still iter in sorted order. Sweet!
-		let grouped = extrinsics.into_iter().take(extrinsics.len() - 1).fold::<BTreeMap<AppId, Vec<_>>, _>(
-			BTreeMap::default(),
-			|mut acc, e| {
+		let grouped = extrinsics
+			.clone()
+			.into_iter()
+			.take(extrinsics.len() - 1)
+			.fold::<BTreeMap<AppId, Vec<_>>, _>(BTreeMap::default(), |mut acc, e| {
 				acc.entry(e.app_id).or_default().push(e.data);
 				acc
-			},
-		);
+			});
 		// Convert each grup of extrinsics into scalars
 		let scalars_by_app = grouped
 			.into_iter()
@@ -100,8 +101,10 @@ impl EvaluationGrid {
 			.iter()
 			.map(|(app, scalars)| (*app, scalars.len()));
 
-
-		log::info!("len_by_app : {:?} - AAAAAAAA - 4", len_by_app.clone().rev().take(5));
+		log::info!(
+			"len_by_app : {:?} - AAAAAAAA - 4",
+			len_by_app.clone().rev().take(5)
+		);
 		// make the index of app info
 		let lookup = DataLookup::from_id_and_len_iter(len_by_app)?;
 		// log::info!("lookup : {:?} - AAAAAAAA - 5", lookup);
