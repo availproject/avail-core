@@ -97,7 +97,7 @@ impl EvaluationGrid {
 				let a: u32 = 0;
 				datas.clone().iter().for_each(|f| {
 					// log::info!("CCCCC - AppId {}, length: {}", id, f.len());
-					a += f.len();
+					a += f.len() as u32;
 				});
 				log::info!("CCCCC - AppId {}, total raw length: {}", id, a);
 				let mut enc = datas.encode();
