@@ -94,7 +94,7 @@ impl EvaluationGrid {
 		let scalars_by_app = grouped
 			.into_iter()
 			.map(|(id, datas)| {
-				let a: u32 = 0;
+				let mut a: u32 = 0;
 				datas.clone().iter().for_each(|f| {
 					// log::info!("CCCCC - AppId {}, length: {}", id, f.len());
 					a += f.len() as u32;
