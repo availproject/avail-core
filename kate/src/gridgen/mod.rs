@@ -76,13 +76,13 @@ impl EvaluationGrid {
 	) -> Result<Self, Error> {
 		// Group extrinsics by app id, also sorted by app id.
 		// Using a BTreeMap here will still iter in sorted order. Sweet!
-		extrinsics.clone().iter().for_each(|f| {
-			log::info!(
-				"CCCCC - Extrinsic with appId: {} and length: {}",
-				f.app_id,
-				f.data.len()
-			);
-		});
+		// extrinsics.clone().iter().for_each(|f| {
+		// 	log::info!(
+		// 		"CCCCC - Extrinsic with appId: {} and length: {}",
+		// 		f.app_id,
+		// 		f.data.len()
+		// 	);
+		// });
 		let grouped = extrinsics.into_iter().fold::<BTreeMap<AppId, Vec<_>>, _>(
 			BTreeMap::default(),
 			|mut acc, e| {
@@ -94,9 +94,12 @@ impl EvaluationGrid {
 		let scalars_by_app = grouped
 			.into_iter()
 			.map(|(id, datas)| {
+				let a: u32 = 0;
 				datas.clone().iter().for_each(|f| {
-					log::info!("CCCCC - AppId {}, length: {}", id, f.len());
+					// log::info!("CCCCC - AppId {}, length: {}", id, f.len());
+					a += f.len();
 				});
+				log::info!("CCCCC - AppId {}, total raw length: {}", id, a);
 				let mut enc = datas.encode();
 				log::info!("CCCCC - enc length: {}", enc.len());
 				enc.push(PADDING_TAIL_VALUE); // TODO: remove 9797 padding stuff
