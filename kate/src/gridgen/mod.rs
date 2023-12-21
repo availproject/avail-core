@@ -112,7 +112,7 @@ impl EvaluationGrid {
 			.iter()
 			.map(|(app, scalars)| (*app, scalars.len()));
 
-		log::info!("len_by_app : {:?} - AAAAAAAA - 4", len_by_app);
+		// log::info!("len_by_app : {:?} - AAAAAAAA - 4", len_by_app);
 		// make the index of app info
 		let lookup = DataLookup::from_id_and_len_iter(len_by_app)?;
 		// log::info!("lookup : {:?} - AAAAAAAA - 5", lookup);
