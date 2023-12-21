@@ -97,10 +97,10 @@ impl EvaluationGrid {
 				datas.clone().iter().for_each(|f| {
 					log::info!("CCCCC - AppId {}, length: {}", id, f.len());
 				});
-				log::info!("CCCCC - enc length: {}", enc.len());
 				let mut enc = datas.encode();
 				log::info!("CCCCC - enc length: {}", enc.len());
 				enc.push(PADDING_TAIL_VALUE); // TODO: remove 9797 padding stuff
+				log::info!("CCCCC - enc length after padding: {}", enc.len());
 				enc.chunks(DATA_CHUNK_SIZE)
 					.map(pad_to_bls_scalar)
 					.collect::<Result<Vec<_>, _>>()
