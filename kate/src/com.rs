@@ -104,7 +104,6 @@ impl PartialEq for Error {
 pub type XtsLayout = Vec<(AppId, u32)>;
 type FlatData = Vec<u8>;
 type DataChunk = [u8; DATA_CHUNK_SIZE];
-const PADDING_TAIL_VALUE: u8 = 0x80;
 /// Helper which groups extrinsics data that share the same app_id.
 /// We assume the input extrinsics are already sorted by app_id, i.e. extrinsics with the same app_id are consecutive.
 /// This function does the same thing as group_by (unstable), just less general.
@@ -248,8 +247,6 @@ fn pad_to_chunk(chunk: DataChunk, chunk_size: NonZeroU32) -> Vec<u8> {
 
 fn pad_iec_9797_1(mut data: Vec<u8>) -> Vec<DataChunk> {
 	let padded_size = padded_len_of_pad_iec_9797_1(data.len().saturated_into());
-	// Add `PADDING_TAIL_VALUE` and fill with zeros.
-	data.push(PADDING_TAIL_VALUE);
 	data.resize(padded_size as usize, 0u8);
 
 	// Transform into `DataChunk`.
