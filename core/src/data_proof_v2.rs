@@ -1,4 +1,3 @@
-use std::u8;
 #[cfg(feature = "runtime")]
 use binary_merkle_tree::MerkleProof;
 use codec::{Decode, Encode};
