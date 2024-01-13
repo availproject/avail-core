@@ -1,4 +1,3 @@
-use std::fmt::format;
 #[cfg(feature = "runtime")]
 use binary_merkle_tree::MerkleProof;
 use codec::{Decode, Encode};
@@ -53,7 +52,7 @@ impl<'de> Deserialize<'de> for MessageType {
         } else if s == "0x02" {
             Ok(MessageType::FungibleToken)
         } else {
-            Err(<D::Error as de::Error>::custom("Unsupported value {}"))
+            Err(<D::Error as de::Error>::custom("Unsupported value"))
         }
     }
 }
