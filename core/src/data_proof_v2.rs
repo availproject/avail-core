@@ -1,3 +1,4 @@
+use std::fmt::format;
 #[cfg(feature = "runtime")]
 use binary_merkle_tree::MerkleProof;
 use codec::{Decode, Encode};
@@ -8,7 +9,7 @@ use nomad_core::keccak256_concat;
 use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use serde::{Deserializer, Serializer};
+use serde::{de, Deserializer, Serializer};
 use sp_core::{ConstU32, H256};
 use sp_std::vec;
 use sp_std::vec::Vec;
@@ -47,11 +48,13 @@ impl<'de> Deserialize<'de> for MessageType {
         where D: Deserializer<'de>
     {
         let s = String::deserialize(deserializer)?;
-        Ok(match s.as_str() {
-            "0x01" => MessageType::ArbitraryMessage,
-            "0x02" => MessageType::FungibleToken,
-            _ => { panic!("{:} not supported!", s) }
-        })
+        if s == "0x01" {
+            Ok(MessageType::ArbitraryMessage)
+        } else if s == "0x02" {
+            Ok(MessageType::FungibleToken)
+        } else {
+            Err(<D::Error as de::Error>::custom("Unsupported value {}"))
+        }
     }
 }
 
@@ -246,31 +249,31 @@ mod test {
     use hex_literal::hex;
     use crate::Keccak256;
 
-	use super::*;
+    use super::*;
 
-	fn leaves() -> Vec<Vec<u8>> {
-		(0u8..7)
-			.map(|idx| H256::repeat_byte(idx).to_fixed_bytes().to_vec())
-			.collect::<Vec<_>>()
-	}
+    fn leaves() -> Vec<Vec<u8>> {
+        (0u8..7)
+            .map(|idx| H256::repeat_byte(idx).to_fixed_bytes().to_vec())
+            .collect::<Vec<_>>()
+    }
 
-	/// Creates a merkle proof of `leaf_index`.
-	///
-	/// If `leaf_index >= number_of_leaves`, it will create a fake proof using the latest possible
-	/// index and overwriting the proof. That case is used to test transformations into
-	/// `DataProofV2`.
-	fn merkle_proof_idx(
-		leaf_index: usize,
-		root: H256,
-		sub_trie: SubTrie,
-	) -> (MerkleProof<H256, Vec<u8>>, H256, SubTrie) {
-		let leaves = leaves();
-		let index = min(leaf_index, leaves.len() - 1);
-		let mut proof = binary_merkle_tree::merkle_proof::<Keccak256, _, _>(leaves, index);
-		proof.leaf_index = leaf_index;
+    /// Creates a merkle proof of `leaf_index`.
+    ///
+    /// If `leaf_index >= number_of_leaves`, it will create a fake proof using the latest possible
+    /// index and overwriting the proof. That case is used to test transformations into
+    /// `DataProofV2`.
+    fn merkle_proof_idx(
+        leaf_index: usize,
+        root: H256,
+        sub_trie: SubTrie,
+    ) -> (MerkleProof<H256, Vec<u8>>, H256, SubTrie) {
+        let leaves = leaves();
+        let index = min(leaf_index, leaves.len() - 1);
+        let mut proof = binary_merkle_tree::merkle_proof::<Keccak256, _, _>(leaves, index);
+        proof.leaf_index = leaf_index;
 
-		(proof, root, sub_trie)
-	}
+        (proof, root, sub_trie)
+    }
 
     #[test]
     fn test_abi_encoding_with_serde() {
@@ -306,12 +309,12 @@ mod test {
 
         // revert back to object
         let deserialized_message: Message = serde_json::from_slice(serialized_message.as_bytes()).unwrap();
-        assert_eq!(origin_message.origin_domain,deserialized_message.origin_domain);
-        assert_eq!(origin_message.message_type,deserialized_message.message_type);
-        assert_eq!(origin_message.id,deserialized_message.id);
-        assert_eq!(origin_message.to,deserialized_message.to);
-        assert_eq!(origin_message.from,deserialized_message.from);
-        assert_eq!(origin_message.data,deserialized_message.data);
-        assert_eq!(origin_message.destination_domain,deserialized_message.destination_domain);
+        assert_eq!(origin_message.origin_domain, deserialized_message.origin_domain);
+        assert_eq!(origin_message.message_type, deserialized_message.message_type);
+        assert_eq!(origin_message.id, deserialized_message.id);
+        assert_eq!(origin_message.to, deserialized_message.to);
+        assert_eq!(origin_message.from, deserialized_message.from);
+        assert_eq!(origin_message.data, deserialized_message.data);
+        assert_eq!(origin_message.destination_domain, deserialized_message.destination_domain);
     }
 }
