@@ -60,7 +60,7 @@ impl Position {
 
 	/// Checks if position is from extended row
 	pub fn is_extended(&self) -> bool {
-		self.row % 2 == 1
+		self.row % EXTENSION_FACTOR_U32 != 0
 	}
 }
 
