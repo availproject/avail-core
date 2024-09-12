@@ -20,8 +20,6 @@ use dusk_bytes::Serializable as _;
 #[cfg(feature = "std")]
 use dusk_plonk::{fft::EvaluationDomain, prelude::BlsScalar};
 #[cfg(feature = "std")]
-pub use sp_arithmetic::{traits::SaturatedConversion as _, Percent};
-#[cfg(feature = "std")]
 use static_assertions::{const_assert, const_assert_ne};
 #[cfg(feature = "std")]
 use std::{
@@ -80,15 +78,17 @@ impl std::error::Error for ReconstructionError {
 pub fn columns_positions<R: rand::RngCore>(
 	dimensions: matrix::Dimensions,
 	positions: &[matrix::Position],
-	factor: Percent,
+	factor: u8,
 	rng: &mut R,
 ) -> Vec<matrix::Position> {
+	debug_assert!(factor <= 100);
 	use rand::seq::SliceRandom;
 
-	let cells = factor
-		.mul_ceil(dimensions.extended_rows())
-		.saturated_into::<usize>();
+	// TODO MARKO
+	let dim_ext_rows: u32 = dimensions.extended_rows();
+	let dim_ext_rows: u128 = (dim_ext_rows as u128 * factor as u128) / 100u128;
 
+	let cells: usize = dim_ext_rows.try_into().unwrap_or(usize::MAX);
 	let columns: HashSet<u16> = HashSet::from_iter(positions.iter().map(|position| position.col));
 
 	columns

@@ -8,7 +8,6 @@ use derive_more::{Add, Constructor, Deref, Into, Mul};
 use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use sp_arithmetic::traits::Zero;
 use sp_core::RuntimeDebug;
 
 pub mod from_substrate;
@@ -96,20 +95,19 @@ pub enum InvalidTransactionCustomId {
 )]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct AppId(#[codec(compact)] pub u32);
+impl AppId {
+	pub fn zero() -> Self {
+		AppId(0u32)
+	}
+
+	pub fn is_zero(&self) -> bool {
+		self.0 == 0u32
+	}
+}
 
 impl core::fmt::Display for AppId {
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 		write!(f, "{}", self.0)
-	}
-}
-
-impl Zero for AppId {
-	fn zero() -> Self {
-		AppId(Zero::zero())
-	}
-
-	fn is_zero(&self) -> bool {
-		self.0.is_zero()
 	}
 }
 

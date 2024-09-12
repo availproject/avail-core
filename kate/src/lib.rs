@@ -5,11 +5,11 @@ use avail_core::{constants::kate::DATA_CHUNK_SIZE, BlockLengthColumns, BlockLeng
 use core::{
 	convert::TryInto,
 	num::{NonZeroU32, TryFromIntError},
+	u32,
 };
 #[cfg(feature = "std")]
 pub use dusk_plonk::{commitment_scheme::kzg10::PublicParameters, prelude::BlsScalar};
 use kate_recovery::matrix::Dimensions;
-use sp_arithmetic::traits::SaturatedConversion;
 use static_assertions::const_assert_ne;
 use thiserror_no_std::Error;
 
@@ -324,7 +324,7 @@ pub mod gridgen;
 fn padded_len_of_pad_iec_9797_1(len: u32) -> u32 {
 	let len_plus_one = len.saturating_add(1);
 	let offset = (DATA_CHUNK_SIZE - (len_plus_one as usize % DATA_CHUNK_SIZE)) % DATA_CHUNK_SIZE;
-	let offset: u32 = offset.saturated_into();
+	let offset: u32 = offset.try_into().unwrap_or(u32::MAX);
 
 	len_plus_one.saturating_add(offset)
 }

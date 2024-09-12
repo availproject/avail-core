@@ -17,7 +17,6 @@ use nalgebra::DMatrix;
 use rand::{prelude::IteratorRandom, Rng, SeedableRng};
 use rand_chacha::ChaChaRng;
 use serde::{Deserialize, Serialize};
-use sp_arithmetic::{traits::SaturatedConversion, Percent};
 
 const XTS_JSON_SETS: &str = include_str!("reconstruct.data.json");
 
@@ -84,15 +83,17 @@ fn sample_cells_from_matrix(matrix: &DMatrix<BlsScalar>, columns: Option<&[u16]>
 fn random_cells(
 	max_cols: BlockLengthColumns,
 	max_rows: BlockLengthRows,
-	percents: Percent,
+	percents: u8,
 ) -> Vec<Cell> {
-	let max_cols = max_cols.into();
-	let max_rows = max_rows.into();
+	assert!(percents <= 100);
+	let max_cols: u32 = max_cols.into();
+	let max_rows: u32 = max_rows.into();
 
 	let rng = &mut ChaChaRng::from_seed([0u8; 32]);
-	let amount: usize = percents
-		.mul_ceil::<u32>(max_cols * max_rows)
-		.saturated_into();
+
+	let mut multi: u128 = (max_cols as u128) * (max_rows as u128);
+	multi = (multi * (percents as u128)) / 100u128;
+	let amount: usize = multi.try_into().unwrap_or(usize::MAX);
 
 	(0..max_cols)
 		.flat_map(move |col| {
@@ -147,7 +148,7 @@ fn reconstruct(xts: &[AppExtrinsic]) {
 
 	let dims_cols: u32 = dims.cols().into();
 	let public_params = testnet::public_params(usize::try_from(dims_cols).unwrap());
-	for cell in random_cells(dims.cols(), dims.rows(), Percent::one()) {
+	for cell in random_cells(dims.cols(), dims.rows(), 1u8) {
 		let row: u32 = cell.row.into();
 
 		let proof = build_proof(&public_params, dims, &matrix, &[cell], &metrics).unwrap();
