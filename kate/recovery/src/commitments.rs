@@ -1,6 +1,6 @@
 use avail_core::constants::kate::{CHUNK_SIZE, COMMITMENT_SIZE};
+use avail_core::sp_std::prelude::*;
 use core::{array::TryFromSliceError, convert::TryInto, num::TryFromIntError};
-use sp_std::prelude::*;
 use thiserror_no_std::Error;
 
 #[cfg(feature = "std")]

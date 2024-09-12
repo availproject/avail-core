@@ -17,6 +17,10 @@
 
 //! Data-Avail implementation of a block header.
 
+use crate::sp_std::{
+	convert::TryFrom,
+	fmt::{Debug, Formatter},
+};
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
@@ -27,10 +31,6 @@ use sp_runtime::{
 	Digest,
 };
 use sp_runtime_interface::pass_by::{Codec as PassByCodecImpl, PassBy};
-use sp_std::{
-	convert::TryFrom,
-	fmt::{Debug, Formatter},
-};
 
 use crate::traits::ExtendedHeader;
 
@@ -109,7 +109,7 @@ where
 	H: HashT,
 	H::Output: TypeInfo,
 {
-	fn fmt(&self, f: &mut Formatter<'_>) -> sp_std::fmt::Result {
+	fn fmt(&self, f: &mut Formatter<'_>) -> crate::sp_std::fmt::Result {
 		let parent_hash = self.parent_hash.as_ref();
 		let state_root = self.state_root.as_ref();
 		let extrinsics_root = self.extrinsics_root.as_ref();

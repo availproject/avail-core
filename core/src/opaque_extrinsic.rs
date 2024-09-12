@@ -1,7 +1,7 @@
+use crate::sp_std::vec::Vec;
 use codec::{Decode, Encode};
 use scale_info::prelude::format;
 use scale_info::TypeInfo;
-use sp_std::vec::Vec;
 
 /// Simple blob to hold an extrinsic without committing to its format and ensure it is serialized
 /// correctly.
@@ -19,14 +19,14 @@ impl OpaqueExtrinsic {
 	}
 }
 
-impl sp_std::fmt::Debug for OpaqueExtrinsic {
+impl crate::sp_std::fmt::Debug for OpaqueExtrinsic {
 	#[cfg(feature = "std")]
-	fn fmt(&self, fmt: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
+	fn fmt(&self, fmt: &mut crate::sp_std::fmt::Formatter) -> crate::sp_std::fmt::Result {
 		write!(fmt, "{}", sp_core::hexdisplay::HexDisplay::from(&self.0))
 	}
 
 	#[cfg(not(feature = "std"))]
-	fn fmt(&self, _fmt: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
+	fn fmt(&self, _fmt: &mut crate::sp_std::fmt::Formatter) -> crate::sp_std::fmt::Result {
 		Ok(())
 	}
 }

@@ -1,6 +1,6 @@
+use avail_core::sp_std::{collections::btree_map::BTreeMap, vec::Vec};
 use core::convert::TryInto;
 use derive_more::Constructor;
-use sp_std::{collections::btree_map::BTreeMap, vec::Vec};
 
 use crate::matrix::{Dimensions, Position, RowIndex};
 

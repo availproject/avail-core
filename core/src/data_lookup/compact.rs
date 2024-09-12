@@ -1,8 +1,8 @@
 use crate::{AppId, DataLookup};
 
+use crate::sp_std::vec::Vec;
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_std::vec::Vec;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};

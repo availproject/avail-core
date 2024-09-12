@@ -1,4 +1,6 @@
 use avail_core::constants::kate::{CHUNK_SIZE, EXTENSION_FACTOR};
+use avail_core::sp_std::prelude::*;
+use avail_core::sp_std::vec;
 use core::{
 	convert::TryInto,
 	fmt::{Display, Formatter, Result},
@@ -6,8 +8,6 @@ use core::{
 	ops::{Mul, Range},
 };
 use derive_more::Constructor;
-use sp_std::prelude::*;
-use sp_std::vec;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};

@@ -2,7 +2,7 @@ use frame_support::traits::Randomness;
 
 /// Provides an implementation of [`frame_support::traits::Randomness`] that should only be used in
 /// on Benchmarks!
-pub struct BenchRandomness<T>(sp_std::marker::PhantomData<T>);
+pub struct BenchRandomness<T>(crate::sp_std::marker::PhantomData<T>);
 
 impl<Output, T> Randomness<Output, T> for BenchRandomness<T>
 where

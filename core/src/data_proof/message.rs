@@ -1,10 +1,10 @@
 use super::BoundedData;
 
+use crate::sp_std::{vec, vec::Vec};
 use codec::{Decode, Encode};
 use derive_more::{Constructor, From};
 use scale_info::TypeInfo;
 use sp_core::H256;
-use sp_std::{vec, vec::Vec};
 
 use ethabi_decode::{encode, Token, U256};
 

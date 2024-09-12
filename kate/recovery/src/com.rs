@@ -10,7 +10,7 @@ use avail_core::{
 };
 use avail_core::{data_lookup::Error as DataLookupError, AppId, DataLookup};
 
-use sp_std::prelude::*;
+use avail_core::sp_std::prelude::*;
 use thiserror_no_std::Error;
 
 #[cfg(feature = "std")]

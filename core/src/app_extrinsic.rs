@@ -1,3 +1,4 @@
+use crate::sp_std::vec::Vec;
 use crate::traits::GetAppId;
 #[cfg(feature = "runtime")]
 use codec::Codec;
@@ -7,7 +8,6 @@ use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use sp_core::RuntimeDebug;
-use sp_std::vec::Vec;
 
 use crate::AppId;
 

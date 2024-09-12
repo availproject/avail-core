@@ -1,10 +1,10 @@
+use crate::sp_std::fmt::Debug;
 use codec::Codec;
 use scale_info::TypeInfo;
 use sp_runtime::{
 	generic::Digest,
 	traits::{Header, MaybeSerialize},
 };
-use sp_std::fmt::Debug;
 
 /// Extended header access
 pub trait ExtendedHeader: Header {

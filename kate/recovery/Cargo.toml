@@ -13,7 +13,6 @@ dusk-plonk = { workspace = true, optional = true }
 # Parity
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive"] }
 sp-arithmetic.workspace = true
-sp-std.workspace = true
 
 # 3rd-parties
 derive_more.workspace = true
@@ -41,7 +40,6 @@ std = [
 	"rand_chacha/std",
 	"serde",
 	"sp-arithmetic/std",
-	"sp-std/std",
 ]
 
 serde = [ "dep:serde" ]

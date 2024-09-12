@@ -20,6 +20,7 @@
 #[cfg(feature = "std")]
 use std::fmt;
 
+use crate::sp_std::prelude::*;
 use crate::traits::{ExtendedBlock, ExtendedHeader};
 use codec::{Codec, Decode, Encode};
 #[cfg(feature = "serde")]
@@ -31,7 +32,6 @@ use sp_runtime::{
 	},
 	Justifications,
 };
-use sp_std::prelude::*;
 
 /// Something to identify a block.
 #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug)]

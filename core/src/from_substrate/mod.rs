@@ -1,3 +1,5 @@
+pub mod sp_std;
+
 use sha3::Digest;
 
 ////////////// START SP-IO
@@ -13,6 +15,11 @@ fn blake2<const N: usize>(data: &[u8]) -> [u8; N] {
 
 /// Do a Blake2 256-bit hash and return result.
 pub fn blake2_256(data: &[u8]) -> [u8; 32] {
+	blake2(data)
+}
+
+/// Do a Blake2 128-bit hash and return result.
+pub fn blake2_128(data: &[u8]) -> [u8; 16] {
 	blake2(data)
 }
 

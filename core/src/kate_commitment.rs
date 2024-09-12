@@ -1,14 +1,14 @@
+use crate::sp_std::vec::Vec;
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::H256;
-use sp_std::vec::Vec;
 
+#[cfg(feature = "serde")]
+use crate::sp_std::fmt;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "serde")]
 use sp_core::hexdisplay::HexDisplay;
-#[cfg(feature = "serde")]
-use sp_std::fmt;
 
 pub mod v3 {
 	use super::*;

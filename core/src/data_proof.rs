@@ -1,9 +1,9 @@
+use crate::sp_std::vec::Vec;
 use bounded_collections::BoundedVec;
 use codec::{Decode, Encode};
 use derive_more::Constructor;
 use scale_info::TypeInfo;
 use sp_core::{ConstU32, H256};
-use sp_std::vec::Vec;
 
 #[cfg(feature = "runtime")]
 use binary_merkle_tree::MerkleProof;
@@ -71,7 +71,7 @@ impl TxDataRoots {
 	pub fn new(submitted: H256, bridged: H256) -> Self {
 		// keccak_256(submitted, bridged)
 		let sub_roots = [submitted.to_fixed_bytes(), bridged.to_fixed_bytes()].concat();
-		let root = keccak_256(sub_roots.as_slice()).into();
+		let root = crate::from_substrate::keccak_256(sub_roots.as_slice()).into();
 
 		Self {
 			data_root: root,
@@ -110,7 +110,7 @@ impl DataProof {
 	pub fn new(sub_trie: SubTrie, roots: TxDataRoots, m_proof: MerkleProof<H256, Vec<u8>>) -> Self {
 		let leaf = match sub_trie {
 			SubTrie::DataSubmit => H256::from_slice(m_proof.leaf.as_slice()),
-			SubTrie::Bridge => keccak_256(m_proof.leaf.as_slice()).into(),
+			SubTrie::Bridge => crate::from_substrate::keccak_256(m_proof.leaf.as_slice()).into(),
 		};
 
 		Self {

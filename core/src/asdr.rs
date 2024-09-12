@@ -21,15 +21,17 @@ use crate::{
 	AppId, OpaqueExtrinsic,
 };
 
-use codec::{Codec, Compact, Decode, Encode, EncodeLike, Error, Input};
-use scale_info::{build::Fields, meta_type, Path, StaticTypeInfo, Type, TypeInfo, TypeParameter};
-use sp_runtime::MultiAddress;
-use sp_std::{
+use crate::sp_std::{
 	fmt::{Debug, Formatter, Result as FmtResult},
 	vec,
 	vec::Vec,
 };
+use codec::{Codec, Compact, Decode, Encode, EncodeLike, Error, Input};
+use scale_info::{build::Fields, meta_type, Path, StaticTypeInfo, Type, TypeInfo, TypeParameter};
+use sp_runtime::MultiAddress;
 
+#[cfg(all(not(feature = "std"), feature = "serde"))]
+use crate::sp_std::alloc::format;
 #[cfg(feature = "runtime")]
 use frame_support::{
 	dispatch::{DispatchInfo, GetDispatchInfo},
@@ -44,8 +46,6 @@ use sp_runtime::{
 	},
 	transaction_validity::{InvalidTransaction, TransactionValidityError},
 };
-#[cfg(all(not(feature = "std"), feature = "serde"))]
-use sp_std::alloc::format;
 
 /// Current version of the [`UncheckedExtrinsic`] encoded format.
 ///
@@ -326,7 +326,7 @@ where
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		self.0.using_encoded(|payload| {
 			if payload.len() > 256 {
-				f(&blake2_256(payload)[..])
+				f(&crate::from_substrate::blake2_256(payload)[..])
 			} else {
 				f(payload)
 			}
@@ -380,7 +380,7 @@ where
 	E: SignedExtension,
 {
 	fn encode(&self) -> Vec<u8> {
-		let mut tmp = Vec::with_capacity(sp_std::mem::size_of::<Self>());
+		let mut tmp = Vec::with_capacity(crate::sp_std::mem::size_of::<Self>());
 
 		// 1 byte version id.
 		match self.signature.as_ref() {

@@ -23,8 +23,8 @@ impl Hasher for Keccak256 {
 #[cfg(feature = "runtime")]
 pub mod hash {
 	use super::*;
+	use crate::sp_std::vec::Vec;
 	use sp_core::storage::StateVersion;
-	use sp_std::vec::Vec;
 	use sp_trie::{LayoutV0, LayoutV1, TrieConfiguration as _};
 
 	impl sp_runtime::traits::Hash for Keccak256 {
