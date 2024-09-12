@@ -15,7 +15,7 @@ impl Hasher for Keccak256 {
 	const LENGTH: usize = 32;
 
 	fn hash(s: &[u8]) -> Self::Out {
-		let keccak_out = sp_io::hashing::keccak_256(s);
+		let keccak_out = crate::from_substrate::keccak_256(s);
 		keccak_out.into()
 	}
 }

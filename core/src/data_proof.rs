@@ -9,8 +9,6 @@ use sp_std::vec::Vec;
 use binary_merkle_tree::MerkleProof;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "runtime")]
-use sp_io::hashing::keccak_256;
 
 /// Max data supported on bridge (Ethereum calldata limits)
 pub const BOUNDED_DATA_MAX_LENGTH: u32 = 102_400;

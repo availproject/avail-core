@@ -23,7 +23,6 @@ use crate::{
 
 use codec::{Codec, Compact, Decode, Encode, EncodeLike, Error, Input};
 use scale_info::{build::Fields, meta_type, Path, StaticTypeInfo, Type, TypeInfo, TypeParameter};
-use sp_io::hashing::blake2_256;
 use sp_runtime::MultiAddress;
 use sp_std::{
 	fmt::{Debug, Formatter, Result as FmtResult},
@@ -638,7 +637,8 @@ mod tests {
 			TEST_ACCOUNT,
 			TestSig(
 				TEST_ACCOUNT,
-				(vec![0u8; 257], TestExtra).using_encoded(blake2_256)[..].to_owned(),
+				(vec![0u8; 257], TestExtra).using_encoded(crate::from_substrate::blake2_256)[..]
+					.to_owned(),
 			),
 			TestExtra,
 		);

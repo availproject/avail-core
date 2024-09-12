@@ -30,7 +30,10 @@ sp-runtime = { workspace = true, optional = true }
 sp-runtime-interface = { workspace = true, optional = true }
 sp-std.workspace = true
 sp-trie.workspace = true
-sp-io.workspace = true
+
+blake2b_simd = { version = "1.0.2", default-features = false }
+sha2 = { version = "0.10.7", default-features = false }
+sha3 = { version = "0.10.0", default-features = false }
 
 [dev-dependencies]
 hex-literal.workspace = true
@@ -56,7 +59,6 @@ std = [
 	"serde/std",
 	"sp-arithmetic/std",
 	"sp-core/std",
-	"sp-io/std",
 	"sp-runtime-interface?/std",
 	"sp-runtime?/std",
 	"sp-std/std",
@@ -69,7 +71,6 @@ runtime = [
 	"sp-runtime",
 	"sp-runtime-interface",
 ]
-disable_panic_handler = [ "sp-io/disable_panic_handler" ]
 
 try-runtime = [ "runtime", "sp-runtime/try-runtime" ]
 serde = [ "dep:serde", "hex/serde", "log/serde" ]

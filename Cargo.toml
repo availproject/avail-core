@@ -9,7 +9,6 @@ bounded-collections = { version = "0.2", default-features = false }
 scale-info = { version = "2", default-features = false, features = ["derive"] }
 
 # Polkadot SDK
-sp-io = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-9", default-features = false }
 binary-merkle-tree = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-9", default-features = false }
 sp-arithmetic = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-9", default-features = false }
 sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-9", default-features = false }

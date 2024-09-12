@@ -14,7 +14,7 @@ impl Hasher for ShaTwo256 {
 	const LENGTH: usize = 32;
 
 	fn hash(s: &[u8]) -> Self::Out {
-		let sha2_out = sp_io::hashing::sha2_256(s);
+		let sha2_out = crate::from_substrate::sha2_256(s);
 		sha2_out.into()
 	}
 }
