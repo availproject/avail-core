@@ -45,14 +45,18 @@ pub use core::time;
 // runtime doesn't require anything human readable).
 
 pub mod collections {
+	use super::*;
+
 	pub use alloc::collections::btree_map;
 	pub use alloc::collections::btree_set;
 	pub use alloc::collections::vec_deque;
 }
 
 pub mod borrow {
-	pub use core::borrow::*;
+	use super::*;
+
 	pub use alloc::borrow::*;
+	pub use core::borrow::*;
 }
 
 pub mod thread {

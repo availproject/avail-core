@@ -1,10 +1,18 @@
+#![cfg(feature = "runtime")]
+
 use crate::sp_std::fmt::Debug;
 use codec::Codec;
 use scale_info::TypeInfo;
+use sp_runtime::traits::Block;
 use sp_runtime::{
 	generic::Digest,
 	traits::{Header, MaybeSerialize},
 };
+
+/// Extended Block trait that extends substrate primitive Block to include ExtendedHeader in the header
+pub trait ExtendedBlock: Block<Header = Self::ExtHeader> {
+	type ExtHeader: ExtendedHeader;
+}
 
 /// Extended header access
 pub trait ExtendedHeader: Header {

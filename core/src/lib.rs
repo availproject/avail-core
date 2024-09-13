@@ -16,19 +16,11 @@ pub use from_substrate::sp_std;
 pub mod opaque_extrinsic;
 pub use opaque_extrinsic::*;
 
-/// DA Block
-#[cfg(feature = "runtime")]
-pub mod da_block;
-#[cfg(feature = "runtime")]
-pub use da_block::*;
-
-/// Customized headers.
-#[cfg(feature = "runtime")]
-pub mod header;
-
 /// Kate Commitment on Headers.
 pub mod kate_commitment;
 pub use kate_commitment::*;
+
+pub mod block;
 
 /// Application Specific Data Retrieval
 #[cfg(feature = "runtime")]
@@ -53,9 +45,6 @@ pub use app_extrinsic::AppExtrinsic;
 
 pub mod constants;
 pub use constants::*;
-
-pub mod header_version;
-pub use header_version::HeaderVersion;
 
 pub mod const_generic_asserts;
 

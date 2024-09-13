@@ -1,3 +1,4 @@
+pub mod digest;
 pub mod sp_std;
 
 use sha3::Digest;
