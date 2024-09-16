@@ -1,19 +1,23 @@
+use super::super::kate::v3::KateCommitment;
 use super::HeaderVersion;
 use crate::sp_std::{vec, vec::Vec};
-use crate::{kate_commitment::v3::KateCommitment, DataLookup};
+use crate::DataLookup;
 use codec::{Decode, Encode};
-use scale_info::TypeInfo;
-use sp_core::{RuntimeDebug, H256};
+use sp_core::H256;
 
+#[cfg(feature = "runtime")]
+use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "runtime")]
+use sp_core::RuntimeDebug;
 #[cfg(feature = "runtime")]
 use sp_runtime_interface::pass_by::PassByCodec;
 
 /// Header extension data.
-#[derive(PartialEq, Eq, Clone, RuntimeDebug, TypeInfo, Encode, Decode)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "runtime", derive(PassByCodec))]
+#[cfg_attr(feature = "runtime", derive(PassByCodec, RuntimeDebug, TypeInfo))]
 #[repr(u8)]
 pub enum HeaderExtension {
 	V3(v3::HeaderExtension) = 2,
@@ -82,9 +86,10 @@ impl From<v3::HeaderExtension> for HeaderExtension {
 pub mod v3 {
 	use super::*;
 
-	#[derive(Clone, Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Default)]
+	#[derive(Clone, Encode, Decode, PartialEq, Eq, Default)]
 	#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 	#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
+	#[cfg_attr(feature = "runtime", derive(RuntimeDebug, TypeInfo))]
 	pub struct HeaderExtension {
 		pub app_lookup: DataLookup,
 		pub commitment: KateCommitment,

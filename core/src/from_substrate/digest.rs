@@ -24,18 +24,22 @@ use serde::{Deserialize, Serialize};
 
 use super::sp_std::prelude::*;
 use codec::{Decode, Encode, Error, Input};
+
+#[cfg(feature = "runtime")]
 use scale_info::{
 	build::{Fields, Variants},
 	Path, Type, TypeInfo,
 };
+#[cfg(feature = "runtime")]
 use sp_core::RuntimeDebug;
 
 /// Consensus engine unique ID.
 pub type ConsensusEngineId = [u8; 4];
 
 /// Generic header digest.
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo, Default)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "runtime", derive(RuntimeDebug, TypeInfo))]
 pub struct Digest {
 	/// A list of logs in the digest.
 	pub logs: Vec<DigestItem>,
@@ -129,6 +133,7 @@ impl<'a> serde::Deserialize<'a> for DigestItem {
 	}
 }
 
+#[cfg(feature = "runtime")]
 impl TypeInfo for DigestItem {
 	type Identity = Self;
 

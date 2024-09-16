@@ -2,24 +2,22 @@
 use super::HeaderExtension;
 use crate::sp_std::{convert::TryFrom, fmt::Debug};
 use codec::{Decode, Encode};
-use scale_info::TypeInfo;
 use sp_core::{H256, U256};
 use sp_runtime::{traits::BlockNumber, Digest};
 
+#[cfg(feature = "runtime")]
+use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/* fn h256_to_hex(value: &H256) -> String {
-	std::format!("0x{}", hex::encode(value.0))
-}
- */
 /// Abstraction over a block header for a substrate chain.
-#[derive(Debug, PartialEq, Eq, Clone, TypeInfo, Encode, Decode, Default)]
+#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
 	feature = "serde",
 	serde(deny_unknown_fields, rename_all = "camelCase")
 )]
+#[cfg_attr(feature = "runtime", derive(TypeInfo))]
 pub struct Header {
 	/// The parent hash.
 	pub parent_hash: H256,

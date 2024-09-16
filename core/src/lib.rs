@@ -16,10 +16,6 @@ pub use from_substrate::sp_std;
 pub mod opaque_extrinsic;
 pub use opaque_extrinsic::*;
 
-/// Kate Commitment on Headers.
-pub mod kate_commitment;
-pub use kate_commitment::*;
-
 pub mod block;
 
 /// Application Specific Data Retrieval

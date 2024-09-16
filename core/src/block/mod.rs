@@ -2,6 +2,7 @@ mod bock;
 mod unknown;
 
 pub mod header;
+pub mod kate;
 
 #[cfg(feature = "runtime")]
 mod block_runtime;

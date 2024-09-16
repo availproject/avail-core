@@ -1,6 +1,8 @@
 pub mod digest;
+pub mod justifications;
 pub mod sp_std;
 
+pub use justifications::Justifications;
 use sha3::Digest;
 
 ////////////// START SP-IO
