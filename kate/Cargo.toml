@@ -70,7 +70,6 @@ std = [
 ]
 
 serde = [ "dep:serde", "avail-core-substrate/serde" ]
-runtime = [ "avail-core-substrate/runtime" ]
 
 extended-columns = []
 maximum-block-size = []
