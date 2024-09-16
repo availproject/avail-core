@@ -483,6 +483,7 @@ name = "avail-core"
 version = "0.6.2"
 dependencies = [
  "avail-core",
+ "avail-core-block",
  "avail-core-substrate",
  "binary-merkle-tree",
  "blake2b_simd",
@@ -510,6 +511,22 @@ dependencies = [
  "thiserror-no-std",
  "tiny-keccak",
  "trybuild",
+]
+
+[[package]]
+name = "avail-core-block"
+version = "0.6.2"
+dependencies = [
+ "avail-core-substrate",
+ "hash256-std-hasher",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-runtime",
+ "sp-runtime-interface",
+ "static_assertions",
+ "thiserror-no-std",
 ]
 
 [[package]]

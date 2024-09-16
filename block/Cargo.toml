@@ -1,0 +1,45 @@
+[package]
+name = "avail-core-block"
+version = "0.6.2"
+authors = []
+edition = "2021"
+license = "Apache-2.0"
+
+[dependencies]
+# Others
+thiserror-no-std.workspace = true
+hash256-std-hasher.workspace = true
+serde = { workspace = true, optional = true }
+static_assertions.workspace = true
+
+# Parity
+codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive", "max-encoded-len"] }
+scale-info.workspace = true
+
+# TODO Marko
+sp-core.workspace = true
+sp-runtime = { workspace = true, optional = true }
+sp-runtime-interface = { workspace = true, optional = true }
+
+avail-core-substrate = { path = "./../substrate", default-features = false }
+
+[features]
+default = [ "std" ]
+std = [
+	"codec/std",
+	"hash256-std-hasher/std",
+	"scale-info/std",
+	"serde/std",
+	"sp-core/std",
+	"sp-runtime-interface?/std",
+	"sp-runtime?/std",
+]
+runtime = [
+	"serde",
+	"sp-runtime",
+	"sp-runtime-interface",
+	"avail-core-substrate/runtime"
+]
+
+try-runtime = [ "runtime", "sp-runtime/try-runtime" ]
+serde = [ "dep:serde", "avail-core-substrate/serde" ]

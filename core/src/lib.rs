@@ -15,8 +15,6 @@ pub use avail_core_substrate::sp_std;
 pub mod opaque_extrinsic;
 pub use opaque_extrinsic::*;
 
-pub mod block;
-
 /// Application Specific Data Retrieval
 #[cfg(feature = "runtime")]
 pub mod asdr;
@@ -29,11 +27,10 @@ pub mod traits;
 pub mod keccak256;
 pub use keccak256::Keccak256;
 
-pub mod data_proof;
-pub use data_proof::DataProof;
+pub use avail_core_block::data_lookup;
+pub use avail_core_block::data_lookup::*;
 
-pub mod data_lookup;
-pub use data_lookup::*;
+pub mod data_proof;
 
 pub mod app_extrinsic;
 pub use app_extrinsic::AppExtrinsic;

@@ -1,4 +1,4 @@
-use crate::{AppId, DataLookup};
+use super::DataLookup;
 
 use crate::sp_std::vec::Vec;
 use codec::{Decode, Encode};
@@ -11,26 +11,22 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct DataLookupItem {
-	pub app_id: AppId,
+	pub app_id: u32,
 	#[codec(compact)]
 	pub start: u32,
 }
 
 impl DataLookupItem {
-	pub fn new(app_id: AppId, start: u32) -> Self {
+	pub fn new(app_id: u32, start: u32) -> Self {
 		Self { app_id, start }
 	}
 }
 
-impl<A, S> From<(A, S)> for DataLookupItem
-where
-	u32: From<A>,
-	u32: From<S>,
-{
-	fn from(value: (A, S)) -> Self {
+impl From<(u32, u32)> for DataLookupItem {
+	fn from(value: (u32, u32)) -> Self {
 		Self {
-			app_id: AppId(value.0.into()),
-			start: value.1.into(),
+			app_id: value.0,
+			start: value.1,
 		}
 	}
 }
@@ -65,7 +61,7 @@ impl CompactDataLookup {
 	fn new_error() -> Self {
 		Self {
 			size: 0,
-			index: [DataLookupItem::new(AppId(0), 0)].to_vec(),
+			index: [DataLookupItem::new(0, 0)].to_vec(),
 		}
 	}
 
@@ -77,7 +73,7 @@ impl CompactDataLookup {
 		let index = lookup
 			.index
 			.iter()
-			.filter(|(id, _)| *id != AppId(0))
+			.filter(|(id, _)| *id != 0)
 			.map(|(id, range)| DataLookupItem::new(*id, range.start))
 			.collect();
 		let size = lookup.index.last().map_or(0, |(_, range)| range.end);

@@ -102,7 +102,7 @@ pub fn verify_equality(
 	rows: &[Option<Vec<u8>>],
 	index: &DataLookup,
 	dimensions: matrix::Dimensions,
-	app_id: AppId,
+	app_id: u32,
 ) -> Result<(Vec<u32>, Vec<u32>), Error> {
 	let ext_rows: usize = dimensions.extended_rows().try_into()?;
 	ensure!(commitments.len() == ext_rows, Error::BadCommitmentsData);

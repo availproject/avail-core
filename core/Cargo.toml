@@ -34,6 +34,7 @@ sha2 = { version = "0.10.7", default-features = false }
 sha3 = { version = "0.10.0", default-features = false }
 
 avail-core-substrate = { path = "./../substrate", default-features = false }
+avail-core-block = { path = "./../block", default-features = false }
 
 [dev-dependencies]
 hex-literal.workspace = true
@@ -67,8 +68,9 @@ runtime = [
 	"serde",
 	"sp-runtime",
 	"sp-runtime-interface",
-	"avail-core-substrate/runtime"
+	"avail-core-substrate/runtime",
+	"avail-core-block/runtime",
 ]
 
 try-runtime = [ "runtime", "sp-runtime/try-runtime" ]
-serde = [ "dep:serde", "hex/serde", "log/serde", "avail-core-substrate/serde" ]
+serde = [ "dep:serde", "hex/serde", "log/serde", "avail-core-substrate/serde", "avail-core-block/serde", ]

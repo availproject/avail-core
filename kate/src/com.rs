@@ -578,7 +578,7 @@ fn commit(
 
 #[cfg(feature = "std")]
 pub fn scalars_to_app_rows(
-	id: AppId,
+	id: u32,
 	lookup: &DataLookup,
 	dimensions: Dimensions,
 	matrix: &DMatrix<BlsScalar>,

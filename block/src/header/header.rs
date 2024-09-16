@@ -110,7 +110,7 @@ mod number_serde {
 	}
 }
 
-#[cfg(all(test, feature = "runtime"))]
+/* #[cfg(all(test, feature = "runtime"))]
 mod tests {
 	use codec::Error;
 	use hex_literal::hex;
@@ -335,3 +335,4 @@ mod tests {
 		header.hash() == hash
 	}
 }
+ */

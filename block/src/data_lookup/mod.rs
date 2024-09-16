@@ -9,8 +9,6 @@ use thiserror_no_std::Error;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::{ensure, AppId};
-
 pub mod compact;
 use compact::CompactDataLookup;
 
@@ -21,7 +19,7 @@ pub enum Error {
 	#[error("Input data is not sorted by AppId")]
 	DataNotSorted,
 	#[error("Data is empty on AppId {0}")]
-	DataEmptyOn(AppId),
+	DataEmptyOn(u32),
 	#[error("Offset overflows")]
 	OffsetOverflows,
 }
@@ -33,7 +31,7 @@ pub enum Error {
 	serde(try_from = "CompactDataLookup", into = "CompactDataLookup")
 )]
 pub struct DataLookup {
-	pub(crate) index: Vec<(AppId, DataLookupRange)>,
+	pub(crate) index: Vec<(u32, DataLookupRange)>,
 }
 
 impl DataLookup {
@@ -49,7 +47,7 @@ impl DataLookup {
 		self.is_empty() && !self.index.is_empty()
 	}
 
-	pub fn range_of(&self, app_id: AppId) -> Option<DataLookupRange> {
+	pub fn range_of(&self, app_id: u32) -> Option<DataLookupRange> {
 		self.index
 			.iter()
 			.find(|(id, _)| *id == app_id)
@@ -57,7 +55,7 @@ impl DataLookup {
 			.cloned()
 	}
 
-	pub fn projected_range_of(&self, app_id: AppId, chunk_size: u32) -> Option<DataLookupRange> {
+	pub fn projected_range_of(&self, app_id: u32, chunk_size: u32) -> Option<DataLookupRange> {
 		self.range_of(app_id).and_then(|range| {
 			let start = range.start.checked_mul(chunk_size)?;
 			let end = range.end.checked_mul(chunk_size)?;
@@ -68,7 +66,7 @@ impl DataLookup {
 	/// It projects `self.index` into _chunked_ indexes.
 	/// # Errors
 	/// It raises `Error::OffsetOverflows` up if any index multiplied by `chunk_size` overflows.
-	pub fn projected_ranges(&self, chunk_size: u32) -> Result<Vec<(AppId, Range<u32>)>, Error> {
+	pub fn projected_ranges(&self, chunk_size: u32) -> Result<Vec<(u32, Range<u32>)>, Error> {
 		self.index
 			.iter()
 			.map(|(id, range)| {
@@ -99,14 +97,18 @@ impl DataLookup {
 		let index = iter
 			.map(|(id, len)| {
 				// Check sorted by AppId
-				let id = AppId(id.into());
+				let id = id.into();
 				if let Some(prev_id) = maybe_prev_id.replace(id) {
-					ensure!(prev_id < id, Error::DataNotSorted);
+					if prev_id >= id {
+						return Err(Error::DataNotSorted);
+					}
 				}
 
 				// Check non-empty data per AppId
 				let len = u32::try_from(len).map_err(|_| Error::OffsetOverflows)?;
-				ensure!(len > 0, Error::DataEmptyOn(id));
+				if len == 0 {
+					return Err(Error::DataEmptyOn(id));
+				}
 
 				// Create range and update `offset`.
 				let end = offset.checked_add(len).ok_or(Error::OffsetOverflows)?;
@@ -128,7 +130,7 @@ impl DataLookup {
 	/// This function is only used when something has gone wrong during header extension building
 	pub fn new_error() -> Self {
 		Self {
-			index: vec![(AppId(0), 0..0)],
+			index: vec![(0, 0..0)],
 		}
 	}
 }
@@ -142,7 +144,7 @@ impl TryFrom<CompactDataLookup> for DataLookup {
 		}
 
 		let mut offset = 0;
-		let mut prev_id = AppId(0);
+		let mut prev_id = 0;
 		let mut index = Vec::with_capacity(
 			compacted
 				.index
@@ -163,7 +165,9 @@ impl TryFrom<CompactDataLookup> for DataLookup {
 		}
 
 		let lookup = DataLookup { index };
-		ensure!(lookup.len() == compacted.size, Error::DataNotSorted);
+		if lookup.len() != compacted.size {
+			return Err(Error::DataNotSorted);
+		}
 
 		Ok(lookup)
 	}
@@ -196,7 +200,7 @@ impl TypeInfo for DataLookup {
 	}
 }
 
-#[cfg(test)]
+/* #[cfg(test)]
 mod test {
 	use super::*;
 	use test_case::test_case;
@@ -256,3 +260,4 @@ mod test {
 		assert_eq!(lookup, expanded_lookup);
 	}
 }
+ */

@@ -8,7 +8,7 @@ use avail_core::{
 	constants::kate::{CHUNK_SIZE, DATA_CHUNK_SIZE},
 	ensure,
 };
-use avail_core::{data_lookup::Error as DataLookupError, AppId, DataLookup};
+use avail_core::{data_lookup::Error as DataLookupError, DataLookup};
 
 use avail_core::sp_std::prelude::*;
 use thiserror_no_std::Error;
@@ -49,7 +49,7 @@ pub enum ReconstructionError {
 	#[error("Rows must be power of two")]
 	InvalidRowCount,
 	#[error("Missing AppId {0}")]
-	MissingId(AppId),
+	MissingId(u32),
 	#[error("DataLookup {0}")]
 	DataLookup(#[from] DataLookupError),
 	#[error("Some cells are from different columns")]
@@ -130,7 +130,7 @@ fn map_cells(
 pub fn app_specific_rows(
 	index: &DataLookup,
 	dimensions: matrix::Dimensions,
-	app_id: AppId,
+	app_id: u32,
 ) -> Vec<u32> {
 	index
 		.range_of(app_id)
@@ -150,7 +150,7 @@ pub fn app_specific_rows(
 pub fn app_specific_cells(
 	index: &DataLookup,
 	dimensions: matrix::Dimensions,
-	id: AppId,
+	id: u32,
 ) -> Option<Vec<matrix::Position>> {
 	index
 		.range_of(id)
@@ -175,7 +175,7 @@ pub fn reconstruct_app_extrinsics(
 	index: &DataLookup,
 	dimensions: matrix::Dimensions,
 	cells: Vec<data::DataCell>,
-	app_id: AppId,
+	app_id: u32,
 ) -> Result<AppData, ReconstructionError> {
 	let data = reconstruct_available(dimensions, cells)?;
 	const_assert!(CHUNK_SIZE as u64 <= u32::MAX as u64);
@@ -201,7 +201,7 @@ pub fn reconstruct_extrinsics(
 	lookup: &DataLookup,
 	dimensions: matrix::Dimensions,
 	cells: Vec<data::DataCell>,
-) -> Result<Vec<(AppId, AppData)>, ReconstructionError> {
+) -> Result<Vec<(u32, AppData)>, ReconstructionError> {
 	let data = reconstruct_available(dimensions, cells)?;
 
 	const_assert!(CHUNK_SIZE as u64 <= u32::MAX as u64);
@@ -296,7 +296,7 @@ pub fn decode_app_extrinsics(
 	index: &DataLookup,
 	dimensions: matrix::Dimensions,
 	cells: Vec<data::DataCell>,
-	app_id: AppId,
+	app_id: u32,
 ) -> Result<AppData, ReconstructionError> {
 	let positions = app_specific_cells(index, dimensions, app_id).unwrap_or_default();
 	if positions.is_empty() {
@@ -361,9 +361,9 @@ impl std::error::Error for UnflattenError {
 #[cfg(feature = "std")]
 // Removes both extrinsics and block padding (iec_9797 and seeded random data)
 pub fn unflatten_padded_data(
-	ranges: Vec<(AppId, AppDataRange)>,
+	ranges: Vec<(u32, AppDataRange)>,
 	data: Vec<u8>,
-) -> Result<Vec<(AppId, AppData)>, UnflattenError> {
+) -> Result<Vec<(u32, AppData)>, UnflattenError> {
 	ensure!(data.len() % CHUNK_SIZE == 0, UnflattenError::InvalidLen);
 
 	fn extract_encoded_extrinsic(range_data: &[u8]) -> SparseSliceRead {
@@ -607,7 +607,7 @@ mod tests {
 		let index = DataLookup::from_id_and_len_iter(id_lens.into_iter()).unwrap();
 		let dimensions = Dimensions::new(8, 4).unwrap();
 
-		app_specific_rows(&index, dimensions, AppId(id))
+		app_specific_rows(&index, dimensions, id)
 	}
 
 	fn to_matrix_pos(data: &[(u32, u16)]) -> Vec<Position> {
@@ -622,7 +622,7 @@ mod tests {
 		let index = DataLookup::from_id_and_len_iter(id_lens.into_iter()).unwrap();
 		let dimensions = Dimensions::new(4, 4).unwrap();
 
-		app_specific_cells(&index, dimensions, AppId(app_id)).unwrap_or_default()
+		app_specific_cells(&index, dimensions, app_id).unwrap_or_default()
 	}
 
 	#[test]

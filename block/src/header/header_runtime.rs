@@ -7,9 +7,6 @@ use sp_runtime::traits::{BlakeTwo256, Header as HeaderT};
 use sp_runtime::Digest;
 use sp_runtime_interface::pass_by::{Codec as PassByCodecImpl, PassBy};
 
-#[cfg(feature = "std")]
-const LOG_TARGET: &str = "header";
-
 impl PassBy for Header {
 	type PassBy = PassByCodecImpl<Header>;
 }
@@ -56,8 +53,6 @@ impl HeaderT for Header {
 	}
 
 	fn digest_mut(&mut self) -> &mut Digest {
-		#[cfg(feature = "std")]
-		log::debug!(target: LOG_TARGET, "Retrieving mutable reference to digest");
 		&mut self.digest
 	}
 

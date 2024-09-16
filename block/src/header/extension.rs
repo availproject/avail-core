@@ -1,7 +1,7 @@
 use super::super::kate::v3::KateCommitment;
 use super::HeaderVersion;
+use crate::data_lookup::DataLookup;
 use crate::sp_std::{vec, vec::Vec};
-use crate::DataLookup;
 use codec::{Decode, Encode};
 use sp_core::H256;
 
@@ -48,22 +48,22 @@ impl HeaderExtension {
 		}
 	}
 }
+
+#[cfg(feature = "runtime")]
+
 impl HeaderExtension {
-	#[cfg(feature = "runtime")]
 	pub fn get_empty_header(data_root: H256, version: HeaderVersion) -> HeaderExtension {
 		match version {
 			HeaderVersion::V3 => v3::HeaderExtension::get_empty_header(data_root).into(),
 		}
 	}
 
-	#[cfg(feature = "runtime")]
 	pub fn get_faulty_header(data_root: H256, version: HeaderVersion) -> HeaderExtension {
 		match version {
 			HeaderVersion::V3 => v3::HeaderExtension::get_faulty_header(data_root).into(),
 		}
 	}
 
-	#[cfg(feature = "runtime")]
 	pub fn get_header_version(&self) -> HeaderVersion {
 		match self {
 			HeaderExtension::V3(_) => HeaderVersion::V3,

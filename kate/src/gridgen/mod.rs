@@ -61,7 +61,7 @@ pub enum AppRowError {
 	#[error("Original dimensions are not divisible by current ones")]
 	OrigDimNotDivisible,
 	#[error("AppId({0}) not found")]
-	IdNotFound(AppId),
+	IdNotFound(u32),
 	#[error("Lineal index overflows")]
 	LinealIndexOverflows,
 }
@@ -156,7 +156,7 @@ impl EvaluationGrid {
 	#[allow(clippy::type_complexity)]
 	pub fn app_rows(
 		&self,
-		app_id: AppId,
+		app_id: u32,
 		maybe_orig_dims: Option<Dimensions>,
 	) -> Result<Option<Vec<(usize, Vec<ArkScalar>)>>, AppRowError> {
 		let dims = self.dims();

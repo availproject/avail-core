@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["core", "kate/recovery", "kate", "substrate"]
+members = ["core", "kate/recovery", "kate", "substrate", "block"]
 
 [workspace.dependencies]
 # Parity
