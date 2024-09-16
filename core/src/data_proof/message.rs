@@ -3,7 +3,7 @@ use super::BoundedData;
 use crate::sp_std::{vec, vec::Vec};
 use codec::{Decode, Encode};
 use derive_more::{Constructor, From};
-use sp_core::H256;
+use primitive_types::H256;
 
 use ethabi_decode::{encode, Token, U256};
 

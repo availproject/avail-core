@@ -2,7 +2,7 @@
 use super::HeaderExtension;
 use crate::sp_std::fmt::Debug;
 use codec::{Decode, Encode};
-use sp_core::H256;
+use primitive_types::H256;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -114,7 +114,7 @@ mod number_serde {
 mod tests {
 	use codec::Error;
 	use hex_literal::hex;
-	use sp_core::H256;
+	use primitive_types::H256;
 	use sp_runtime::{traits::BlakeTwo256, DigestItem};
 	use test_case::test_case;
 

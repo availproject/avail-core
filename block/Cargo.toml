@@ -15,9 +15,10 @@ static_assertions.workspace = true
 # Parity
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive", "max-encoded-len"] }
 scale-info.workspace = true
+primitive-types = { version = "0.12.2",  default-features = false, features = ["codec"] }
 
 # TODO Marko
-sp-core.workspace = true
+sp-debug-derive.workspace = true
 sp-runtime = { workspace = true, optional = true }
 sp-runtime-interface = { workspace = true, optional = true }
 
@@ -30,15 +31,17 @@ std = [
 	"hash256-std-hasher/std",
 	"scale-info/std",
 	"serde/std",
-	"sp-core/std",
+	"sp-debug-derive/std",
 	"sp-runtime-interface?/std",
 	"sp-runtime?/std",
+	"primitive-types/std",
 ]
 runtime = [
 	"serde",
 	"sp-runtime",
 	"sp-runtime-interface",
+	"primitive-types/scale-info"
 ]
 
 try-runtime = [ "runtime", "sp-runtime/try-runtime" ]
-serde = [ "dep:serde", "avail-core-substrate/serde" ]
+serde = [ "dep:serde", "avail-core-substrate/serde", "primitive-types/serde" ]

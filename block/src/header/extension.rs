@@ -3,14 +3,14 @@ use super::HeaderVersion;
 use crate::data_lookup::DataLookup;
 use crate::sp_std::{vec, vec::Vec};
 use codec::{Decode, Encode};
-use sp_core::H256;
+use primitive_types::H256;
 
 #[cfg(feature = "runtime")]
 use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "runtime")]
-use sp_core::RuntimeDebug;
+use sp_debug_derive::RuntimeDebug;
 #[cfg(feature = "runtime")]
 use sp_runtime_interface::pass_by::PassByCodec;
 

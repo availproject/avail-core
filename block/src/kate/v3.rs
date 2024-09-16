@@ -1,7 +1,7 @@
 use crate::sp_std::{fmt, vec::Vec};
 use avail_core_substrate::hex_display::HexDisplay;
 use codec::{Decode, Encode};
-use sp_core::H256;
+use primitive_types::H256;
 
 #[cfg(feature = "runtime")]
 use scale_info::TypeInfo;
@@ -38,7 +38,6 @@ impl KateCommitment {
 	}
 }
 
-#[cfg(feature = "serde")]
 impl fmt::Debug for KateCommitment {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		let commitment: &[u8] = self.commitment.as_slice();

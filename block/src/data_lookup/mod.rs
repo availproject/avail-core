@@ -2,9 +2,13 @@ use crate::sp_std::vec;
 use crate::sp_std::{ops::Range, vec::Vec};
 use codec::{Decode, Encode, Input};
 use core::convert::TryFrom;
-use scale_info::{Type, TypeInfo};
-use sp_core::RuntimeDebug;
 use thiserror_no_std::Error;
+
+#[cfg(feature = "runtime")]
+use {
+	scale_info::{Type, TypeInfo},
+	sp_debug_derive::RuntimeDebug,
+};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -24,8 +28,10 @@ pub enum Error {
 	OffsetOverflows,
 }
 
-#[derive(PartialEq, Eq, Clone, Default, RuntimeDebug)]
+#[derive(PartialEq, Eq, Clone, Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
+#[cfg_attr(not(feature = "runtime"), derive(Debug))]
 #[cfg_attr(
 	feature = "serde",
 	serde(try_from = "CompactDataLookup", into = "CompactDataLookup")
@@ -192,6 +198,7 @@ impl Decode for DataLookup {
 	}
 }
 
+#[cfg(feature = "runtime")]
 impl TypeInfo for DataLookup {
 	type Identity = Self;
 

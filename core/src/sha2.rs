@@ -11,7 +11,7 @@ use {scale_info::TypeInfo, sp_core::RuntimeDebug};
 pub struct ShaTwo256 {}
 
 impl Hasher for ShaTwo256 {
-	type Out = sp_core::H256;
+	type Out = primitive_types::H256;
 	type StdHasher = hash256_std_hasher::Hash256StdHasher;
 	const LENGTH: usize = 32;
 
@@ -29,7 +29,7 @@ pub mod hash {
 	use sp_trie::{LayoutV0, LayoutV1, TrieConfiguration as _};
 
 	impl sp_runtime::traits::Hash for ShaTwo256 {
-		type Output = sp_core::H256;
+		type Output = primitive_types::H256;
 
 		fn trie_root(input: Vec<(Vec<u8>, Vec<u8>)>, version: StateVersion) -> Self::Output {
 			match version {

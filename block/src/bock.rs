@@ -10,7 +10,7 @@ use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "runtime")]
-use sp_core::RuntimeDebug;
+use sp_debug_derive::RuntimeDebug;
 
 /// Abstraction over a substrate block.
 #[derive(PartialEq, Eq, Clone, Encode, Decode)]

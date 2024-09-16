@@ -3,7 +3,7 @@
 use crate::sp_std::{fmt, prelude::*};
 use codec::{Decode, Encode};
 
-use sp_core::RuntimeDebug;
+use sp_debug_derive::RuntimeDebug;
 use sp_runtime::traits::{Block as BlockT, NumberFor};
 
 /// Something to identify a block.
