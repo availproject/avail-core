@@ -1,10 +1,14 @@
+#![cfg(feature = "runtime")]
+
 use crate::sp_std::{fmt, prelude::*};
 use codec::{Decode, Encode};
+
 use sp_core::RuntimeDebug;
 use sp_runtime::traits::{Block as BlockT, NumberFor};
 
 /// Something to identify a block.
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode)]
+#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
 pub enum BlockId<Block: BlockT> {
 	/// Identify by block header hash.
 	Hash(Block::Hash),

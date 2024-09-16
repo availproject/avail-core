@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["core", "kate/recovery", "kate"]
+members = ["core", "kate/recovery", "kate", "substrate"]
 
 [workspace.dependencies]
 # Parity
@@ -30,6 +30,7 @@ criterion = { version = "0.4", default-features = false }
 
 # Serialization
 serde = { version = "1.0.196", default-features = false, features = ["derive", "alloc"] }
+impl-serde = { version = "0.5.0", default-features = false }
 hex = { version = "0.4", default-features = false, features = ["alloc", "serde"] }
 serde_json = { version = "1" }
 dusk-bytes = { version = "0.1.6", default-features = false }

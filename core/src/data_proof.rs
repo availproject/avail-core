@@ -1,15 +1,16 @@
 pub mod message;
 
 use crate::sp_std::vec::Vec;
+use binary_merkle_tree::MerkleProof;
 use bounded_collections::BoundedVec;
 use codec::{Decode, Encode};
 use derive_more::Constructor;
 use sp_core::{ConstU32, H256};
 
+#[cfg(feature = "runtime")]
+use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "runtime")]
-use {binary_merkle_tree::MerkleProof, scale_info::TypeInfo};
 
 /// Max data supported on bridge (Ethereum calldata limits)
 pub const BOUNDED_DATA_MAX_LENGTH: u32 = 102_400;
@@ -71,7 +72,7 @@ impl TxDataRoots {
 	pub fn new(submitted: H256, bridged: H256) -> Self {
 		// keccak_256(submitted, bridged)
 		let sub_roots = [submitted.to_fixed_bytes(), bridged.to_fixed_bytes()].concat();
-		let root = crate::from_substrate::keccak_256(sub_roots.as_slice()).into();
+		let root = avail_core_substrate::keccak_256(sub_roots.as_slice()).into();
 
 		Self {
 			data_root: root,
@@ -110,7 +111,7 @@ impl DataProof {
 	pub fn new(sub_trie: SubTrie, roots: TxDataRoots, m_proof: MerkleProof<H256, Vec<u8>>) -> Self {
 		let leaf = match sub_trie {
 			SubTrie::DataSubmit => H256::from_slice(m_proof.leaf.as_slice()),
-			SubTrie::Bridge => crate::from_substrate::keccak_256(m_proof.leaf.as_slice()).into(),
+			SubTrie::Bridge => avail_core_substrate::keccak_256(m_proof.leaf.as_slice()).into(),
 		};
 
 		Self {

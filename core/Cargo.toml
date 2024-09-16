@@ -18,7 +18,7 @@ thiserror-no-std.workspace = true
 tiny-keccak.workspace = true
 
 # Parity
-binary-merkle-tree = { workspace = true, optional = true }
+binary-merkle-tree = { workspace = true }
 bounded-collections.workspace = true
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive", "max-encoded-len"] }
 scale-info.workspace = true
@@ -33,6 +33,8 @@ blake2b_simd = { version = "1.0.2", default-features = false }
 sha2 = { version = "0.10.7", default-features = false }
 sha3 = { version = "0.10.0", default-features = false }
 
+avail-core-substrate = { path = "./../substrate", default-features = false }
+
 [dev-dependencies]
 hex-literal.workspace = true
 rand.workspace = true
@@ -44,7 +46,7 @@ trybuild = "1.0.96"
 [features]
 default = [ "std" ]
 std = [
-	"binary-merkle-tree?/std",
+	"binary-merkle-tree/std",
 	"bounded-collections/std",
 	"codec/std",
 	"derive_more/display",
@@ -61,12 +63,12 @@ std = [
 	"sp-trie/std",
 ]
 runtime = [
-	"binary-merkle-tree",
 	"frame-support",
 	"serde",
 	"sp-runtime",
 	"sp-runtime-interface",
+	"avail-core-substrate/runtime"
 ]
 
 try-runtime = [ "runtime", "sp-runtime/try-runtime" ]
-serde = [ "dep:serde", "hex/serde", "log/serde" ]
+serde = [ "dep:serde", "hex/serde", "log/serde", "avail-core-substrate/serde" ]

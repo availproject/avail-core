@@ -1,8 +1,8 @@
 //! Generic implementation of a DA block and associated items.
 
 use super::header::Header;
-use crate::from_substrate::Justifications;
 use crate::sp_std::prelude::*;
+use avail_core_substrate::Justifications;
 use codec::{Codec, Decode, Encode};
 
 #[cfg(feature = "runtime")]
@@ -29,10 +29,12 @@ where
 }
 
 /// Abstraction over a substrate block and justification.
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
+
 pub struct SignedBlock<Block: Codec> {
 	/// Full block.
 	pub block: Block,

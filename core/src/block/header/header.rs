@@ -1,14 +1,16 @@
 //! Data-Avail implementation of a block header.
 use super::HeaderExtension;
-use crate::sp_std::{convert::TryFrom, fmt::Debug};
+use crate::sp_std::fmt::Debug;
 use codec::{Decode, Encode};
-use sp_core::{H256, U256};
-use sp_runtime::{traits::BlockNumber, Digest};
+use sp_core::H256;
 
-#[cfg(feature = "runtime")]
-use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "runtime")]
+use {scale_info::TypeInfo, sp_runtime::Digest, sp_runtime_interface::pass_by::PassByCodec};
+
+#[cfg(not(feature = "runtime"))]
+use avail_core_substrate::digest::Digest;
 
 /// Abstraction over a block header for a substrate chain.
 #[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, Default)]
@@ -77,29 +79,34 @@ impl Header {
 	}
 } */
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Encode, Decode)]
+#[cfg_attr(feature = "runtime", derive(TypeInfo, PassByCodec))]
+pub enum HeaderVersion {
+	V3 = 2, // Current one
+}
+
 /// This module adds serialization support to `Header::number` field.
 #[cfg(feature = "serde")]
 mod number_serde {
-	use serde::{de::Error, Deserializer, Serializer};
+	use serde::{Deserializer, Serializer};
 
 	use super::*;
 
-	pub fn serialize<N, S>(n: &N, serializer: S) -> Result<S::Ok, S::Error>
+	pub fn serialize<S>(n: &u32, serializer: S) -> Result<S::Ok, S::Error>
 	where
-		N: BlockNumber,
 		S: Serializer,
 	{
-		let u256: U256 = (*n).into();
-		serde::Serialize::serialize(&u256, serializer)
+		serde::Serialize::serialize(&n, serializer)
 	}
 
-	pub fn deserialize<'de, D, T>(d: D) -> Result<T, D::Error>
+	pub fn deserialize<'de, D>(d: D) -> Result<u32, D::Error>
 	where
-		T: BlockNumber,
 		D: Deserializer<'de>,
 	{
-		let u256: U256 = serde::Deserialize::deserialize(d)?;
-		TryFrom::try_from(u256).map_err(|_| Error::custom("Try from failed"))
+		let buf = String::deserialize(d)?;
+		let without_prefix = buf.trim_start_matches("0x");
+		// TODO Marko
+		Ok(u32::from_str_radix(without_prefix, 16).unwrap())
 	}
 }
 

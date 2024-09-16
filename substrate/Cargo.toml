@@ -1,0 +1,29 @@
+[package]
+name = "avail-core-substrate"
+version = "0.6.2"
+authors = []
+edition = "2021"
+license = "Apache-2.0"
+
+[dependencies]
+sp-core = { workspace = true, optional = true }
+
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+impl-serde = { workspace = true, optional = true }
+
+bounded-collections.workspace = true
+codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive", "max-encoded-len"] }
+scale-info.workspace = true
+
+blake2b_simd = { version = "1.0.2", default-features = false }
+sha2 = { version = "0.10.7", default-features = false }
+sha3 = { version = "0.10.0", default-features = false }
+
+[features]
+default = [ "serde" ]
+
+runtime = [
+	"dep:sp-core"
+]
+serde = [ "dep:serde", "dep:serde_json", "dep:impl-serde" ]

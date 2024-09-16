@@ -18,6 +18,7 @@ use sp_runtime_interface::pass_by::PassByCodec;
 #[derive(PartialEq, Eq, Clone, Encode, Decode)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "runtime", derive(PassByCodec, RuntimeDebug, TypeInfo))]
+#[cfg_attr(not(feature = "runtime"), derive(Debug))]
 #[repr(u8)]
 pub enum HeaderExtension {
 	V3(v3::HeaderExtension) = 2,
@@ -90,6 +91,7 @@ pub mod v3 {
 	#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 	#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 	#[cfg_attr(feature = "runtime", derive(RuntimeDebug, TypeInfo))]
+	#[cfg_attr(not(feature = "runtime"), derive(Debug))]
 	pub struct HeaderExtension {
 		pub app_lookup: DataLookup,
 		pub commitment: KateCommitment,

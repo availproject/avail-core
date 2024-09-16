@@ -326,7 +326,7 @@ where
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		self.0.using_encoded(|payload| {
 			if payload.len() > 256 {
-				f(&crate::from_substrate::blake2_256(payload)[..])
+				f(&avail_core_substrate::blake2_256(payload)[..])
 			} else {
 				f(payload)
 			}

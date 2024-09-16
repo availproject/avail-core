@@ -37,6 +37,8 @@ rayon = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 
+avail-core-substrate = { path = "./../substrate", default-features = false }
+
 [dev-dependencies]
 criterion.workspace = true
 proptest.workspace = true
@@ -67,7 +69,8 @@ std = [
 	"sp-core/std",
 ]
 
-serde = [ "dep:serde" ]
+serde = [ "dep:serde", "avail-core-substrate/serde" ]
+runtime = [ "avail-core-substrate/runtime" ]
 
 extended-columns = []
 maximum-block-size = []

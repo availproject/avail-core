@@ -10,8 +10,7 @@ use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use sp_core::RuntimeDebug;
 
-pub mod from_substrate;
-pub use from_substrate::sp_std;
+pub use avail_core_substrate::sp_std;
 
 pub mod opaque_extrinsic;
 pub use opaque_extrinsic::*;

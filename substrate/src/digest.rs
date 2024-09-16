@@ -26,12 +26,13 @@ use super::sp_std::prelude::*;
 use codec::{Decode, Encode, Error, Input};
 
 #[cfg(feature = "runtime")]
-use scale_info::{
-	build::{Fields, Variants},
-	Path, Type, TypeInfo,
+use {
+	scale_info::{
+		build::{Fields, Variants},
+		Path, Type, TypeInfo,
+	},
+	sp_core::RuntimeDebug,
 };
-#[cfg(feature = "runtime")]
-use sp_core::RuntimeDebug;
 
 /// Consensus engine unique ID.
 pub type ConsensusEngineId = [u8; 4];
@@ -40,6 +41,7 @@ pub type ConsensusEngineId = [u8; 4];
 #[derive(PartialEq, Eq, Clone, Encode, Decode, Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "runtime", derive(RuntimeDebug, TypeInfo))]
+#[cfg_attr(not(feature = "runtime"), derive(Debug))]
 pub struct Digest {
 	/// A list of logs in the digest.
 	pub logs: Vec<DigestItem>,
@@ -74,7 +76,9 @@ impl Digest {
 
 /// Digest item that is able to encode/decode 'system' digest items and
 /// provide opaque access to other items.
-#[derive(PartialEq, Eq, Clone, RuntimeDebug)]
+#[derive(PartialEq, Eq, Clone)]
+#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
+#[cfg_attr(not(feature = "runtime"), derive(Debug))]
 pub enum DigestItem {
 	/// A pre-runtime digest.
 	///
@@ -117,7 +121,7 @@ impl serde::Serialize for DigestItem {
 	where
 		S: serde::Serializer,
 	{
-		self.using_encoded(|bytes| sp_core::bytes::serialize(bytes, seq))
+		self.using_encoded(|bytes| impl_serde::serialize::serialize(bytes, seq))
 	}
 }
 
@@ -127,7 +131,7 @@ impl<'a> serde::Deserialize<'a> for DigestItem {
 	where
 		D: serde::Deserializer<'a>,
 	{
-		let r = sp_core::bytes::deserialize(de)?;
+		let r = impl_serde::serialize::deserialize(de)?;
 		Decode::decode(&mut &r[..])
 			.map_err(|e| serde::de::Error::custom(format!("Decode error: {}", e)))
 	}
@@ -184,7 +188,8 @@ impl TypeInfo for DigestItem {
 
 /// A 'referencing view' for digest item. Does not own its contents. Used by
 /// final runtime implementations for encoding/decoding its log items.
-#[derive(PartialEq, Eq, Clone, RuntimeDebug)]
+#[derive(PartialEq, Eq, Clone)]
+#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
 pub enum DigestItemRef<'a> {
 	/// A pre-runtime digest.
 	///
