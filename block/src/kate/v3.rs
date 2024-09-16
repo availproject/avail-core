@@ -1,15 +1,12 @@
-use crate::sp_std::vec::Vec;
+use crate::sp_std::{fmt, vec::Vec};
+use avail_core_substrate::hex_display::HexDisplay;
 use codec::{Decode, Encode};
 use sp_core::H256;
 
-#[cfg(feature = "serde")]
-use crate::sp_std::fmt;
 #[cfg(feature = "runtime")]
 use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "serde")]
-use sp_core::hexdisplay::HexDisplay;
 
 /// Customized extrinsics root to save the commitment.
 #[derive(Default, Clone, Encode, Decode, PartialEq, Eq)]
@@ -44,14 +41,14 @@ impl KateCommitment {
 #[cfg(feature = "serde")]
 impl fmt::Debug for KateCommitment {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		let commitment = self.commitment.as_slice();
-		let data_root = self.data_root.as_ref();
+		let commitment: &[u8] = self.commitment.as_slice();
+		let data_root: &[u8] = self.data_root.as_ref();
 
 		f.debug_struct("KateCommitment(v3)")
 			.field("rows", &self.rows)
 			.field("cols", &self.cols)
-			.field("commitment", &HexDisplay::from(&commitment))
-			.field("data_root", &HexDisplay::from(&data_root))
+			.field("commitment", &HexDisplay(commitment))
+			.field("data_root", &HexDisplay(data_root))
 			.finish()
 	}
 }

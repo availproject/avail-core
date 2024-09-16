@@ -1,4 +1,5 @@
 pub mod digest;
+pub mod hex_display;
 pub mod justifications;
 pub mod sp_std;
 

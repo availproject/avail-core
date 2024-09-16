@@ -1,4 +1,5 @@
 use crate::sp_std::vec::Vec;
+use avail_core_substrate::hex_display::HexDisplay;
 use codec::{Decode, Encode};
 use scale_info::prelude::format;
 use scale_info::TypeInfo;
@@ -22,7 +23,7 @@ impl OpaqueExtrinsic {
 impl crate::sp_std::fmt::Debug for OpaqueExtrinsic {
 	#[cfg(feature = "std")]
 	fn fmt(&self, fmt: &mut crate::sp_std::fmt::Formatter) -> crate::sp_std::fmt::Result {
-		write!(fmt, "{}", sp_core::hexdisplay::HexDisplay::from(&self.0))
+		write!(fmt, "{}", HexDisplay(&self.0))
 	}
 
 	#[cfg(not(feature = "std"))]
