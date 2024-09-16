@@ -5,7 +5,8 @@ use binary_merkle_tree::MerkleProof;
 use bounded_collections::BoundedVec;
 use codec::{Decode, Encode};
 use derive_more::Constructor;
-use sp_core::{ConstU32, H256};
+use primitive_types::H256;
+use sp_core::ConstU32;
 
 #[cfg(feature = "runtime")]
 use scale_info::TypeInfo;

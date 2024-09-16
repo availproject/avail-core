@@ -1,6 +1,6 @@
+use hash_db::Hasher;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use sp_core::Hasher;
 #[cfg(feature = "runtime")]
 use {scale_info::TypeInfo, sp_debug_derive::RuntimeDebug};
 

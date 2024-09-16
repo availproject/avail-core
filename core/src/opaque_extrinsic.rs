@@ -38,7 +38,9 @@ impl ::serde::Serialize for OpaqueExtrinsic {
 	where
 		S: ::serde::Serializer,
 	{
-		codec::Encode::using_encoded(&self.0, |bytes| ::sp_core::bytes::serialize(bytes, seq))
+		codec::Encode::using_encoded(&self.0, |bytes| {
+			impl_serde::serialize::serialize(bytes, seq)
+		})
 	}
 }
 
@@ -48,7 +50,7 @@ impl<'a> ::serde::Deserialize<'a> for OpaqueExtrinsic {
 	where
 		D: ::serde::Deserializer<'a>,
 	{
-		let r = ::sp_core::bytes::deserialize(de)?;
+		let r = impl_serde::serialize::deserialize(de)?;
 		Decode::decode(&mut &r[..])
 			.map_err(|e| ::serde::de::Error::custom(format!("Decode error: {e}")))
 	}

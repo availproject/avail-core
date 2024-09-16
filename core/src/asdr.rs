@@ -432,7 +432,7 @@ where
 		S: ::serde::Serializer,
 	{
 		let encoded = self.encode();
-		sp_core::bytes::serialize(&encoded, s)
+		impl_serde::serialize::serialize(&encoded, s)
 	}
 }
 
@@ -448,7 +448,7 @@ where
 	where
 		D: serde::Deserializer<'a>,
 	{
-		let r = sp_core::bytes::deserialize(de)?;
+		let r = impl_serde::serialize::deserialize(de)?;
 		Decode::decode(&mut &r[..])
 			.map_err(|e| serde::de::Error::custom(format!("Decode error: {}", e)))
 	}
