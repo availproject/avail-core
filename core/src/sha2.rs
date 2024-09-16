@@ -1,11 +1,13 @@
-use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use sp_core::{Hasher, RuntimeDebug};
+use sp_core::Hasher;
+#[cfg(feature = "runtime")]
+use {scale_info::TypeInfo, sp_core::RuntimeDebug};
 
 /// Sha2 256 wrapper which supports `binary-merkle-tree::Hasher`.
-#[derive(PartialEq, Eq, Clone, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "runtime", derive(RuntimeDebug, TypeInfo))]
 pub struct ShaTwo256 {}
 
 impl Hasher for ShaTwo256 {

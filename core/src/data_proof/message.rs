@@ -3,26 +3,32 @@ use super::BoundedData;
 use crate::sp_std::{vec, vec::Vec};
 use codec::{Decode, Encode};
 use derive_more::{Constructor, From};
-use scale_info::TypeInfo;
 use sp_core::H256;
 
 use ethabi_decode::{encode, Token, U256};
 
+#[cfg(feature = "runtime")]
+use scale_info::TypeInfo;
+
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Encode, Decode, PartialEq, Eq, TypeInfo)]
+#[derive(Debug, Clone, Encode, Decode, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
+#[cfg_attr(feature = "runtime", derive(TypeInfo))]
+
 pub enum MessageType {
 	ArbitraryMessage,
 	FungibleToken,
 }
 
 /// Possible types of Messages allowed by Avail to bridge to other chains.
-#[derive(Debug, Clone, Encode, Decode, PartialEq, Eq, From, TypeInfo)]
+#[derive(Debug, Clone, Encode, Decode, PartialEq, Eq, From)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
+#[cfg_attr(feature = "runtime", derive(TypeInfo))]
+
 pub enum Message {
 	ArbitraryMessage(BoundedData),
 	FungibleToken {
@@ -56,9 +62,10 @@ impl Message {
 }
 
 /// Message type used to bridge between Avail & other chains
-#[derive(Debug, Clone, Encode, Decode, PartialEq, Eq, Constructor, TypeInfo)]
+#[derive(Debug, Clone, Encode, Decode, PartialEq, Eq, Constructor)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
+#[cfg_attr(feature = "runtime", derive(TypeInfo))]
 pub struct AddressedMessage {
 	pub message: Message,
 	pub from: H256,
