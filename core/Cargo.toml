@@ -29,6 +29,7 @@ sp-core.workspace = true
 sp-runtime = { workspace = true, optional = true }
 sp-runtime-interface = { workspace = true, optional = true }
 sp-trie.workspace = true
+sp-debug-derive.workspace = true
 
 blake2b_simd = { workspace = true, default-features = false  }
 sha2 = { workspace = true, default-features = false  }

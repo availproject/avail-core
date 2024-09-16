@@ -8,7 +8,6 @@ use derive_more::{Add, Constructor, Deref, Into, Mul};
 use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use sp_core::RuntimeDebug;
 
 pub use avail_core_substrate::sp_std;
 
@@ -66,15 +65,14 @@ pub enum InvalidTransactionCustomId {
 	Ord,
 	Add,
 	Deref,
-	TypeInfo,
 	Encode,
 	Decode,
 	Default,
 	Into,
 	MaxEncodedLen,
-	RuntimeDebug,
 )]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "runtime", derive(sp_debug_derive::RuntimeDebug, TypeInfo))]
 pub struct AppId(#[codec(compact)] pub u32);
 impl AppId {
 	pub fn zero() -> Self {

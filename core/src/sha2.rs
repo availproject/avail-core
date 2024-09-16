@@ -2,7 +2,7 @@
 use serde::{Deserialize, Serialize};
 use sp_core::Hasher;
 #[cfg(feature = "runtime")]
-use {scale_info::TypeInfo, sp_core::RuntimeDebug};
+use {scale_info::TypeInfo, sp_debug_derive::RuntimeDebug};
 
 /// Sha2 256 wrapper which supports `binary-merkle-tree::Hasher`.
 #[derive(PartialEq, Eq, Clone)]

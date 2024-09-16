@@ -7,7 +7,7 @@ use derive_more::Constructor;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "runtime")]
-use {scale_info::TypeInfo, sp_core::RuntimeDebug};
+use {scale_info::TypeInfo, sp_debug_derive::RuntimeDebug};
 
 use crate::AppId;
 
