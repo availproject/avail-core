@@ -23,6 +23,9 @@ sha3 = { version = "0.10.0", default-features = false }
 [features]
 default = [ "serde" ]
 
+std = [
+	"sp-core?/std"
+]
 runtime = [
 	"dep:sp-core"
 ]
