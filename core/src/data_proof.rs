@@ -3,10 +3,10 @@ pub mod message;
 use crate::sp_std::vec::Vec;
 use binary_merkle_tree::MerkleProof;
 use bounded_collections::BoundedVec;
+use bounded_collections::ConstU32;
 use codec::{Decode, Encode};
 use derive_more::Constructor;
 use primitive_types::H256;
-use sp_core::ConstU32;
 
 #[cfg(feature = "runtime")]
 use scale_info::TypeInfo;

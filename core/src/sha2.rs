@@ -25,7 +25,7 @@ impl Hasher for ShaTwo256 {
 pub mod hash {
 	use super::*;
 	use crate::sp_std::vec::Vec;
-	use sp_core::storage::StateVersion;
+	use sp_storage::StateVersion;
 	use sp_trie::{LayoutV0, LayoutV1, TrieConfiguration as _};
 
 	impl sp_runtime::traits::Hash for ShaTwo256 {
