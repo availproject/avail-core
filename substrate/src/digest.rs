@@ -25,23 +25,12 @@ use serde::{Deserialize, Serialize};
 use super::sp_std::prelude::*;
 use codec::{Decode, Encode, Error, Input};
 
-#[cfg(feature = "runtime")]
-use {
-	scale_info::{
-		build::{Fields, Variants},
-		Path, Type, TypeInfo,
-	},
-	sp_core::RuntimeDebug,
-};
-
 /// Consensus engine unique ID.
 pub type ConsensusEngineId = [u8; 4];
 
 /// Generic header digest.
-#[derive(PartialEq, Eq, Clone, Encode, Decode, Default)]
+#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "runtime", derive(RuntimeDebug, TypeInfo))]
-#[cfg_attr(not(feature = "runtime"), derive(Debug))]
 pub struct Digest {
 	/// A list of logs in the digest.
 	pub logs: Vec<DigestItem>,
@@ -76,9 +65,7 @@ impl Digest {
 
 /// Digest item that is able to encode/decode 'system' digest items and
 /// provide opaque access to other items.
-#[derive(PartialEq, Eq, Clone)]
-#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
-#[cfg_attr(not(feature = "runtime"), derive(Debug))]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum DigestItem {
 	/// A pre-runtime digest.
 	///
@@ -137,59 +124,9 @@ impl<'a> serde::Deserialize<'a> for DigestItem {
 	}
 }
 
-#[cfg(feature = "runtime")]
-impl TypeInfo for DigestItem {
-	type Identity = Self;
-
-	fn type_info() -> Type {
-		Type::builder()
-			.path(Path::new("DigestItem", module_path!()))
-			.variant(
-				Variants::new()
-					.variant("PreRuntime", |v| {
-						v.index(DigestItemType::PreRuntime as u8).fields(
-							Fields::unnamed()
-								.field(|f| {
-									f.ty::<ConsensusEngineId>().type_name("ConsensusEngineId")
-								})
-								.field(|f| f.ty::<Vec<u8>>().type_name("Vec<u8>")),
-						)
-					})
-					.variant("Consensus", |v| {
-						v.index(DigestItemType::Consensus as u8).fields(
-							Fields::unnamed()
-								.field(|f| {
-									f.ty::<ConsensusEngineId>().type_name("ConsensusEngineId")
-								})
-								.field(|f| f.ty::<Vec<u8>>().type_name("Vec<u8>")),
-						)
-					})
-					.variant("Seal", |v| {
-						v.index(DigestItemType::Seal as u8).fields(
-							Fields::unnamed()
-								.field(|f| {
-									f.ty::<ConsensusEngineId>().type_name("ConsensusEngineId")
-								})
-								.field(|f| f.ty::<Vec<u8>>().type_name("Vec<u8>")),
-						)
-					})
-					.variant("Other", |v| {
-						v.index(DigestItemType::Other as u8).fields(
-							Fields::unnamed().field(|f| f.ty::<Vec<u8>>().type_name("Vec<u8>")),
-						)
-					})
-					.variant("RuntimeEnvironmentUpdated", |v| {
-						v.index(DigestItemType::RuntimeEnvironmentUpdated as u8)
-							.fields(Fields::unit())
-					}),
-			)
-	}
-}
-
 /// A 'referencing view' for digest item. Does not own its contents. Used by
 /// final runtime implementations for encoding/decoding its log items.
-#[derive(PartialEq, Eq, Clone)]
-#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum DigestItemRef<'a> {
 	/// A pre-runtime digest.
 	///
@@ -475,51 +412,5 @@ mod tests {
 			serde_json::to_string(&digest).unwrap(),
 			r#"{"logs":["0x000c010203","0x05746573740c010203"]}"#
 		);
-	}
-
-	#[test]
-	fn digest_item_type_info() {
-		let type_info = DigestItem::type_info();
-		let variants = if let scale_info::TypeDef::Variant(variant) = type_info.type_def {
-			variant.variants
-		} else {
-			panic!("Should be a TypeDef::TypeDefVariant")
-		};
-
-		// ensure that all variants are covered by manual TypeInfo impl
-		let check = |digest_item_type: DigestItemType| {
-			let (variant_name, digest_item) = match digest_item_type {
-				DigestItemType::Other => ("Other", DigestItem::Other(Default::default())),
-				DigestItemType::Consensus => (
-					"Consensus",
-					DigestItem::Consensus(Default::default(), Default::default()),
-				),
-				DigestItemType::Seal => (
-					"Seal",
-					DigestItem::Seal(Default::default(), Default::default()),
-				),
-				DigestItemType::PreRuntime => (
-					"PreRuntime",
-					DigestItem::PreRuntime(Default::default(), Default::default()),
-				),
-				DigestItemType::RuntimeEnvironmentUpdated => (
-					"RuntimeEnvironmentUpdated",
-					DigestItem::RuntimeEnvironmentUpdated,
-				),
-			};
-			let encoded = digest_item.encode();
-			let variant = variants
-				.iter()
-				.find(|v| v.name == variant_name)
-				.expect(&format!("Variant {} not found", variant_name));
-
-			assert_eq!(encoded[0], variant.index)
-		};
-
-		check(DigestItemType::Other);
-		check(DigestItemType::Consensus);
-		check(DigestItemType::Seal);
-		check(DigestItemType::PreRuntime);
-		check(DigestItemType::RuntimeEnvironmentUpdated);
 	}
 }

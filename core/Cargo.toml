@@ -29,9 +29,9 @@ sp-runtime = { workspace = true, optional = true }
 sp-runtime-interface = { workspace = true, optional = true }
 sp-trie.workspace = true
 
-blake2b_simd = { version = "1.0.2", default-features = false }
-sha2 = { version = "0.10.7", default-features = false }
-sha3 = { version = "0.10.0", default-features = false }
+blake2b_simd = { workspace = true, default-features = false  }
+sha2 = { workspace = true, default-features = false  }
+sha3 = { workspace = true, default-features = false  }
 
 avail-core-substrate = { path = "./../substrate", default-features = false }
 avail-core-block = { path = "./../block", default-features = false }
@@ -68,7 +68,6 @@ runtime = [
 	"serde",
 	"sp-runtime",
 	"sp-runtime-interface",
-	"avail-core-substrate/runtime",
 	"avail-core-block/runtime",
 ]
 
