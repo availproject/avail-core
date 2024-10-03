@@ -23,15 +23,14 @@ bounded-collections.workspace = true
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive", "max-encoded-len"] }
 scale-info.workspace = true
 
-# Polkadot SDK
 frame-support = { workspace = true, optional = true }
 sp-arithmetic.workspace = true
 sp-core.workspace = true
-sp-io.workspace = true
 sp-runtime = { workspace = true, optional = true }
 sp-runtime-interface = { workspace = true, optional = true }
 sp-std.workspace = true
 sp-trie.workspace = true
+sp-io.workspace = true
 
 [dev-dependencies]
 hex-literal.workspace = true
@@ -70,6 +69,7 @@ runtime = [
 	"sp-runtime",
 	"sp-runtime-interface",
 ]
+disable_panic_handler = [ "sp-io/disable_panic_handler" ]
 
 try-runtime = [ "runtime", "sp-runtime/try-runtime" ]
 serde = [ "dep:serde", "hex/serde", "log/serde" ]
