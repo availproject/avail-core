@@ -12,6 +12,11 @@ use sp_std::vec;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(target_arch = "wasm32")]
+extern crate alloc;
+#[cfg(target_arch = "wasm32")]
+use alloc::{format, string::String};
+
 /// Position of a cell in the the matrix.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Default, Debug, Clone, Copy, Hash, Eq, PartialEq, Constructor)]
@@ -51,7 +56,6 @@ impl Display for Position {
 
 impl Position {
 	/// Reference in format `block_number:column_number:row_number`
-	#[cfg(feature = "std")]
 	pub fn reference(&self, block_number: u32) -> String {
 		format!("{}:{}", block_number, self)
 	}
@@ -76,7 +80,6 @@ pub struct RowIndex(pub u32);
 
 impl RowIndex {
 	/// Reference in format `block_number:row_number`
-	#[cfg(feature = "std")]
 	pub fn reference(&self, block_number: u32) -> String {
 		format!("{}:{}", block_number, self.0)
 	}
