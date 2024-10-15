@@ -18,22 +18,25 @@
 //! Data-Avail implementation of a block header.
 
 use crate::from_substrate::HexDisplay;
+use crate::traits::ExtendedHeader;
 use codec::{Decode, Encode};
 use primitive_types::U256;
-use scale_info::TypeInfo;
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-use sp_runtime::{
-	traits::{BlockNumber, Hash as HashT, Header as HeaderT},
-	Digest,
-};
-use sp_runtime_interface::pass_by::{Codec as PassByCodecImpl, PassBy};
 use sp_std::{
 	convert::TryFrom,
 	fmt::{Debug, Formatter},
 };
 
-use crate::traits::ExtendedHeader;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "runtime")]
+use {
+	scale_info::TypeInfo,
+	sp_runtime::{
+		traits::{BlockNumber, Hash as HashT, Header as HeaderT},
+		Digest,
+	},
+	sp_runtime_interface::pass_by::{Codec as PassByCodecImpl, PassBy},
+};
 
 #[cfg(feature = "std")]
 const LOG_TARGET: &str = "header";
@@ -170,6 +173,7 @@ where
 	}
 }
 
+#[cfg(feature = "runtime")]
 impl<N, H> PassBy for Header<N, H>
 where
 	N: BlockNumber,

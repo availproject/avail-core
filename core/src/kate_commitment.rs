@@ -1,14 +1,11 @@
+use crate::from_substrate::HexDisplay;
 use codec::{Decode, Encode};
 use primitive_types::H256;
 use scale_info::TypeInfo;
-use sp_std::vec::Vec;
+use sp_std::{fmt, vec::Vec};
 
-use crate::from_substrate::HexDisplay;
 #[cfg(feature = "serde")]
-use {
-	serde::{Deserialize, Serialize},
-	sp_std::fmt,
-};
+use serde::{Deserialize, Serialize};
 
 pub mod v3 {
 	use super::*;
@@ -42,7 +39,6 @@ pub mod v3 {
 		}
 	}
 
-	#[cfg(feature = "serde")]
 	impl fmt::Debug for KateCommitment {
 		fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 			let commitment: &[u8] = self.commitment.as_slice();
