@@ -6,7 +6,7 @@ use derive_more::Constructor;
 use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use sp_core::RuntimeDebug;
+use sp_debug_derive::RuntimeDebug;
 use sp_std::vec::Vec;
 
 use crate::AppId;

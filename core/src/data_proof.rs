@@ -1,8 +1,10 @@
+use crate::from_substrate::keccak_256;
 use bounded_collections::BoundedVec;
+use bounded_collections::ConstU32;
 use codec::{Decode, Encode};
 use derive_more::Constructor;
+use primitive_types::H256;
 use scale_info::TypeInfo;
-use sp_core::{ConstU32, H256};
 use sp_std::vec::Vec;
 
 #[cfg(feature = "runtime")]

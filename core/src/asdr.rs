@@ -21,6 +21,7 @@ use crate::{
 	AppId, OpaqueExtrinsic,
 };
 
+use crate::from_substrate::blake2_256;
 use codec::{Codec, Compact, Decode, Encode, EncodeLike, Error, Input};
 use scale_info::{build::Fields, meta_type, Path, StaticTypeInfo, Type, TypeInfo, TypeParameter};
 use sp_runtime::MultiAddress;
@@ -30,22 +31,23 @@ use sp_std::{
 	vec::Vec,
 };
 
-#[cfg(feature = "runtime")]
-use frame_support::{
-	dispatch::{DispatchInfo, GetDispatchInfo},
-	traits::ExtrinsicCall,
-};
-#[cfg(feature = "runtime")]
-use sp_runtime::{
-	generic::CheckedExtrinsic,
-	traits::{
-		self, Checkable, Extrinsic, ExtrinsicMetadata, IdentifyAccount, MaybeDisplay, Member,
-		SignedExtension,
-	},
-	transaction_validity::{InvalidTransaction, TransactionValidityError},
-};
 #[cfg(all(not(feature = "std"), feature = "serde"))]
 use sp_std::alloc::format;
+#[cfg(feature = "runtime")]
+use {
+	frame_support::{
+		dispatch::{DispatchInfo, GetDispatchInfo},
+		traits::ExtrinsicCall,
+	},
+	sp_runtime::{
+		generic::CheckedExtrinsic,
+		traits::{
+			self, Checkable, Extrinsic, ExtrinsicMetadata, IdentifyAccount, MaybeDisplay, Member,
+			SignedExtension,
+		},
+		transaction_validity::{InvalidTransaction, TransactionValidityError},
+	},
+};
 
 /// Current version of the [`UncheckedExtrinsic`] encoded format.
 ///
@@ -432,7 +434,7 @@ where
 		S: ::serde::Serializer,
 	{
 		let encoded = self.encode();
-		sp_core::bytes::serialize(&encoded, s)
+		impl_serde::serialize::serialize(&encoded, s)
 	}
 }
 
@@ -448,7 +450,7 @@ where
 	where
 		D: serde::Deserializer<'a>,
 	{
-		let r = sp_core::bytes::deserialize(de)?;
+		let r = impl_serde::serialize::deserialize(de)?;
 		Decode::decode(&mut &r[..])
 			.map_err(|e| serde::de::Error::custom(format!("Decode error: {}", e)))
 	}

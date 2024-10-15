@@ -501,6 +501,8 @@ pub fn par_build_commitments<const CHUNK_SIZE: usize, M: Metrics>(
 	rng_seed: Seed,
 	metrics: &M,
 ) -> Result<(XtsLayout, Vec<u8>, BlockDimensions, DMatrix<BlsScalar>), Error> {
+	use avail_core::from_substrate;
+
 	let start = Instant::now();
 
 	// generate data matrix first
@@ -523,7 +525,7 @@ pub fn par_build_commitments<const CHUNK_SIZE: usize, M: Metrics>(
 
 	if log::log_enabled!(target: LOG_TARGET, log::Level::Debug) {
 		let raw_pp = public_params.to_raw_var_bytes();
-		let hash_pp = hex::encode(sp_core::hashing::blake2_128(&raw_pp));
+		let hash_pp = hex::encode(from_substrate::blake2_128(&raw_pp));
 		let hex_pp = hex::encode(raw_pp);
 		log::debug!(
 			target: LOG_TARGET,

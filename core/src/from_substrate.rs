@@ -15,6 +15,11 @@ pub fn blake2_256(data: &[u8]) -> [u8; 32] {
 	blake2(data)
 }
 
+/// Do a Blake2 128-bit hash and return result.
+pub fn blake2_128(data: &[u8]) -> [u8; 16] {
+	blake2(data)
+}
+
 /// Do a keccak 256-bit hash and return result.
 pub fn keccak_256(data: &[u8]) -> [u8; 32] {
 	sha3::Keccak256::digest(data).into()
@@ -23,4 +28,34 @@ pub fn keccak_256(data: &[u8]) -> [u8; 32] {
 /// Do a sha2 256-bit hash and return result.
 pub fn sha2_256(data: &[u8]) -> [u8; 32] {
 	sha2::Sha256::digest(data).into()
+}
+
+pub struct HexDisplay<'a>(pub &'a [u8]);
+
+impl<'a> sp_std::fmt::Display for HexDisplay<'a> {
+	fn fmt(&self, f: &mut sp_std::fmt::Formatter) -> Result<(), sp_std::fmt::Error> {
+		if self.0.len() < 1027 {
+			for byte in self.0 {
+				f.write_fmt(format_args!("{:02x}", byte))?;
+			}
+		} else {
+			for byte in &self.0[0..512] {
+				f.write_fmt(format_args!("{:02x}", byte))?;
+			}
+			f.write_str("...")?;
+			for byte in &self.0[self.0.len() - 512..] {
+				f.write_fmt(format_args!("{:02x}", byte))?;
+			}
+		}
+		Ok(())
+	}
+}
+
+impl<'a> sp_std::fmt::Debug for HexDisplay<'a> {
+	fn fmt(&self, f: &mut sp_std::fmt::Formatter) -> Result<(), sp_std::fmt::Error> {
+		for byte in self.0 {
+			f.write_fmt(format_args!("{:02x}", byte))?;
+		}
+		Ok(())
+	}
 }

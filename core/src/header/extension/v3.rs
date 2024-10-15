@@ -1,8 +1,9 @@
 use codec::{Decode, Encode};
+use primitive_types::H256;
 use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use sp_core::{RuntimeDebug, H256};
+use sp_debug_derive::RuntimeDebug;
 use sp_std::{vec, vec::Vec};
 
 use crate::{v3::KateCommitment, DataLookup};

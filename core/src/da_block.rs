@@ -24,7 +24,7 @@ use crate::traits::{ExtendedBlock, ExtendedHeader};
 use codec::{Codec, Decode, Encode};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use sp_core::RuntimeDebug;
+use sp_debug_derive::RuntimeDebug;
 use sp_runtime::{
 	traits::{
 		self, Block as BlockT, Header as HeaderT, MaybeSerializeDeserialize, Member, NumberFor,

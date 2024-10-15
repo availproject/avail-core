@@ -17,11 +17,12 @@
 
 //! Data-Avail implementation of a block header.
 
+use crate::from_substrate::HexDisplay;
 use codec::{Decode, Encode};
+use primitive_types::U256;
 use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use sp_core::{hexdisplay::HexDisplay, U256};
 use sp_runtime::{
 	traits::{BlockNumber, Hash as HashT, Header as HeaderT},
 	Digest,
@@ -115,10 +116,10 @@ where
 		let extrinsics_root = self.extrinsics_root.as_ref();
 
 		f.debug_struct("Header")
-			.field("parent_hash", &HexDisplay::from(&parent_hash))
+			.field("parent_hash", &HexDisplay(&parent_hash))
 			.field("number", &self.number)
-			.field("state_root", &HexDisplay::from(&state_root))
-			.field("extrinsics_root", &HexDisplay::from(&extrinsics_root))
+			.field("state_root", &HexDisplay(&state_root))
+			.field("extrinsics_root", &HexDisplay(&extrinsics_root))
 			.field("digest", &self.digest)
 			.field("extension", &self.extension)
 			.finish()
@@ -283,7 +284,7 @@ where
 mod tests {
 	use codec::Error;
 	use hex_literal::hex;
-	use sp_core::H256;
+	use primitive_types::H256;
 	use sp_runtime::{traits::BlakeTwo256, DigestItem};
 	use test_case::test_case;
 
