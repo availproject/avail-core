@@ -11,6 +11,8 @@ use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::Zero;
 use sp_core::RuntimeDebug;
 
+pub mod from_substrate;
+
 pub mod opaque_extrinsic;
 pub use opaque_extrinsic::*;
 

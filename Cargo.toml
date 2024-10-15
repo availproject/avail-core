@@ -12,7 +12,6 @@ scale-info = { version = "2", default-features = false, features = ["derive"] }
 binary-merkle-tree = { git = "https://github.com/availproject/polkadot-sdk", tag = "polkadot-1.7.1-patch-10", default-features = false }
 sp-arithmetic = { git = "https://github.com/availproject/polkadot-sdk", tag = "polkadot-1.7.1-patch-10", default-features = false }
 sp-core = { git = "https://github.com/availproject/polkadot-sdk", tag = "polkadot-1.7.1-patch-10", default-features = false }
-sp-io = { git = "https://github.com/availproject/polkadot-sdk", tag = "polkadot-1.7.1-patch-10", default-features = false }
 sp-std = { git = "https://github.com/availproject/polkadot-sdk", tag = "polkadot-1.7.1-patch-10", default-features = false }
 sp-trie = { git = "https://github.com/availproject/polkadot-sdk", tag = "polkadot-1.7.1-patch-10", default-features = false }
 sp-runtime = { git = "https://github.com/availproject/polkadot-sdk", tag = "polkadot-1.7.1-patch-10", default-features = false }
@@ -42,6 +41,9 @@ hash256-std-hasher = { version = "0.15.2", default-features = false }
 tiny-keccak = { version = "2.0.2", default-features = false, features = ["keccak"] }
 rand = { version = "0.8.4", features = ["alloc", "small_rng"], default-features = false }
 rand_chacha = { version = "0.3", default-features = false }
+blake2b_simd = { version = "1.0.2", default-features = false }
+sha2 = { version = "0.10.7", default-features = false }
+sha3 = { version = "0.10.0", default-features = false }
 
 poly-multiproof = { git = "https://github.com/availproject/poly-multiproof", default-features = false, tag = "v0.0.1" }
 dusk-plonk = { git = "https://github.com/availproject/plonk.git", tag = "v0.12.0-polygon-2" }
