@@ -22,9 +22,6 @@ use std::fmt;
 
 use crate::traits::{ExtendedBlock, ExtendedHeader};
 use codec::{Codec, Decode, Encode};
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-use sp_core::RuntimeDebug;
 use sp_runtime::{
 	traits::{
 		self, Block as BlockT, Header as HeaderT, MaybeSerializeDeserialize, Member, NumberFor,
@@ -33,8 +30,14 @@ use sp_runtime::{
 };
 use sp_std::prelude::*;
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "runtime")]
+use sp_debug_derive::RuntimeDebug;
+
 /// Something to identify a block.
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode)]
+#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
 pub enum BlockId<Block: BlockT> {
 	/// Identify by block header hash.
 	Hash(Block::Hash),

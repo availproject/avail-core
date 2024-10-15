@@ -17,22 +17,26 @@
 
 //! Data-Avail implementation of a block header.
 
+use crate::from_substrate::HexDisplay;
+use crate::traits::ExtendedHeader;
 use codec::{Decode, Encode};
-use scale_info::TypeInfo;
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-use sp_core::{hexdisplay::HexDisplay, U256};
-use sp_runtime::{
-	traits::{BlockNumber, Hash as HashT, Header as HeaderT},
-	Digest,
-};
-use sp_runtime_interface::pass_by::{Codec as PassByCodecImpl, PassBy};
+use primitive_types::U256;
 use sp_std::{
 	convert::TryFrom,
 	fmt::{Debug, Formatter},
 };
 
-use crate::traits::ExtendedHeader;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "runtime")]
+use {
+	scale_info::TypeInfo,
+	sp_runtime::{
+		traits::{BlockNumber, Hash as HashT, Header as HeaderT},
+		Digest,
+	},
+	sp_runtime_interface::pass_by::{Codec as PassByCodecImpl, PassBy},
+};
 
 #[cfg(feature = "std")]
 const LOG_TARGET: &str = "header";
@@ -115,10 +119,10 @@ where
 		let extrinsics_root = self.extrinsics_root.as_ref();
 
 		f.debug_struct("Header")
-			.field("parent_hash", &HexDisplay::from(&parent_hash))
+			.field("parent_hash", &HexDisplay(&parent_hash))
 			.field("number", &self.number)
-			.field("state_root", &HexDisplay::from(&state_root))
-			.field("extrinsics_root", &HexDisplay::from(&extrinsics_root))
+			.field("state_root", &HexDisplay(&state_root))
+			.field("extrinsics_root", &HexDisplay(&extrinsics_root))
 			.field("digest", &self.digest)
 			.field("extension", &self.extension)
 			.finish()
@@ -169,6 +173,7 @@ where
 	}
 }
 
+#[cfg(feature = "runtime")]
 impl<N, H> PassBy for Header<N, H>
 where
 	N: BlockNumber,
@@ -283,7 +288,7 @@ where
 mod tests {
 	use codec::Error;
 	use hex_literal::hex;
-	use sp_core::H256;
+	use primitive_types::H256;
 	use sp_runtime::{traits::BlakeTwo256, DigestItem};
 	use test_case::test_case;
 
