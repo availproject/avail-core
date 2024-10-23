@@ -704,8 +704,9 @@ dependencies = [
 
 [[package]]
 name = "blst"
-version = "0.3.10"
-source = "git+https://github.com/availproject/blst?tag=v0.3.10#556e037926d9c526c2eb6cb1522bea39690416ea"
+version = "0.3.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4378725facc195f1a538864863f6de233b500a8862747e7f165078a419d5e874"
 dependencies = [
  "cc",
  "glob",
@@ -2655,7 +2656,6 @@ checksum = "626dec3cac7cc0e1577a2ec3fc496277ec2baa084bebad95bb6fdbfae235f84c"
 [[package]]
 name = "poly-multiproof"
 version = "0.0.1"
-source = "git+https://github.com/availproject/poly-multiproof?tag=v0.0.1#cd8d31b7eb568dea2fddfc9237e2e31ea7ae7ed3"
 dependencies = [
  "ark-bls12-381",
  "ark-ec",
@@ -2665,6 +2665,7 @@ dependencies = [
  "ark-std",
  "blst",
  "merlin 3.0.0",
+ "thiserror",
 ]
 
 [[package]]

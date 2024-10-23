@@ -43,7 +43,7 @@ tiny-keccak = { version = "2.0.2", default-features = false, features = ["keccak
 rand = { version = "0.8.4", features = ["alloc", "small_rng"], default-features = false }
 rand_chacha = { version = "0.3", default-features = false }
 
-poly-multiproof = { git = "https://github.com/availproject/poly-multiproof", default-features = false, tag = "v0.0.1" }
+poly-multiproof = { path = "../poly-multiproof", default-features = false}
 dusk-plonk = { git = "https://github.com/availproject/plonk.git", tag = "v0.12.0-polygon-2" }
 
 # Others

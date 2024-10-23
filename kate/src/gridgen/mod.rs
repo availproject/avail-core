@@ -1,8 +1,10 @@
 use crate::pmp::{
+	ark_bls12_381::{Bls12_381, Fr},
+	ark_ec::pairing::Pairing,
 	ark_poly::{EvaluationDomain, GeneralEvaluationDomain},
-	m1_blst::{Bls12_381, M1NoPrecomp},
 	merlin::Transcript,
-	traits::Committer,
+	method1::M1NoPrecomp,
+	traits::{Committer, MSMEngine},
 };
 use avail_core::{
 	app_extrinsic::AppExtrinsic, constants::kate::DATA_CHUNK_SIZE, ensure, AppId, DataLookup,
@@ -16,7 +18,7 @@ use core::{
 use kate_recovery::matrix::Dimensions;
 use nalgebra::base::DMatrix;
 use poly_multiproof::{
-	m1_blst::Proof,
+	method1::Proof,
 	traits::{KZGProof, PolyMultiProofNoPrecomp},
 };
 use rand::Rng;
@@ -44,7 +46,7 @@ macro_rules! cfg_iter {
 }
 
 pub const SCALAR_SIZE: usize = 32;
-pub type ArkScalar = crate::pmp::m1_blst::Fr;
+pub type ArkScalar = Fr;
 pub type Commitment = crate::pmp::Commitment<Bls12_381>;
 pub use poly_multiproof::traits::AsBytes;
 
@@ -302,21 +304,37 @@ impl PolynomialGrid {
 			.and_then(|poly| srs.commit(poly).map_err(Error::MultiproofError))
 	}
 
-	pub fn proof(&self, srs: &M1NoPrecomp, cell: &Cell) -> Result<Proof, Error> {
+	pub fn proof<E: Pairing, M: MSMEngine<E = E>>(
+		&self,
+		srs: &M1NoPrecomp<E, M>,
+		cell: &Cell,
+	) -> Result<Proof<E>, Error>
+	where
+		E::ScalarField: From<ArkScalar>,
+	{
 		let x = cell.col.0 as usize;
 		let y = cell.row.0 as usize;
-		let poly = self.inner.get(y).ok_or(Error::CellLengthExceeded)?;
-		let witness = KZGProof::compute_witness_polynomial(srs, poly.clone(), self.points[x])?;
+		let poly: Vec<E::ScalarField> = self
+			.inner
+			.get(y)
+			.ok_or(Error::CellLengthExceeded)?
+			.iter()
+			.map(|&scalar| E::ScalarField::from(scalar))
+			.collect();
+		let witness = KZGProof::compute_witness_polynomial(srs, poly, self.points[x].into())?;
 		Ok(KZGProof::open(srs, witness)?)
 	}
 
-	pub fn multiproof(
+	pub fn multiproof<E: Pairing, M: MSMEngine<E = E>>(
 		&self,
-		srs: &M1NoPrecomp,
+		srs: &M1NoPrecomp<E, M>,
 		cell: &Cell,
 		eval_grid: &EvaluationGrid,
 		target_dims: Dimensions,
-	) -> Result<Multiproof, Error> {
+	) -> Result<Multiproof<E>, Error>
+	where
+		E::ScalarField: From<ArkScalar>,
+	{
 		let block = multiproof_block(
 			cell.col.0 as usize,
 			cell.row.0 as usize,
@@ -324,18 +342,28 @@ impl PolynomialGrid {
 			target_dims,
 		)
 		.ok_or(Error::CellLengthExceeded)?;
-		let polys = &self.inner[block.start_y..block.end_y];
-		let evals: Vec<Vec<ArkScalar>> = (block.start_y..block.end_y)
-			.map(|y| {
-				eval_grid.row(y).expect("Already bounds checked .qed")[block.start_x..block.end_x]
-					.to_vec()
-			})
-			.collect::<Vec<_>>();
-		let evals_view = evals.iter().map(|row| row.as_slice()).collect::<Vec<_>>();
+		let polys: Vec<Vec<E::ScalarField>> = self.inner[block.start_y..block.end_y]
+			.iter()
+			.map(|row| row.iter().map(|&s| E::ScalarField::from(s)).collect())
+			.collect();
 
-		let points = &self.points[block.start_x..block.end_x];
+		let evals: Vec<Vec<E::ScalarField>> = self.inner[block.start_y..block.end_y]
+			.iter()
+			.map(|row| {
+				row[block.start_x..block.end_x]
+					.iter()
+					.map(|&s| E::ScalarField::from(s))
+					.collect()
+			})
+			.collect();
+
+		let points: Vec<E::ScalarField> = self.points[block.start_x..block.end_x]
+			.iter()
+			.map(|&p| E::ScalarField::from(p))
+			.collect();
+
 		let mut ts = Transcript::new(b"avail-mp");
-		let proof = PolyMultiProofNoPrecomp::open(srs, &mut ts, &evals_view, polys, points)
+		let proof = PolyMultiProofNoPrecomp::open(srs, &mut ts, &evals, &polys, &points)
 			.map_err(Error::MultiproofError)?;
 
 		Ok(Multiproof {
@@ -347,9 +375,9 @@ impl PolynomialGrid {
 }
 
 #[derive(Debug, Clone)]
-pub struct Multiproof {
-	pub proof: poly_multiproof::m1_blst::Proof,
-	pub evals: Vec<Vec<poly_multiproof::m1_blst::Fr>>,
+pub struct Multiproof<E: Pairing> {
+	pub proof: Proof<E>,
+	pub evals: Vec<Vec<<E as Pairing>::ScalarField>>,
 	pub block: CellBlock,
 }
 

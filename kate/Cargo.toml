@@ -61,6 +61,7 @@ std = [
 	"once_cell",
 	"parallel",
 	"poly-multiproof/blst",
+	"poly-multiproof/std",
 	"rand/std",
 	"rand_chacha/std",
 	"serde",

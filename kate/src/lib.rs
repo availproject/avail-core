@@ -54,10 +54,12 @@ pub mod testnet {
 	use super::*;
 	use hex_literal::hex;
 	use once_cell::sync::Lazy;
-	use poly_multiproof::ark_ff::{BigInt, Fp};
+	use poly_multiproof::ark_bls12_381::{Fr, G1Projective as G1, G2Projective as G2};
+	use poly_multiproof::ark_ec::pairing::Pairing;
+	use poly_multiproof::ark_ff::{BigInt, Fp, PrimeField};
 	use poly_multiproof::ark_serialize::CanonicalDeserialize;
-	use poly_multiproof::m1_blst;
-	use poly_multiproof::m1_blst::{Fr, G1, G2};
+	use poly_multiproof::method1::M1NoPrecomp;
+	use poly_multiproof::traits::MSMEngine;
 	use rand_chacha::{rand_core::SeedableRng, ChaChaRng};
 	use std::{collections::HashMap, sync::Mutex};
 
@@ -87,13 +89,21 @@ pub mod testnet {
 	const G1_BYTES: [u8; 48] = hex!("a45f754a9e94cccbb2cbe9d7c441b8b527026ef05e2a3aff4aa4bb1c57df3767fb669cc4c7639bd37e683653bdc50b5a");
 	const G2_BYTES: [u8; 96] = hex!("b845ac5e7b4ec8541d012660276772e001c1e0475e60971884481d43fcbd44de2a02e9862dbf9f536c211814f6cc5448100bcda5dc707854af8e3829750d1fb18b127286aaa4fc959e732e2128a8a315f2f8f419bf5774fe043af46fbbeb4b27");
 
-	pub fn multiproof_params(max_degree: usize, max_pts: usize) -> m1_blst::M1NoPrecomp {
-		let x: Fr = Fp(BigInt(SEC_LIMBS), core::marker::PhantomData);
+	pub fn multiproof_params<E: Pairing, M: MSMEngine<E = E>>(
+		max_degree: usize,
+		max_pts: usize,
+	) -> M1NoPrecomp<E, M>
+	where
+		E::ScalarField: PrimeField + From<Fr>,
+		E::G1: CanonicalDeserialize,
+		E::G2: CanonicalDeserialize,
+	{
+		let x: E::ScalarField = E::ScalarField::from(Fr::from(BigInt(SEC_LIMBS)));
 
-		let g1 = G1::deserialize_compressed(&G1_BYTES[..]).unwrap();
-		let g2 = G2::deserialize_compressed(&G2_BYTES[..]).unwrap();
+		let g1: E::G1 = E::G1::deserialize_compressed(&G1_BYTES[..]).unwrap();
+		let g2: E::G2 = E::G2::deserialize_compressed(&G2_BYTES[..]).unwrap();
 
-		m1_blst::M1NoPrecomp::new_from_scalar(x, g1, g2, max_degree.saturating_add(1), max_pts)
+		M1NoPrecomp::<E, M>::new_from_scalar(x, g1, g2, max_degree.saturating_add(1), max_pts)
 	}
 
 	#[cfg(test)]
@@ -164,10 +174,11 @@ pub mod testnet {
 #[cfg(feature = "std")]
 pub mod couscous {
 	use super::*;
+	use poly_multiproof::ark_bls12_381::{G1Projective as G1, G2Projective as G2};
+	use poly_multiproof::ark_ec::pairing::Pairing;
 	use poly_multiproof::ark_serialize::CanonicalDeserialize;
-	use poly_multiproof::m1_blst;
-	use poly_multiproof::m1_blst::{G1, G2};
-
+	use poly_multiproof::method1::M1NoPrecomp;
+	use poly_multiproof::traits::MSMEngine;
 	/// Constructs public parameters from pre-generated points for degree upto 1024
 	pub fn public_params() -> PublicParameters {
 		// We can also use the raw data to make deserilization faster at the cost of size of the data
@@ -208,9 +219,11 @@ pub mod couscous {
 	}
 
 	///  Construct public parameters from pre-generated points for degree upto 1024
-	pub fn multiproof_params() -> m1_blst::M1NoPrecomp {
+	pub fn multiproof_params<E: Pairing<G1 = G1, G2 = G2>, M: MSMEngine<E = E>>(
+	) -> M1NoPrecomp<E, M> {
 		let (g1, g2) = load_trusted_g1_g2();
-		m1_blst::M1NoPrecomp::new_from_powers(g1, g2)
+		let x = <M1NoPrecomp<_, _>>::new_from_powers(&g1, &g2);
+		x
 	}
 
 	#[cfg(test)]

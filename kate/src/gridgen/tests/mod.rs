@@ -1,7 +1,7 @@
 use avail_core::{AppExtrinsic, AppId};
 use kate_recovery::{data::DataCell, matrix::Position};
 use once_cell::sync::Lazy;
-use poly_multiproof::{m1_blst::M1NoPrecomp, traits::AsBytes};
+use poly_multiproof::{method1::M1NoPrecomp, traits::AsBytes};
 use proptest::{collection, prelude::*, sample::size_range};
 use rand::{distributions::Uniform, prelude::Distribution, SeedableRng};
 use rand_chacha::ChaChaRng;
