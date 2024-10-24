@@ -54,7 +54,7 @@ pub mod testnet {
 	use super::*;
 	use hex_literal::hex;
 	use once_cell::sync::Lazy;
-	use poly_multiproof::ark_bls12_381::{Fr, G1Projective as G1, G2Projective as G2};
+	use poly_multiproof::ark_bls12_381::Fr;
 	use poly_multiproof::ark_ec::pairing::Pairing;
 	use poly_multiproof::ark_ff::{BigInt, Fp, PrimeField};
 	use poly_multiproof::ark_serialize::CanonicalDeserialize;
@@ -98,8 +98,8 @@ pub mod testnet {
 		E::G1: CanonicalDeserialize,
 		E::G2: CanonicalDeserialize,
 	{
-		let x: E::ScalarField = E::ScalarField::from(Fr::from(BigInt(SEC_LIMBS)));
-
+		let x: <E as Pairing>::ScalarField =
+			Fp(BigInt(SEC_LIMBS), core::marker::PhantomData).into();
 		let g1: E::G1 = E::G1::deserialize_compressed(&G1_BYTES[..]).unwrap();
 		let g2: E::G2 = E::G2::deserialize_compressed(&G2_BYTES[..]).unwrap();
 
@@ -117,10 +117,10 @@ pub mod testnet {
 			prelude::BlsScalar,
 		};
 		use poly_multiproof::{
+			ark_ec::pairing::Pairing,
 			ark_ff::{BigInt, Fp},
 			ark_poly::{EvaluationDomain, GeneralEvaluationDomain},
 			ark_serialize::{CanonicalDeserialize, CanonicalSerialize},
-			m1_blst::Fr,
 			traits::Committer,
 		};
 		use rand::thread_rng;
@@ -135,10 +135,10 @@ pub mod testnet {
 				hex!("7848b5d711bc9883996317a3f9c90269d56771005d540a19184939c9e8d0db2a");
 			assert_eq!(SEC_BYTES, out);
 
-			let g1 = G1::deserialize_compressed(&G1_BYTES[..]).unwrap();
-			let g2 = G2::deserialize_compressed(&G2_BYTES[..]).unwrap();
+			let g1 = Pairing::G1::deserialize_compressed(&G1_BYTES[..]).unwrap();
+			let g2 = Pairing::G2::deserialize_compressed(&G2_BYTES[..]).unwrap();
 
-			let pmp = poly_multiproof::m1_blst::M1NoPrecomp::new_from_scalar(x, g1, g2, 1024, 256);
+			let pmp = poly_multiproof::method1::M1NoPrecomp::new_from_scalar(x, g1, g2, 1024, 256);
 
 			let dp_evals = (0..30)
 				.map(|_| BlsScalar::random(&mut thread_rng()))
@@ -242,7 +242,7 @@ pub mod couscous {
 			traits::KZGProof,
 		};
 		use poly_multiproof::{
-			m1_blst::Fr,
+			ark_bls12_381::Fr,
 			traits::{AsBytes, Committer},
 		};
 		use rand::thread_rng;
