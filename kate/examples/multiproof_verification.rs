@@ -8,7 +8,10 @@ use kate::{
 	Seed,
 };
 use kate_recovery::matrix::Dimensions;
-use poly_multiproof::traits::AsBytes;
+use poly_multiproof::ark_ec::pairing::Pairing;
+use poly_multiproof::{ark_bls12_381::Bls12_381, msm::blst::BlstMSMEngine};
+use poly_multiproof::{method1::M1NoPrecomp, traits::MSMEngine};
+use poly_multiproof::{msm::ArkMSMEngine, traits::AsBytes};
 use rand::thread_rng;
 use thiserror_no_std::Error;
 
@@ -26,9 +29,11 @@ fn main() -> Result<(), AppError> {
 }
 
 fn multiproof_verification() -> Result<bool, AppError> {
+	type E = Bls12_381;
+	type M = BlstMSMEngine;
 	let target_dims = Dimensions::new_from(16, 64).unwrap();
-	let pp = multiproof_params(256, 256);
-	let pmp = poly_multiproof::m1_blst::M1NoPrecomp::new(256, 256, &mut thread_rng());
+	let pp = multiproof_params::<Bls12_381, BlstMSMEngine>(256, 256);
+	let pmp = M1NoPrecomp::<E, M>::new(256, 256, &mut thread_rng());
 	let points = kate::gridgen::domain_points(256)?;
 	let exts_data = vec![
 		hex!("CAFEBABE00000000000000000000000000000000000000").to_vec(),
@@ -92,7 +97,7 @@ fn multiproof_verification() -> Result<bool, AppError> {
 		.chunks_exact(mp_block.end_x - mp_block.start_x)
 		.collect::<Vec<_>>();
 
-	let proof = kate::pmp::m1_blst::Proof::from_bytes(&proof)?;
+	let proof = kate::pmp::method1::Proof::from_bytes(&proof)?;
 
 	let verified = pmp.verify(
 		&mut Transcript::new(b"avail-mp"),
