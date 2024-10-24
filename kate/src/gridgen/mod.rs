@@ -346,17 +346,14 @@ impl PolynomialGrid {
 			.iter()
 			.map(|row| row.iter().map(|&s| E::ScalarField::from(s)).collect())
 			.collect();
-
-		let evals: Vec<Vec<E::ScalarField>> = self.inner[block.start_y..block.end_y]
-			.iter()
-			.map(|row| {
-				row[block.start_x..block.end_x]
+		let evals: Vec<Vec<E::ScalarField>> = (block.start_y..block.end_y)
+			.map(|y| {
+				eval_grid.row(y).expect("Already bounds checked .qed")[block.start_x..block.end_x]
 					.iter()
-					.map(|&s| E::ScalarField::from(s))
-					.collect()
+					.map(|&scalar| E::ScalarField::from(scalar))
+					.collect::<Vec<_>>()
 			})
-			.collect();
-
+			.collect::<Vec<_>>();
 		let points: Vec<E::ScalarField> = self.points[block.start_x..block.end_x]
 			.iter()
 			.map(|&p| E::ScalarField::from(p))
