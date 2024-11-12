@@ -5,10 +5,14 @@ authors = ["Denis Ermolin <denis.ermolin@matic.network>"]
 edition = "2018"
 license = "Apache-2.0"
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2.15", features = ["js"] }
+sp-io = { workspace = true, features = [ "disable_panic_handler" ] }
+
 [dependencies]
 # Internals
 avail-core = { path = "../../core", default-features = false }
-dusk-plonk = { workspace = true, optional = true }
+dusk-plonk = { workspace = true }
 
 # Parity
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive"] }
