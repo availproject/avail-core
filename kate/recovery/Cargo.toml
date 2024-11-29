@@ -12,7 +12,7 @@ license = "Apache-2.0"
 [dependencies]
 # Internals
 avail-core = { path = "../../core", default-features = false }
-dusk-plonk = { workspace = true, optional = true }
+dusk-plonk = { workspace = true }
 
 # Parity
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive"] }
