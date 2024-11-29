@@ -5,14 +5,14 @@ authors = ["Denis Ermolin <denis.ermolin@matic.network>"]
 edition = "2018"
 license = "Apache-2.0"
 
-#[target.'cfg(target_arch = "wasm32")'.dependencies]
-#getrandom = { version = "0.2.15",  default-features = false, features = ["js"], optional = true }
-#sp-io = { workspace = true, default-features = false, feautes = ["disable_panic_handler"], optional = true }
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2.15",  default-features = false, features = ["js"], optional = true }
+sp-io = { workspace = true, default-features = false, feautes = ["disable_panic_handler"], optional = true }
 
 [dependencies]
 # Internals
 avail-core = { path = "../../core", default-features = false }
-dusk-plonk = { workspace = true }
+dusk-plonk = { workspace = true, optional = true  }
 
 # Parity
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive"] }
@@ -47,7 +47,6 @@ std = [
 	"sp-arithmetic/std",
 	"sp-std/std",
 ]
-#wasmcompatible = ["dep:getrandom", "dep:sp-io"]
-wasmcompatible = []
+wasmcompatible = ["dep:getrandom", "dep:sp-io", "dep:dusk-plonk"]
 
 serde = [ "dep:serde" ]
