@@ -4105,8 +4105,3 @@ dependencies = [
  "quote",
  "syn 2.0.89",
 ]
-
-[[patch.unused]]
-name = "sp-crypto-ec-utils"
-version = "0.14.0"
-source = "git+https://github.com/availproject/polkadot-sdk.git?rev=9fb27e7926940a4f6c570d658f1a7efe54360d80#9fb27e7926940a4f6c570d658f1a7efe54360d80"

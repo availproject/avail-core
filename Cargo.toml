@@ -54,9 +54,6 @@ nalgebra = { version = "0.32.2", default-features = false }
 # ETH
 ethabi-decode = { git = "https://github.com/Snowfork/ethabi-decode.git", branch = "master", default-features = false }
 
-[patch."https://github.com/paritytech/polkadot-sdk"]
-sp-crypto-ec-utils = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "9fb27e7926940a4f6c570d658f1a7efe54360d80" }
-
 [profile.dev.package]
 nalgebra = { opt-level = 3 }
 blst = { opt-level = 3 }
