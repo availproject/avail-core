@@ -7,7 +7,6 @@ license = "Apache-2.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2.15",  default-features = false, features = ["js"], optional = true }
-sp-io = { workspace = true, default-features = false, feautes = ["disable_panic_handler"], optional = true }
 
 [dependencies]
 # Internals
@@ -47,6 +46,6 @@ std = [
 	"sp-arithmetic/std",
 	"sp-std/std",
 ]
-wasmcompatible = ["dep:getrandom", "dep:sp-io", "dep:dusk-plonk"]
+wasmcompatible = ["dep:getrandom", "dep:dusk-plonk"]
 
 serde = [ "dep:serde" ]

@@ -9,7 +9,9 @@ use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::Zero;
-use sp_core::RuntimeDebug;
+use sp_debug_derive::RuntimeDebug;
+
+pub mod from_substrate;
 
 pub mod opaque_extrinsic;
 pub use opaque_extrinsic::*;
@@ -199,7 +201,7 @@ macro_rules! keccak256_concat{
 			let mut hasher = tiny_keccak::Keccak::v256();
 			$crate::keccak256_concat_update!(hasher, $($arg)*);
 			hasher.finalize(&mut output);
-			sp_core::H256::from(output)
+			primitive_types::H256::from(output)
 		}
 	}}
 }

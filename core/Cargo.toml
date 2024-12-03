@@ -16,21 +16,28 @@ serde = { workspace = true, optional = true }
 static_assertions.workspace = true
 thiserror-no-std.workspace = true
 tiny-keccak.workspace = true
+impl-serde = { workspace = true, optional = true }
 
 # Parity
 binary-merkle-tree = { workspace = true, optional = true }
 bounded-collections.workspace = true
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive", "max-encoded-len"] }
-scale-info.workspace = true
+scale-info = { workspace = true, optional = true }
 
 frame-support = { workspace = true, optional = true }
 sp-arithmetic.workspace = true
-sp-core.workspace = true
 sp-runtime = { workspace = true, optional = true }
 sp-runtime-interface = { workspace = true, optional = true }
 sp-std.workspace = true
 sp-trie.workspace = true
-sp-io.workspace = true
+sp-storage.workspace = true
+sp-debug-derive.workspace = true
+
+blake2b_simd.workspace = true
+sha2.workspace = true
+sha3.workspace = true
+primitive-types.workspace = true
+hash-db.workspace = true
 
 [dev-dependencies]
 hex-literal.workspace = true
@@ -55,8 +62,6 @@ std = [
 	"scale-info/std",
 	"serde/std",
 	"sp-arithmetic/std",
-	"sp-core/std",
-	"sp-io/std",
 	"sp-runtime-interface?/std",
 	"sp-runtime?/std",
 	"sp-std/std",
@@ -68,8 +73,8 @@ runtime = [
 	"serde",
 	"sp-runtime",
 	"sp-runtime-interface",
+	"scale-info"
 ]
-disable_panic_handler = [ "sp-io/disable_panic_handler" ]
 
 try-runtime = [ "runtime", "sp-runtime/try-runtime" ]
-serde = [ "dep:serde", "hex/serde", "log/serde" ]
+serde = [ "dep:serde", "hex/serde", "log/serde", "impl-serde" ]

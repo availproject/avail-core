@@ -1,7 +1,7 @@
 use codec::{Decode, Encode, Input};
 use core::convert::TryFrom;
 use scale_info::{Type, TypeInfo};
-use sp_core::RuntimeDebug;
+use sp_debug_derive::RuntimeDebug;
 use sp_std::vec;
 use sp_std::{ops::Range, vec::Vec};
 use thiserror_no_std::Error;
