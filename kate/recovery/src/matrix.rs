@@ -55,6 +55,7 @@ impl Display for Position {
 }
 
 impl Position {
+	#[cfg(any(target_arch = "wasm32", feature = "std"))]
 	/// Reference in format `block_number:column_number:row_number`
 	pub fn reference(&self, block_number: u32) -> String {
 		format!("{}:{}", block_number, self)
@@ -79,6 +80,7 @@ pub struct Partition {
 pub struct RowIndex(pub u32);
 
 impl RowIndex {
+	#[cfg(any(target_arch = "wasm32", feature = "std"))]
 	/// Reference in format `block_number:row_number`
 	pub fn reference(&self, block_number: u32) -> String {
 		format!("{}:{}", block_number, self.0)

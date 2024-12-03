@@ -6,10 +6,13 @@ use core::fmt::Debug;
 use codec::{Decode, Encode, MaxEncodedLen};
 use derive_more::{Add, Constructor, Deref, Into, Mul};
 use scale_info::TypeInfo;
+use sp_arithmetic::traits::Zero;
+
+#[cfg(feature = "runtime")]
+use sp_debug_derive::RuntimeDebug;
+
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use sp_arithmetic::traits::Zero;
-use sp_debug_derive::RuntimeDebug;
 
 pub mod from_substrate;
 
@@ -91,9 +94,10 @@ pub enum InvalidTransactionCustomId {
 	Default,
 	Into,
 	MaxEncodedLen,
-	RuntimeDebug,
 )]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
+#[cfg_attr(not(feature = "runtime"), derive(Debug))]
 pub struct AppId(#[codec(compact)] pub u32);
 
 impl core::fmt::Display for AppId {
@@ -129,13 +133,13 @@ impl Zero for AppId {
 	Constructor,
 	MaxEncodedLen,
 	Default,
+	Debug,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize, Debug))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[mul(forward)]
 pub struct BlockLengthColumns(#[codec(compact)] pub u32);
 
 /// Strong type for `BlockLength::rows`
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize, Debug))]
 #[derive(
 	Encode,
 	Decode,
@@ -152,7 +156,9 @@ pub struct BlockLengthColumns(#[codec(compact)] pub u32);
 	Into,
 	Constructor,
 	Default,
+	Debug,
 )]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[mul(forward)]
 pub struct BlockLengthRows(#[codec(compact)] pub u32);
 
