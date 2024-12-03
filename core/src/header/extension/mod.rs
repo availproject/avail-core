@@ -1,20 +1,19 @@
 use crate::{DataLookup, HeaderVersion};
 use codec::{Decode, Encode};
 use primitive_types::H256;
+use scale_info::TypeInfo;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "runtime")]
-use {
-	scale_info::TypeInfo, sp_debug_derive::RuntimeDebug, sp_runtime_interface::pass_by::PassByCodec,
-};
+use {sp_debug_derive::RuntimeDebug, sp_runtime_interface::pass_by::PassByCodec};
 
 pub mod v3;
 
 /// Header extension data.
-#[derive(PartialEq, Eq, Clone, Encode, Decode)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "runtime", derive(PassByCodec, RuntimeDebug, TypeInfo))]
+#[cfg_attr(feature = "runtime", derive(PassByCodec, RuntimeDebug))]
 #[repr(u8)]
 pub enum HeaderExtension {
 	V3(v3::HeaderExtension) = 2,

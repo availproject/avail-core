@@ -1,17 +1,18 @@
 use crate::{v3::KateCommitment, DataLookup};
 use codec::{Decode, Encode};
 use primitive_types::H256;
+use scale_info::TypeInfo;
 use sp_std::{vec, vec::Vec};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "runtime")]
-use {scale_info::TypeInfo, sp_debug_derive::RuntimeDebug};
+use sp_debug_derive::RuntimeDebug;
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, Default)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
-#[cfg_attr(feature = "runtime", derive(TypeInfo, RuntimeDebug))]
+#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
 pub struct HeaderExtension {
 	pub app_lookup: DataLookup,
 	pub commitment: KateCommitment,

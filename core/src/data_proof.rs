@@ -3,12 +3,13 @@ use bounded_collections::ConstU32;
 use codec::{Decode, Encode};
 use derive_more::Constructor;
 use primitive_types::H256;
+use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 
+#[cfg(feature = "runtime")]
+use binary_merkle_tree::MerkleProof;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "runtime")]
-use {binary_merkle_tree::MerkleProof, scale_info::TypeInfo};
 
 /// Max data supported on bridge (Ethereum calldata limits)
 pub const BOUNDED_DATA_MAX_LENGTH: u32 = 102_400;
@@ -39,10 +40,9 @@ pub fn tx_uid_deconstruct(uid: u64) -> (u32, u32) {
 	(block, tx_index)
 }
 
-#[derive(Clone, Debug, Encode, Decode, Constructor)]
+#[derive(Clone, Debug, Encode, Decode, Constructor, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
-#[cfg_attr(feature = "runtime", derive(TypeInfo))]
 pub struct ProofResponse {
 	pub data_proof: DataProof,
 	#[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
@@ -55,10 +55,9 @@ pub enum SubTrie {
 	Bridge,
 }
 
-#[derive(Debug, Clone, Copy, Encode, Decode, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, Encode, Decode, PartialEq, Eq, Default, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
-#[cfg_attr(feature = "runtime", derive(TypeInfo))]
 pub struct TxDataRoots {
 	/// Global Merkle root
 	pub data_root: H256,
@@ -86,10 +85,9 @@ impl TxDataRoots {
 }
 
 /// Wrapper of `binary-merkle-tree::MerkleProof` with codec support.
-#[derive(Clone, Debug, PartialEq, Eq, Encode, Decode, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Encode, Decode, Default, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
-#[cfg_attr(feature = "runtime", derive(TypeInfo))]
 pub struct DataProof {
 	pub roots: TxDataRoots,
 	/// Proof items (does not contain the leaf hash, nor the root obviously).
