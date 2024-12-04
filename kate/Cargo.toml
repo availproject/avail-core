@@ -71,7 +71,6 @@ serde = [ "dep:serde", "avail-core/serde" ]
 
 extended-columns = []
 maximum-block-size = []
-wasmcompatible = ["kate-recovery/wasmcompatible"]
 
 [[bench]]
 name = "reconstruct"

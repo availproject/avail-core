@@ -87,6 +87,6 @@ serde = [
 	"hex/serde", 
 	"log/serde", 
 	"impl-serde", 
-	"primitive-types/serde_no_std", # TODO If std is enabled then the `primitive-types/serde` "should" be enabled. Don't want to deal with that rn.
+	"primitive-types/serde_no_std", # TODO If std is enabled then `primitive-types/serde` "should" be enabled. Don't want to deal with that rn.
 	"bounded-collections/serde"
 ]
