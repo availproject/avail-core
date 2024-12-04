@@ -55,7 +55,7 @@ std = [
 	"derive_more/display",
 	"ethabi-decode/std",
 	"hash256-std-hasher/std",
-	"hex",
+	"hex/std",
 	"log/std",
 	"scale-info/std",
 	"serde?/std",
@@ -66,6 +66,7 @@ std = [
 	"sp-runtime-interface?/std",
 	"sp-runtime?/std",
 	"sp-trie?/std",
+	"primitive-types/std",
 ]
 
 runtime = [
@@ -80,4 +81,12 @@ runtime = [
 ]
 
 try-runtime = [ "runtime", "sp-runtime/try-runtime" ]
-serde = [ "dep:serde", "hex?/serde", "log/serde", "impl-serde", "primitive-types/serde", "bounded-collections/serde"  ]
+
+serde = [ 
+	"dep:serde", 
+	"hex/serde", 
+	"log/serde", 
+	"impl-serde", 
+	"primitive-types/serde_no_std", # TODO If std is enabled then the `primitive-types/serde` "should" be enabled. Don't want to deal with that rn.
+	"bounded-collections/serde"
+]

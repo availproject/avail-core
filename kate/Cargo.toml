@@ -63,7 +63,7 @@ std = [
 	"rand/std",
 	"rand_chacha/std",
 	"serde",
-	"serde_json",
+	"serde_json/std",
 	"sp-arithmetic/std",
 ]
 
