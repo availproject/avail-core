@@ -9,15 +9,15 @@ bounded-collections = { version = "0.2", default-features = false }
 scale-info = { version = "2", default-features = false, features = ["derive"] }
 
 # Polkadot SDK
-binary-merkle-tree = { git = "https://github.com/availproject/polkadot-sdk", tag = "polkadot-1.7.1-patch-10", default-features = false }
-sp-arithmetic = { git = "https://github.com/availproject/polkadot-sdk", tag = "polkadot-1.7.1-patch-10", default-features = false }
-sp-core = { git = "https://github.com/availproject/polkadot-sdk", tag = "polkadot-1.7.1-patch-10", default-features = false }
-sp-io = { git = "https://github.com/availproject/polkadot-sdk", tag = "polkadot-1.7.1-patch-10", default-features = false }
-sp-std = { git = "https://github.com/availproject/polkadot-sdk", tag = "polkadot-1.7.1-patch-10", default-features = false }
-sp-trie = { git = "https://github.com/availproject/polkadot-sdk", tag = "polkadot-1.7.1-patch-10", default-features = false }
-sp-runtime = { git = "https://github.com/availproject/polkadot-sdk", tag = "polkadot-1.7.1-patch-10", default-features = false }
-frame-support = { git = "https://github.com/availproject/polkadot-sdk", tag = "polkadot-1.7.1-patch-10", default-features = false }
-sp-runtime-interface = { git = "https://github.com/availproject/polkadot-sdk", tag = "polkadot-1.7.1-patch-10", default-features = false }
+binary-merkle-tree = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "9fb27e7926940a4f6c570d658f1a7efe54360d80", default-features = false }
+sp-arithmetic = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "9fb27e7926940a4f6c570d658f1a7efe54360d80", default-features = false }
+sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "9fb27e7926940a4f6c570d658f1a7efe54360d80", default-features = false }
+sp-io = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "9fb27e7926940a4f6c570d658f1a7efe54360d80", default-features = false }
+sp-std = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "9fb27e7926940a4f6c570d658f1a7efe54360d80", default-features = false }
+sp-trie = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "9fb27e7926940a4f6c570d658f1a7efe54360d80", default-features = false }
+sp-runtime = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "9fb27e7926940a4f6c570d658f1a7efe54360d80", default-features = false }
+frame-support = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "9fb27e7926940a4f6c570d658f1a7efe54360d80", default-features = false }
+sp-runtime-interface = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "9fb27e7926940a4f6c570d658f1a7efe54360d80", default-features = false }
 
 # Macros
 derive_more = { version = "0.99.17", default-features = false, features = ["constructor", "from", "add", "deref", "mul", "into"] }
@@ -26,7 +26,7 @@ hex-literal = { version = "0.3.4" }
 
 # Error & Logging
 thiserror-no-std = { version = "2.0.2" }
-log = { version = "0.4.8", default-features = false }
+log = { version = "0.4.22", default-features = false }
 test-case = { version = "1.2.3" }
 proptest = { version = "1" }
 criterion = { version = "0.4", default-features = false }
@@ -53,9 +53,6 @@ nalgebra = { version = "0.32.2", default-features = false }
 
 # ETH
 ethabi-decode = { git = "https://github.com/Snowfork/ethabi-decode.git", branch = "master", default-features = false }
-
-[patch."https://github.com/paritytech/polkadot-sdk"]
-sp-crypto-ec-utils = { git = "https://github.com/availproject/polkadot-sdk", tag = "polkadot-1.7.1-patch-10" }
 
 [profile.dev.package]
 nalgebra = { opt-level = 3 }
