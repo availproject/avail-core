@@ -1,11 +1,11 @@
 use crate::pmp::{
-	ark_bls12_381::{Bls12_381, Fr},
-	ark_ec::pairing::Pairing,
+	Pairing,
 	ark_poly::{EvaluationDomain, GeneralEvaluationDomain},
 	merlin::Transcript,
 	method1::M1NoPrecomp,
 	traits::{Committer, MSMEngine},
 };
+use ark_bls12_381::{Bls12_381, Fr};
 use avail_core::{
 	app_extrinsic::AppExtrinsic, constants::kate::DATA_CHUNK_SIZE, ensure, AppId, DataLookup,
 };

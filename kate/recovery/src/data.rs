@@ -4,6 +4,11 @@ use sp_std::{collections::btree_map::BTreeMap, vec::Vec};
 
 use crate::matrix::{Dimensions, Position, RowIndex};
 
+#[cfg(target_arch = "wasm32")]
+extern crate alloc;
+#[cfg(target_arch = "wasm32")]
+use alloc::string::String;
+
 /// Position and data of a cell in extended matrix
 #[derive(Default, Debug, Clone, Constructor)]
 pub struct DataCell {
@@ -23,7 +28,6 @@ pub struct Cell {
 }
 
 impl Cell {
-	#[cfg(feature = "std")]
 	pub fn reference(&self, block: u32) -> String {
 		self.position.reference(block)
 	}

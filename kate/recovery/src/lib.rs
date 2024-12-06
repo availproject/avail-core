@@ -11,5 +11,5 @@ pub mod sparse_slice_read;
 #[cfg(feature = "std")]
 pub mod testnet;
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "wasmcompatible"))]
 pub mod couscous;

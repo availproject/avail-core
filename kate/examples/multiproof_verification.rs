@@ -1,3 +1,4 @@
+use ark_bls12_381::Bls12_381;
 use avail_core::{AppExtrinsic, AppId, BlockLengthColumns, BlockLengthRows};
 use core::num::NonZeroU16;
 use hex_literal::hex;
@@ -8,10 +9,9 @@ use kate::{
 	Seed,
 };
 use kate_recovery::matrix::Dimensions;
-use poly_multiproof::ark_ec::pairing::Pairing;
-use poly_multiproof::{ark_bls12_381::Bls12_381, msm::blst::BlstMSMEngine};
-use poly_multiproof::{method1::M1NoPrecomp, traits::MSMEngine};
-use poly_multiproof::{msm::ArkMSMEngine, traits::AsBytes};
+use poly_multiproof::msm::blst::BlstMSMEngine;
+use poly_multiproof::traits::AsBytes;
+use poly_multiproof::{method1::M1NoPrecomp};
 use rand::thread_rng;
 use thiserror_no_std::Error;
 

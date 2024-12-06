@@ -52,14 +52,14 @@ pub mod config {
 #[cfg(feature = "std")]
 pub mod testnet {
 	use super::*;
+	use ark_bls12_381::Fr;
 	use hex_literal::hex;
 	use once_cell::sync::Lazy;
-	use poly_multiproof::ark_bls12_381::Fr;
-	use poly_multiproof::ark_ec::pairing::Pairing;
 	use poly_multiproof::ark_ff::{BigInt, Fp, PrimeField};
 	use poly_multiproof::ark_serialize::CanonicalDeserialize;
 	use poly_multiproof::method1::M1NoPrecomp;
 	use poly_multiproof::traits::MSMEngine;
+	use poly_multiproof::Pairing;
 	use rand_chacha::{rand_core::SeedableRng, ChaChaRng};
 	use std::{collections::HashMap, sync::Mutex};
 
@@ -111,16 +111,17 @@ pub mod testnet {
 		use core::marker::PhantomData;
 
 		use super::*;
+		use ark_bls12_381::Bls12_381;
 		use dusk_bytes::Serializable;
 		use dusk_plonk::{
 			fft::{EvaluationDomain as PlonkED, Evaluations as PlonkEV},
 			prelude::BlsScalar,
 		};
 		use poly_multiproof::{
-			ark_ec::pairing::Pairing,
 			ark_ff::{BigInt, Fp},
 			ark_poly::{EvaluationDomain, GeneralEvaluationDomain},
-			ark_serialize::{CanonicalDeserialize, CanonicalSerialize},
+			ark_serialize::CanonicalSerialize,
+			msm::blst::BlstMSMEngine,
 			traits::Committer,
 		};
 		use rand::thread_rng;
@@ -135,10 +136,12 @@ pub mod testnet {
 				hex!("7848b5d711bc9883996317a3f9c90269d56771005d540a19184939c9e8d0db2a");
 			assert_eq!(SEC_BYTES, out);
 
-			let g1 = Pairing::G1::deserialize_compressed(&G1_BYTES[..]).unwrap();
-			let g2 = Pairing::G2::deserialize_compressed(&G2_BYTES[..]).unwrap();
+			let g1 = <Bls12_381 as Pairing>::G1::deserialize_compressed(&G1_BYTES[..]).unwrap();
+			let g2 = <Bls12_381 as Pairing>::G2::deserialize_compressed(&G2_BYTES[..]).unwrap();
 
-			let pmp = poly_multiproof::method1::M1NoPrecomp::new_from_scalar(x, g1, g2, 1024, 256);
+			let pmp = poly_multiproof::method1::M1NoPrecomp::<_, BlstMSMEngine>::new_from_scalar(
+				x, g1, g2, 1024, 256,
+			);
 
 			let dp_evals = (0..30)
 				.map(|_| BlsScalar::random(&mut thread_rng()))
@@ -174,11 +177,11 @@ pub mod testnet {
 #[cfg(feature = "std")]
 pub mod couscous {
 	use super::*;
-	use poly_multiproof::ark_bls12_381::{G1Projective as G1, G2Projective as G2};
-	use poly_multiproof::ark_ec::pairing::Pairing;
+	use ark_bls12_381::{G1Projective as G1, G2Projective as G2};
 	use poly_multiproof::ark_serialize::CanonicalDeserialize;
 	use poly_multiproof::method1::M1NoPrecomp;
 	use poly_multiproof::traits::MSMEngine;
+	use poly_multiproof::Pairing;
 	/// Constructs public parameters from pre-generated points for degree upto 1024
 	pub fn public_params() -> PublicParameters {
 		// We can also use the raw data to make deserilization faster at the cost of size of the data
@@ -229,6 +232,8 @@ pub mod couscous {
 	#[cfg(test)]
 	mod tests {
 		use super::*;
+		use crate::pmp::msm::blst::BlstMSMEngine;
+		use ark_bls12_381::{Bls12_381, Fr};
 		use dusk_plonk::{
 			commitment_scheme::kzg10::proof::Proof,
 			fft::{EvaluationDomain as DPEvaluationDomain, Evaluations},
@@ -241,15 +246,12 @@ pub mod couscous {
 			},
 			traits::KZGProof,
 		};
-		use poly_multiproof::{
-			ark_bls12_381::Fr,
-			traits::{AsBytes, Committer},
-		};
+		use poly_multiproof::traits::{AsBytes, Committer};
 		use rand::thread_rng;
 
 		#[test]
 		fn test_consistent_testnet_params() {
-			let pmp = couscous::multiproof_params();
+			let pmp = couscous::multiproof_params::<Bls12_381, BlstMSMEngine>();
 			let pmp2 = couscous::public_params();
 
 			let points = DensePolynomial::<Fr>::rand(1023, &mut thread_rng()).coeffs;
@@ -289,7 +291,7 @@ pub mod couscous {
 			assert_eq!(proof.to_bytes().unwrap(), proof2.to_bytes());
 
 			let verify1 = pmp
-				.verify(&pmp_commit, pmp_domain_pts[1], points[1], &proof)
+				.verify::<BlstMSMEngine>(&pmp_commit, pmp_domain_pts[1], points[1], &proof)
 				.unwrap();
 
 			let dp_proof_obj = Proof {
