@@ -1,3 +1,4 @@
+use crate::from_substrate::HexDisplay;
 use codec::{Decode, Encode};
 use scale_info::prelude::format;
 use scale_info::TypeInfo;
@@ -22,7 +23,7 @@ impl OpaqueExtrinsic {
 impl sp_std::fmt::Debug for OpaqueExtrinsic {
 	#[cfg(feature = "std")]
 	fn fmt(&self, fmt: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
-		write!(fmt, "{}", sp_core::hexdisplay::HexDisplay::from(&self.0))
+		write!(fmt, "{}", HexDisplay(&self.0))
 	}
 
 	#[cfg(not(feature = "std"))]
@@ -37,7 +38,9 @@ impl ::serde::Serialize for OpaqueExtrinsic {
 	where
 		S: ::serde::Serializer,
 	{
-		codec::Encode::using_encoded(&self.0, |bytes| ::sp_core::bytes::serialize(bytes, seq))
+		codec::Encode::using_encoded(&self.0, |bytes| {
+			::impl_serde::serialize::serialize(bytes, seq)
+		})
 	}
 }
 
@@ -47,7 +50,7 @@ impl<'a> ::serde::Deserialize<'a> for OpaqueExtrinsic {
 	where
 		D: ::serde::Deserializer<'a>,
 	{
-		let r = ::sp_core::bytes::deserialize(de)?;
+		let r = ::impl_serde::serialize::deserialize(de)?;
 		Decode::decode(&mut &r[..])
 			.map_err(|e| ::serde::de::Error::custom(format!("Decode error: {e}")))
 	}

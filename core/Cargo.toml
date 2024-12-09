@@ -7,12 +7,13 @@ license = "Apache-2.0"
 
 [dependencies]
 # Others
+hex = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+impl-serde = { workspace = true, optional = true }
 derive_more.workspace = true
 ethabi-decode.workspace = true
 hash256-std-hasher.workspace = true
-hex = { workspace = true, optional = true }
 log.workspace = true
-serde = { workspace = true, optional = true }
 static_assertions.workspace = true
 thiserror-no-std.workspace = true
 tiny-keccak.workspace = true
@@ -21,16 +22,22 @@ tiny-keccak.workspace = true
 binary-merkle-tree = { workspace = true, optional = true }
 bounded-collections.workspace = true
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive", "max-encoded-len"] }
-scale-info.workspace = true
+scale-info = { workspace = true }
 
 frame-support = { workspace = true, optional = true }
-sp-arithmetic.workspace = true
-sp-core.workspace = true
 sp-runtime = { workspace = true, optional = true }
 sp-runtime-interface = { workspace = true, optional = true }
+sp-trie = { workspace = true, optional = true }
+sp-storage = { workspace = true, optional = true }
+sp-debug-derive = { workspace = true, optional = true }
+sp-arithmetic.workspace = true
 sp-std.workspace = true
-sp-trie.workspace = true
-sp-io.workspace = true
+
+blake2b_simd.workspace = true
+sha2.workspace = true
+sha3.workspace = true
+primitive-types.workspace = true
+hash-db.workspace = true
 
 [dev-dependencies]
 hex-literal.workspace = true
@@ -43,33 +50,43 @@ trybuild = "1.0.96"
 [features]
 default = [ "std" ]
 std = [
-	"binary-merkle-tree?/std",
 	"bounded-collections/std",
 	"codec/std",
 	"derive_more/display",
 	"ethabi-decode/std",
-	"frame-support?/std",
 	"hash256-std-hasher/std",
-	"hex",
+	"hex/std",
 	"log/std",
 	"scale-info/std",
-	"serde/std",
+	"serde?/std",
+	"sp-std/std",
 	"sp-arithmetic/std",
-	"sp-core/std",
-	"sp-io/std",
+	"frame-support?/std",
+	"binary-merkle-tree?/std",
 	"sp-runtime-interface?/std",
 	"sp-runtime?/std",
-	"sp-std/std",
-	"sp-trie/std",
+	"sp-trie?/std",
+	"primitive-types/std",
 ]
+
 runtime = [
-	"binary-merkle-tree",
 	"frame-support",
-	"serde",
 	"sp-runtime",
 	"sp-runtime-interface",
+	"sp-trie",
+	"sp-storage",
+	"sp-debug-derive",
+	"binary-merkle-tree",
+	"serde",
 ]
-disable_panic_handler = [ "sp-io/disable_panic_handler" ]
 
 try-runtime = [ "runtime", "sp-runtime/try-runtime" ]
-serde = [ "dep:serde", "hex/serde", "log/serde" ]
+
+serde = [ 
+	"dep:serde", 
+	"hex/serde", 
+	"log/serde", 
+	"impl-serde", 
+	"primitive-types/serde_no_std", # TODO If std is enabled then `primitive-types/serde` "should" be enabled. Don't want to deal with that rn.
+	"bounded-collections/serde"
+]

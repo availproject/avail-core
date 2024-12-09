@@ -1,19 +1,19 @@
 use crate::traits::GetAppId;
-#[cfg(feature = "runtime")]
-use codec::Codec;
+use crate::AppId;
 use codec::{Decode, Encode};
 use derive_more::Constructor;
 use scale_info::TypeInfo;
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-use sp_core::RuntimeDebug;
 use sp_std::vec::Vec;
 
-use crate::AppId;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "runtime")]
+use {codec::Codec, sp_debug_derive::RuntimeDebug};
 
 /// Raw Extrinsic with application id.
-#[derive(Clone, TypeInfo, Default, Encode, Decode, RuntimeDebug, Constructor)]
+#[derive(Clone, Default, Encode, Decode, Constructor, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
 pub struct AppExtrinsic {
 	pub app_id: AppId,
 	#[cfg_attr(feature = "serde", serde(with = "hex"))]

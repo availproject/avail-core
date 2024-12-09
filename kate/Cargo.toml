@@ -19,7 +19,6 @@ poly-multiproof = { workspace = true, optional = true }
 # Parity & Substrate
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive"] }
 sp-arithmetic.workspace = true
-sp-core.workspace = true
 
 # 3rd-party
 derive_more.workspace = true
@@ -64,16 +63,14 @@ std = [
 	"rand/std",
 	"rand_chacha/std",
 	"serde",
-	"serde_json",
+	"serde_json/std",
 	"sp-arithmetic/std",
-	"sp-core/std",
 ]
 
-serde = [ "dep:serde" ]
+serde = [ "dep:serde", "avail-core/serde" ]
 
 extended-columns = []
 maximum-block-size = []
-wasmcompatible = ["kate-recovery/wasmcompatible"]
 
 [[bench]]
 name = "reconstruct"
