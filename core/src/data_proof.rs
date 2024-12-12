@@ -1,16 +1,15 @@
 use bounded_collections::BoundedVec;
+use bounded_collections::ConstU32;
 use codec::{Decode, Encode};
 use derive_more::Constructor;
+use primitive_types::H256;
 use scale_info::TypeInfo;
-use sp_core::{ConstU32, H256};
 use sp_std::vec::Vec;
 
 #[cfg(feature = "runtime")]
 use binary_merkle_tree::MerkleProof;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "runtime")]
-use sp_io::hashing::keccak_256;
 
 /// Max data supported on bridge (Ethereum calldata limits)
 pub const BOUNDED_DATA_MAX_LENGTH: u32 = 102_400;
@@ -41,7 +40,7 @@ pub fn tx_uid_deconstruct(uid: u64) -> (u32, u32) {
 	(block, tx_index)
 }
 
-#[derive(Clone, Debug, Encode, Decode, TypeInfo, Constructor)]
+#[derive(Clone, Debug, Encode, Decode, Constructor, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct ProofResponse {
@@ -71,6 +70,8 @@ pub struct TxDataRoots {
 #[cfg(feature = "runtime")]
 impl TxDataRoots {
 	pub fn new(submitted: H256, bridged: H256) -> Self {
+		use crate::from_substrate::keccak_256;
+
 		// keccak_256(submitted, bridged)
 		let sub_roots = [submitted.to_fixed_bytes(), bridged.to_fixed_bytes()].concat();
 		let root = keccak_256(sub_roots.as_slice()).into();
@@ -84,7 +85,7 @@ impl TxDataRoots {
 }
 
 /// Wrapper of `binary-merkle-tree::MerkleProof` with codec support.
-#[derive(Clone, Debug, PartialEq, Eq, Encode, Decode, TypeInfo, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Encode, Decode, Default, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct DataProof {
@@ -110,6 +111,8 @@ pub struct DataProof {
 #[cfg(feature = "runtime")]
 impl DataProof {
 	pub fn new(sub_trie: SubTrie, roots: TxDataRoots, m_proof: MerkleProof<H256, Vec<u8>>) -> Self {
+		use crate::from_substrate::keccak_256;
+
 		let leaf = match sub_trie {
 			SubTrie::DataSubmit => H256::from_slice(m_proof.leaf.as_slice()),
 			SubTrie::Bridge => keccak_256(m_proof.leaf.as_slice()).into(),

@@ -1,13 +1,14 @@
 use codec::{Decode, Encode, Input};
 use core::convert::TryFrom;
 use scale_info::{Type, TypeInfo};
-use sp_core::RuntimeDebug;
 use sp_std::vec;
 use sp_std::{ops::Range, vec::Vec};
 use thiserror_no_std::Error;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "runtime")]
+use sp_debug_derive::RuntimeDebug;
 
 use crate::{ensure, AppId};
 
@@ -26,12 +27,13 @@ pub enum Error {
 	OffsetOverflows,
 }
 
-#[derive(PartialEq, Eq, Clone, Default, RuntimeDebug)]
+#[derive(PartialEq, Eq, Clone, Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
 	feature = "serde",
 	serde(try_from = "CompactDataLookup", into = "CompactDataLookup")
 )]
+#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
 pub struct DataLookup {
 	pub(crate) index: Vec<(AppId, DataLookupRange)>,
 }

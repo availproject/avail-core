@@ -2,8 +2,8 @@ use super::BoundedData;
 
 use codec::{Decode, Encode};
 use derive_more::{Constructor, From};
+use primitive_types::H256;
 use scale_info::TypeInfo;
-use sp_core::H256;
 use sp_std::{vec, vec::Vec};
 
 use ethabi_decode::{encode, Token, U256};

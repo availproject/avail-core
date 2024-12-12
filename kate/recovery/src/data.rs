@@ -28,6 +28,7 @@ pub struct Cell {
 }
 
 impl Cell {
+	#[cfg(any(target_arch = "wasm32", feature = "std"))]
 	pub fn reference(&self, block: u32) -> String {
 		self.position.reference(block)
 	}
