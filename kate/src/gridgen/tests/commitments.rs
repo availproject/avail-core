@@ -17,7 +17,7 @@ fn test_build_commitments_simple_commitment_check() {
 		76, 41, 174, 145, 187, 12, 97, 32, 75, 111, 149, 209, 243, 195, 165, 10, 166, 172, 47, 41,
 		218, 24, 212, 66, 62, 5, 187, 191, 129, 5, 105, 3,
 	];
-	let pmp_pp = crate::testnet::multiproof_params(256, 256);
+	let pmp_pp = crate::testnet::multiproof_params::<Bls12_381, BlstMSMEngine>(256, 256);
 
 	let evals = EvaluationGrid::from_extrinsics(
 		vec![AppExtrinsic::from(original_data)],
@@ -149,7 +149,7 @@ fn test_zero_deg_poly_commit(row_values: Vec<u8>) {
 	println!("Row: {:?}", ev.evals);
 
 	let pg = ev.make_polynomial_grid().unwrap();
-	let pmp = couscous::multiproof_params();
+	let pmp = couscous::multiproof_params::<Bls12_381, BlstMSMEngine>();
 	println!("Poly: {:?}", pg.inner[0]);
 	let commitment = pg.commitment(&pmp, 0).unwrap().to_bytes().unwrap();
 
