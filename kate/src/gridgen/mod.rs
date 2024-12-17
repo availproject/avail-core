@@ -1,9 +1,9 @@
 use crate::pmp::{
-	Pairing,
 	ark_poly::{EvaluationDomain, GeneralEvaluationDomain},
 	merlin::Transcript,
 	method1::M1NoPrecomp,
 	traits::{Committer, MSMEngine},
+	Pairing,
 };
 use ark_bls12_381::{Bls12_381, Fr};
 use avail_core::{

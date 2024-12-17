@@ -9,9 +9,9 @@ use kate::{
 	Seed,
 };
 use kate_recovery::matrix::Dimensions;
+use poly_multiproof::method1::M1NoPrecomp;
 use poly_multiproof::msm::blst::BlstMSMEngine;
 use poly_multiproof::traits::AsBytes;
-use poly_multiproof::{method1::M1NoPrecomp};
 use rand::thread_rng;
 use thiserror_no_std::Error;
 

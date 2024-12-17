@@ -225,8 +225,7 @@ pub mod couscous {
 	pub fn multiproof_params<E: Pairing<G1 = G1, G2 = G2>, M: MSMEngine<E = E>>(
 	) -> M1NoPrecomp<E, M> {
 		let (g1, g2) = load_trusted_g1_g2();
-		let x = <M1NoPrecomp<_, _>>::new_from_powers(&g1, &g2);
-		x
+		<M1NoPrecomp<_, _>>::new_from_powers(&g1, &g2)
 	}
 
 	#[cfg(test)]
