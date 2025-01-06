@@ -1,7 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(clippy::arithmetic_side_effects)]
 
-use ark_bls12_381::Bls12_381;
 use avail_core::{constants::kate::DATA_CHUNK_SIZE, BlockLengthColumns, BlockLengthRows};
 use core::{
 	convert::TryInto,
@@ -24,7 +23,8 @@ pub use dusk_bytes::Serializable;
 #[cfg(feature = "std")]
 pub use poly_multiproof as pmp;
 
-pub type M1NoPrecomp = pmp::method1::M1NoPrecomp<Bls12_381, pmp::msm::blst::BlstMSMEngine>;
+#[cfg(all(feature = "std", feature="ark-bls12-381"))]
+pub type M1NoPrecomp = pmp::method1::M1NoPrecomp<ark_bls12_381::Bls12_381, pmp::msm::blst::BlstMSMEngine>;
 
 pub mod config {
 	use super::{BlockLengthColumns, BlockLengthRows};
