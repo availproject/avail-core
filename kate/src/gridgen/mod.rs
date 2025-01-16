@@ -125,6 +125,42 @@ impl EvaluationGrid {
 		})
 	}
 
+	// Temp
+	/// From raw data, create a data grid of Scalars
+	pub fn from_data(
+		data: Vec<u8>,
+		min_width: usize,
+		max_width: usize,
+		max_height: usize,
+		rng_seed: Seed,
+	) -> Result<Self, Error> {
+		// Convert raw data into scalars
+		let scalars = data
+			.chunks(DATA_CHUNK_SIZE)
+			.map(pad_to_bls_scalar)
+			.collect::<Result<Vec<_>, _>>()?;
+
+		let grid_size = scalars.len();
+		let (rows, cols): (usize, usize) =
+			get_block_dims(grid_size, min_width, max_width, max_height)?.into();
+
+		let mut rng = ChaChaRng::from_seed(rng_seed);
+		// Flatten the grid
+		let grid = scalars
+			.into_iter()
+			.chain(iter::repeat(0).map(|_| {
+				let rnd_values: [u8; SCALAR_SIZE - 1] = rng.gen();
+				pad_to_bls_scalar(rnd_values).expect("less than SCALAR_SIZE values, can't fail")
+			}));
+
+		let row_major_evals = DMatrix::from_row_iterator(rows, cols, grid);
+
+		Ok(EvaluationGrid {
+			lookup: DataLookup::default(), // No lookup needed for raw data
+			evals: row_major_evals,
+		})
+	}
+
 	/// Get the row `y` of the evaluation.
 	pub fn row(&self, y: usize) -> Option<Vec<ArkScalar>> {
 		let (rows, _cols) = self.evals.shape();
