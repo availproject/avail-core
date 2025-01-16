@@ -1,5 +1,7 @@
 pub mod get_app_id;
 pub use get_app_id::GetAppId;
+pub mod get_da_commitments;
+pub use get_da_commitments::GetDaCommitments;
 
 #[cfg(feature = "runtime")]
 pub mod extended_header;

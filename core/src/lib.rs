@@ -10,6 +10,7 @@ use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::Zero;
 use sp_core::RuntimeDebug;
+use scale_info::prelude::vec::Vec;
 
 pub mod opaque_extrinsic;
 pub use opaque_extrinsic::*;
@@ -203,3 +204,5 @@ macro_rules! keccak256_concat{
 		}
 	}}
 }
+
+pub type DaCommitments = Vec<[u8; kate::COMMITMENT_SIZE]>;

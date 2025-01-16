@@ -17,8 +17,8 @@
 
 //! Generic implementation of an unchecked (pre-verification) extrinsic.
 use crate::{
-	traits::{GetAppId, MaybeCaller},
-	AppId, OpaqueExtrinsic,
+	traits::{GetAppId, GetDaCommitments, MaybeCaller},
+	AppId, DaCommitments, OpaqueExtrinsic,
 };
 
 use codec::{Codec, Compact, Decode, Encode, EncodeLike, Error, Input};
@@ -483,6 +483,21 @@ where
 		self.signature
 			.as_ref()
 			.map(|(_address, _signature, extra)| extra.app_id())
+			.unwrap_or_default()
+	}
+}
+
+impl<A, C, S, E> GetDaCommitments for AppUncheckedExtrinsic<A, C, S, E>
+where
+	A: Codec,
+	S: Codec,
+	C: Codec,
+	E: SignedExtension + GetDaCommitments,
+{
+	fn da_commitments(&self) -> DaCommitments {
+		self.signature
+			.as_ref()
+			.map(|(_address, _signature, extra)| extra.da_commitments())
 			.unwrap_or_default()
 	}
 }
