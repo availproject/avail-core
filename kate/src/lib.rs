@@ -23,8 +23,9 @@ pub use dusk_bytes::Serializable;
 #[cfg(feature = "std")]
 pub use poly_multiproof as pmp;
 
-#[cfg(all(feature = "std", feature="ark-bls12-381"))]
-pub type M1NoPrecomp = pmp::method1::M1NoPrecomp<ark_bls12_381::Bls12_381, pmp::msm::blst::BlstMSMEngine>;
+#[cfg(all(feature = "std", feature = "ark-bls12-381"))]
+pub type M1NoPrecomp =
+	pmp::method1::M1NoPrecomp<ark_bls12_381::Bls12_381, pmp::msm::blst::BlstMSMEngine>;
 
 pub mod config {
 	use super::{BlockLengthColumns, BlockLengthRows};
