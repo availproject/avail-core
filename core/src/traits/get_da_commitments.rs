@@ -1,4 +1,4 @@
-use crate::{constants::kate::COMMITMENT_SIZE, DaCommitments};
+use crate::DaCommitments;
 use scale_info::prelude::vec::Vec;
 
 /// Get DA Commitments trait
@@ -48,8 +48,8 @@ mod tests {
 
 	#[test]
 	fn da_commitments_trait_on_tuples() {
-		let custom_da_commitments = (0, 1, 2, 3, 4, 5, 6, CustomDaCommitments {});
-		let default_da_commitments = (0, 1, 2, 3, 4, 5, 6, DefaultGetDaCommitments {});
+		let custom_da_commitments = (0, 1, 2, 3, 4, 5, 6, 7, CustomDaCommitments {});
+		let default_da_commitments = (0, 1, 2, 3, 4, 5, 6, 7, DefaultGetDaCommitments {});
 
 		assert_eq!(
 			custom_da_commitments.da_commitments(),

@@ -635,7 +635,7 @@ pub fn scalars_to_rows(
 mod tests {
 	use avail_core::{
 		constants::kate::{CHUNK_SIZE, COMMITMENT_SIZE, DATA_CHUNK_SIZE},
-		DataLookup, DaCommitments,
+		DaCommitments, DataLookup,
 	};
 	use dusk_bytes::Serializable;
 	use dusk_plonk::bls12_381::BlsScalar;
@@ -1145,7 +1145,7 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 			AppExtrinsic::new(AppId(3), DaCommitments::new(), xt4.clone()),
 		];
 
-		let expected = vec![
+		let _expected = vec![
 			(AppId(1), DaCommitments::new(), vec![xt1, xt2]),
 			(AppId(2), DaCommitments::new(), vec![xt3]),
 			(AppId(3), DaCommitments::new(), vec![xt4]),
