@@ -14,13 +14,17 @@ impl<A, B, C, D, E, F, G, H, I: GetDaCommitments> GetDaCommitments for (A, B, C,
 	}
 }
 
-impl<A, B, C, D, E, F, G, H, I, J: GetDaCommitments> GetDaCommitments for (A, B, C, D, E, F, G, H, I, J) {
+impl<A, B, C, D, E, F, G, H, I, J: GetDaCommitments> GetDaCommitments
+	for (A, B, C, D, E, F, G, H, I, J)
+{
 	fn da_commitments(&self) -> DaCommitments {
 		self.9.da_commitments()
 	}
 }
 
-impl<A, B, C, D, E, F, G, H, I, J: GetDaCommitments, K> GetDaCommitments for (A, B, C, D, E, F, G, H, I, J, K) {
+impl<A, B, C, D, E, F, G, H, I, J: GetDaCommitments, K> GetDaCommitments
+	for (A, B, C, D, E, F, G, H, I, J, K)
+{
 	fn da_commitments(&self) -> DaCommitments {
 		self.9.da_commitments()
 	}
@@ -47,7 +51,13 @@ mod tests {
 		let custom_da_commitments = (0, 1, 2, 3, 4, 5, 6, CustomDaCommitments {});
 		let default_da_commitments = (0, 1, 2, 3, 4, 5, 6, DefaultGetDaCommitments {});
 
-		assert_eq!(custom_da_commitments.da_commitments(), vec![[0u8; COMMITMENT_SIZE]]);
-		assert_eq!(default_da_commitments.da_commitments(), DaCommitments::new());
+		assert_eq!(
+			custom_da_commitments.da_commitments(),
+			vec![[0u8; COMMITMENT_SIZE]]
+		);
+		assert_eq!(
+			default_da_commitments.da_commitments(),
+			DaCommitments::new()
+		);
 	}
 }

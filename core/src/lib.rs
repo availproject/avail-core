@@ -5,12 +5,12 @@ use core::fmt::Debug;
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use derive_more::{Add, Constructor, Deref, Into, Mul};
+use scale_info::prelude::vec::Vec;
 use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::Zero;
 use sp_core::RuntimeDebug;
-use scale_info::prelude::vec::Vec;
 
 pub mod opaque_extrinsic;
 pub use opaque_extrinsic::*;

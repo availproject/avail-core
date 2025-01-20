@@ -4,7 +4,7 @@ use crate::{
 	gridgen::{tests::sample_cells, EvaluationGrid},
 	Seed,
 };
-use avail_core::{AppExtrinsic, AppId, BlockLengthColumns, BlockLengthRows};
+use avail_core::{AppExtrinsic, AppId, BlockLengthColumns, BlockLengthRows, DaCommitments};
 use core::num::NonZeroU16;
 use kate_recovery::{
 	com::{reconstruct_app_extrinsics, reconstruct_extrinsics},
@@ -21,8 +21,8 @@ fn test_multiple_extrinsics_for_same_app_id() {
 	let xt1 = vec![5, 5];
 	let xt2 = vec![6, 6];
 	let xts = vec![
-		AppExtrinsic::new(AppId(1), xt1.clone()),
-		AppExtrinsic::new(AppId(1), xt2.clone()),
+		AppExtrinsic::new(AppId(1), DaCommitments::new(), xt1.clone()),
+		AppExtrinsic::new(AppId(1), DaCommitments::new(), xt2.clone()),
 	];
 	// The hash is used for seed for padding the block to next power of two value
 	let hash = Seed::default();
@@ -95,7 +95,7 @@ get erasure coded to ensure redundancy."#;
 	let xts = xts_data
 		.into_iter()
 		.enumerate()
-		.map(|(i, data)| AppExtrinsic::new(AppId(i as u32), data))
+		.map(|(i, data)| AppExtrinsic::new(AppId(i as u32), DaCommitments::new(), data))
 		.collect::<Vec<_>>();
 
 	let grid = EvaluationGrid::from_extrinsics(xts, 4, 4, 32, Seed::default())

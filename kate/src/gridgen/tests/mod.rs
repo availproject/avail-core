@@ -1,4 +1,4 @@
-use avail_core::{AppExtrinsic, AppId};
+use avail_core::{AppExtrinsic, AppId, DaCommitments};
 use kate_recovery::{data::DataCell, matrix::Position};
 use once_cell::sync::Lazy;
 use poly_multiproof::{m1_blst::M1NoPrecomp, traits::AsBytes};
@@ -21,7 +21,7 @@ fn app_extrinsic_strategy() -> impl Strategy<Value = AppExtrinsic> {
 		any::<u32>(),
 		any_with::<Vec<u8>>(size_range(1..2048).lift()),
 	)
-		.prop_map(|(app_id, data)| AppExtrinsic::new(AppId(app_id), data))
+		.prop_map(|(app_id, data)| AppExtrinsic::new(AppId(app_id), DaCommitments::new(), data))
 }
 
 fn app_extrinsics_strategy() -> impl Strategy<Value = Vec<AppExtrinsic>> {

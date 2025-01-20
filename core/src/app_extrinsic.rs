@@ -3,12 +3,12 @@ use crate::traits::{GetAppId, GetDaCommitments};
 use codec::Codec;
 use codec::{Decode, Encode};
 use derive_more::Constructor;
+use scale_info::prelude::string::String;
 use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use sp_core::RuntimeDebug;
 use sp_std::vec::Vec;
-use scale_info::prelude::string::String;
 
 use crate::{AppId, DaCommitments};
 
@@ -17,18 +17,30 @@ use crate::{AppId, DaCommitments};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct AppExtrinsic {
 	pub app_id: AppId,
-	#[cfg_attr(feature = "serde", serde(serialize_with = "serialize_da_commitments", deserialize_with = "deserialize_da_commitments"))]
+	#[cfg_attr(
+		feature = "serde",
+		serde(
+			serialize_with = "serialize_da_commitments",
+			deserialize_with = "deserialize_da_commitments"
+		)
+	)]
 	pub da_commitments: DaCommitments,
 	#[cfg_attr(feature = "serde", serde(with = "hex"))]
 	pub data: Vec<u8>,
 }
 
 #[cfg(feature = "serde")]
-fn serialize_da_commitments<S>(da_commitments: &DaCommitments, serializer: S) -> Result<S::Ok, S::Error>
+fn serialize_da_commitments<S>(
+	da_commitments: &DaCommitments,
+	serializer: S,
+) -> Result<S::Ok, S::Error>
 where
 	S: Serializer,
 {
-	let hex_strings: Vec<String> = da_commitments.iter().map(|commitment| hex::encode(commitment)).collect();
+	let hex_strings: Vec<String> = da_commitments
+		.iter()
+		.map(|commitment| hex::encode(commitment))
+		.collect();
 	hex_strings.serialize(serializer)
 }
 
@@ -75,7 +87,11 @@ where
 			.unwrap_or_default();
 		let data = ue.encode();
 
-		Self { app_id, da_commitments, data }
+		Self {
+			app_id,
+			da_commitments,
+			data,
+		}
 	}
 }
 

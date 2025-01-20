@@ -146,12 +146,10 @@ impl EvaluationGrid {
 
 		let mut rng = ChaChaRng::from_seed(rng_seed);
 		// Flatten the grid
-		let grid = scalars
-			.into_iter()
-			.chain(iter::repeat(0).map(|_| {
-				let rnd_values: [u8; SCALAR_SIZE - 1] = rng.gen();
-				pad_to_bls_scalar(rnd_values).expect("less than SCALAR_SIZE values, can't fail")
-			}));
+		let grid = scalars.into_iter().chain(iter::repeat(0).map(|_| {
+			let rnd_values: [u8; SCALAR_SIZE - 1] = rng.gen();
+			pad_to_bls_scalar(rnd_values).expect("less than SCALAR_SIZE values, can't fail")
+		}));
 
 		let row_major_evals = DMatrix::from_row_iterator(rows, cols, grid);
 
