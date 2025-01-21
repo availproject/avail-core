@@ -37,11 +37,7 @@ fn serialize_da_commitments<S>(
 where
 	S: Serializer,
 {
-	let hex_strings: Vec<String> = da_commitments
-		.iter()
-		.map(|commitment| hex::encode(commitment))
-		.collect();
-	hex_strings.serialize(serializer)
+	hex::encode(da_commitments).serialize(serializer)
 }
 
 #[cfg(feature = "serde")]
@@ -49,16 +45,8 @@ fn deserialize_da_commitments<'de, D>(deserializer: D) -> Result<DaCommitments, 
 where
 	D: Deserializer<'de>,
 {
-	let hex_strings: Vec<String> = Vec::deserialize(deserializer)?;
-	hex_strings
-		.iter()
-		.map(|hex_str| {
-			let bytes = hex::decode(hex_str).map_err(serde::de::Error::custom)?;
-			let mut array = [0u8; 48];
-			array.copy_from_slice(&bytes);
-			Ok(array)
-		})
-		.collect()
+	let hex_string: String = String::deserialize(deserializer)?;
+	hex::decode(&hex_string).map_err(serde::de::Error::custom)
 }
 
 #[cfg(feature = "runtime")]

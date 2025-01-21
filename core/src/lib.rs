@@ -205,4 +205,4 @@ macro_rules! keccak256_concat{
 	}}
 }
 
-pub type DaCommitments = Vec<[u8; kate::COMMITMENT_SIZE]>;
+pub type DaCommitments = Vec<u8>;

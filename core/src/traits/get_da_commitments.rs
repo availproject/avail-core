@@ -1,15 +1,14 @@
-use crate::DaCommitments;
 use scale_info::prelude::vec::Vec;
 
 /// Get DA Commitments trait
 pub trait GetDaCommitments {
-	fn da_commitments(&self) -> DaCommitments {
-		Vec::new()
+	fn da_commitments(&self) -> Vec<u8> {
+		Vec::<u8>::new()
 	}
 }
 
 impl<A, B, C, D, E, F, G, H, I: GetDaCommitments> GetDaCommitments for (A, B, C, D, E, F, G, H, I) {
-	fn da_commitments(&self) -> DaCommitments {
+	fn da_commitments(&self) -> Vec<u8> {
 		self.8.da_commitments()
 	}
 }
@@ -17,7 +16,7 @@ impl<A, B, C, D, E, F, G, H, I: GetDaCommitments> GetDaCommitments for (A, B, C,
 impl<A, B, C, D, E, F, G, H, I, J: GetDaCommitments> GetDaCommitments
 	for (A, B, C, D, E, F, G, H, I, J)
 {
-	fn da_commitments(&self) -> DaCommitments {
+	fn da_commitments(&self) -> Vec<u8> {
 		self.9.da_commitments()
 	}
 }
@@ -25,7 +24,7 @@ impl<A, B, C, D, E, F, G, H, I, J: GetDaCommitments> GetDaCommitments
 impl<A, B, C, D, E, F, G, H, I, J: GetDaCommitments, K> GetDaCommitments
 	for (A, B, C, D, E, F, G, H, I, J, K)
 {
-	fn da_commitments(&self) -> DaCommitments {
+	fn da_commitments(&self) -> Vec<u8> {
 		self.9.da_commitments()
 	}
 }
@@ -38,8 +37,8 @@ mod tests {
 	struct CustomDaCommitments {}
 
 	impl GetDaCommitments for CustomDaCommitments {
-		fn da_commitments(&self) -> DaCommitments {
-			vec![[0u8; COMMITMENT_SIZE]]
+		fn da_commitments(&self) -> Vec<u8> {
+			vec![0u8; COMMITMENT_SIZE]
 		}
 	}
 
@@ -53,11 +52,8 @@ mod tests {
 
 		assert_eq!(
 			custom_da_commitments.da_commitments(),
-			vec![[0u8; COMMITMENT_SIZE]]
+			vec![0u8; COMMITMENT_SIZE]
 		);
-		assert_eq!(
-			default_da_commitments.da_commitments(),
-			DaCommitments::new()
-		);
+		assert_eq!(default_da_commitments.da_commitments(), Vec::<u8>::new());
 	}
 }
