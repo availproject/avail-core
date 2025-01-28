@@ -23,9 +23,9 @@ pub use dusk_bytes::Serializable;
 #[cfg(feature = "std")]
 pub use poly_multiproof as pmp;
 
-#[cfg(all(feature = "std", feature = "ark-bls12-381"))]
+#[cfg(feature = "std")]
 pub type M1NoPrecomp =
-	pmp::method1::M1NoPrecomp<ark_bls12_381::Bls12_381, pmp::msm::blst::BlstMSMEngine>;
+	pmp::method1::M1NoPrecomp<pmp::ark_bls12_381::Bls12_381, pmp::msm::blst::BlstMSMEngine>;
 
 pub mod config {
 	use super::{BlockLengthColumns, BlockLengthRows};
@@ -56,9 +56,9 @@ pub mod config {
 #[cfg(feature = "std")]
 pub mod testnet {
 	use super::*;
-	use ark_bls12_381::Fr;
 	use hex_literal::hex;
 	use once_cell::sync::Lazy;
+	use pmp::ark_bls12_381::Fr;
 	use poly_multiproof::ark_ff::{BigInt, Fp, PrimeField};
 	use poly_multiproof::ark_serialize::CanonicalDeserialize;
 	use poly_multiproof::method1::M1NoPrecomp;
@@ -115,7 +115,7 @@ pub mod testnet {
 		use core::marker::PhantomData;
 
 		use super::*;
-		use ark_bls12_381::Bls12_381;
+		use pmp::ark_bls12_381::Bls12_381;
 		use dusk_bytes::Serializable;
 		use dusk_plonk::{
 			fft::{EvaluationDomain as PlonkED, Evaluations as PlonkEV},
@@ -181,11 +181,11 @@ pub mod testnet {
 #[cfg(feature = "std")]
 pub mod couscous {
 	use super::*;
-	use ark_bls12_381::{G1Projective as G1, G2Projective as G2};
-	use poly_multiproof::ark_serialize::CanonicalDeserialize;
-	use poly_multiproof::method1::M1NoPrecomp;
-	use poly_multiproof::traits::MSMEngine;
-	use poly_multiproof::Pairing;
+	use pmp::ark_bls12_381::{G1Projective as G1, G2Projective as G2};
+	use pmp::ark_serialize::CanonicalDeserialize;
+	use pmp::method1::M1NoPrecomp;
+	use pmp::traits::MSMEngine;
+	use pmp::Pairing;
 	/// Constructs public parameters from pre-generated points for degree upto 1024
 	pub fn public_params() -> PublicParameters {
 		// We can also use the raw data to make deserilization faster at the cost of size of the data

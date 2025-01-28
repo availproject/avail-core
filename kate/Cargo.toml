@@ -15,7 +15,6 @@ kate-recovery = { path = "recovery", default-features = false }
 # Crypto
 dusk-plonk = { workspace = true, optional = true }
 poly-multiproof = { workspace = true, optional = true }
-ark-bls12-381 = { workspace = true, optional = true }
 
 # Parity & Substrate
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive"] }
@@ -60,9 +59,8 @@ std = [
 	"nalgebra/std",
 	"once_cell",
 	"parallel",
-	"poly-multiproof/blst",
 	"poly-multiproof/std",
-	"ark-bls12-381/std",
+	"poly-multiproof/blst",
 	"rand/std",
 	"rand_chacha/std",
 	"serde",

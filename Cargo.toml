@@ -49,8 +49,9 @@ blake2b_simd = { version = "1.0.2", default-features = false }
 sha2 = { version = "0.10.7", default-features = false }
 sha3 = { version = "0.10.0", default-features = false }
 
-poly-multiproof = { git = "https://github.com/availproject/poly-multiproof", ref="0e46c89762b5531b1767e4e8e923e0ed982f0e49", default-features = false, features = ['ark-bls12-381']}
-ark-bls12-381 = { version = "0.4.0" }
+#poly-multiproof = { git = "https://github.com/availproject/poly-multiproof", ref="0e46c89762b5531b1767e4e8e923e0ed982f0e49", default-features = false, features = ['ark-bls12-381']}
+poly-multiproof = { git = "https://github.com/aphoh/poly-multiproof", ref="494468b86ac8e16dca21d465d921990c578eaad3", default-features = false, features = ['ark-bls12-381']}
+#poly-multiproof = { path = "../../poly-multiproof", default-features = false, features = ['ark-bls12-381']}
 dusk-plonk = { git = "https://github.com/availproject/plonk.git", tag = "v0.12.0-polygon-2" }
 
 hash-db = { version = "0.16.0",  default-features = false }
