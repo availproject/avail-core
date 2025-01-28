@@ -115,12 +115,12 @@ pub mod testnet {
 		use core::marker::PhantomData;
 
 		use super::*;
-		use pmp::ark_bls12_381::Bls12_381;
 		use dusk_bytes::Serializable;
 		use dusk_plonk::{
 			fft::{EvaluationDomain as PlonkED, Evaluations as PlonkEV},
 			prelude::BlsScalar,
 		};
+		use pmp::ark_bls12_381::Bls12_381;
 		use poly_multiproof::{
 			ark_ff::{BigInt, Fp},
 			ark_poly::{EvaluationDomain, GeneralEvaluationDomain},
