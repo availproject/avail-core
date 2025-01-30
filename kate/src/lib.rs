@@ -23,6 +23,10 @@ pub use dusk_bytes::Serializable;
 #[cfg(feature = "std")]
 pub use poly_multiproof as pmp;
 
+#[cfg(feature = "std")]
+pub type M1NoPrecomp =
+	pmp::method1::M1NoPrecomp<pmp::ark_bls12_381::Bls12_381, pmp::msm::blst::BlstMSMEngine>;
+
 pub mod config {
 	use super::{BlockLengthColumns, BlockLengthRows};
 	use core::num::NonZeroU16;
@@ -54,10 +58,12 @@ pub mod testnet {
 	use super::*;
 	use hex_literal::hex;
 	use once_cell::sync::Lazy;
-	use poly_multiproof::ark_ff::{BigInt, Fp};
+	use pmp::ark_bls12_381::Fr;
+	use poly_multiproof::ark_ff::{BigInt, Fp, PrimeField};
 	use poly_multiproof::ark_serialize::CanonicalDeserialize;
-	use poly_multiproof::m1_blst;
-	use poly_multiproof::m1_blst::{Fr, G1, G2};
+	use poly_multiproof::method1::M1NoPrecomp;
+	use poly_multiproof::traits::MSMEngine;
+	use poly_multiproof::Pairing;
 	use rand_chacha::{rand_core::SeedableRng, ChaChaRng};
 	use std::{collections::HashMap, sync::Mutex};
 
@@ -87,13 +93,21 @@ pub mod testnet {
 	const G1_BYTES: [u8; 48] = hex!("a45f754a9e94cccbb2cbe9d7c441b8b527026ef05e2a3aff4aa4bb1c57df3767fb669cc4c7639bd37e683653bdc50b5a");
 	const G2_BYTES: [u8; 96] = hex!("b845ac5e7b4ec8541d012660276772e001c1e0475e60971884481d43fcbd44de2a02e9862dbf9f536c211814f6cc5448100bcda5dc707854af8e3829750d1fb18b127286aaa4fc959e732e2128a8a315f2f8f419bf5774fe043af46fbbeb4b27");
 
-	pub fn multiproof_params(max_degree: usize, max_pts: usize) -> m1_blst::M1NoPrecomp {
-		let x: Fr = Fp(BigInt(SEC_LIMBS), core::marker::PhantomData);
+	pub fn multiproof_params<E: Pairing, M: MSMEngine<E = E>>(
+		max_degree: usize,
+		max_pts: usize,
+	) -> M1NoPrecomp<E, M>
+	where
+		E::ScalarField: PrimeField + From<Fr>,
+		E::G1: CanonicalDeserialize,
+		E::G2: CanonicalDeserialize,
+	{
+		let x: <E as Pairing>::ScalarField =
+			Fp(BigInt(SEC_LIMBS), core::marker::PhantomData).into();
+		let g1: E::G1 = E::G1::deserialize_compressed(&G1_BYTES[..]).unwrap();
+		let g2: E::G2 = E::G2::deserialize_compressed(&G2_BYTES[..]).unwrap();
 
-		let g1 = G1::deserialize_compressed(&G1_BYTES[..]).unwrap();
-		let g2 = G2::deserialize_compressed(&G2_BYTES[..]).unwrap();
-
-		m1_blst::M1NoPrecomp::new_from_scalar(x, g1, g2, max_degree.saturating_add(1), max_pts)
+		M1NoPrecomp::<E, M>::new_from_scalar(x, g1, g2, max_degree.saturating_add(1), max_pts)
 	}
 
 	#[cfg(test)]
@@ -106,11 +120,12 @@ pub mod testnet {
 			fft::{EvaluationDomain as PlonkED, Evaluations as PlonkEV},
 			prelude::BlsScalar,
 		};
+		use pmp::ark_bls12_381::Bls12_381;
 		use poly_multiproof::{
 			ark_ff::{BigInt, Fp},
 			ark_poly::{EvaluationDomain, GeneralEvaluationDomain},
-			ark_serialize::{CanonicalDeserialize, CanonicalSerialize},
-			m1_blst::Fr,
+			ark_serialize::CanonicalSerialize,
+			msm::blst::BlstMSMEngine,
 			traits::Committer,
 		};
 		use rand::thread_rng;
@@ -125,10 +140,12 @@ pub mod testnet {
 				hex!("7848b5d711bc9883996317a3f9c90269d56771005d540a19184939c9e8d0db2a");
 			assert_eq!(SEC_BYTES, out);
 
-			let g1 = G1::deserialize_compressed(&G1_BYTES[..]).unwrap();
-			let g2 = G2::deserialize_compressed(&G2_BYTES[..]).unwrap();
+			let g1 = <Bls12_381 as Pairing>::G1::deserialize_compressed(&G1_BYTES[..]).unwrap();
+			let g2 = <Bls12_381 as Pairing>::G2::deserialize_compressed(&G2_BYTES[..]).unwrap();
 
-			let pmp = poly_multiproof::m1_blst::M1NoPrecomp::new_from_scalar(x, g1, g2, 1024, 256);
+			let pmp = poly_multiproof::method1::M1NoPrecomp::<_, BlstMSMEngine>::new_from_scalar(
+				x, g1, g2, 1024, 256,
+			);
 
 			let dp_evals = (0..30)
 				.map(|_| BlsScalar::random(&mut thread_rng()))
@@ -164,10 +181,11 @@ pub mod testnet {
 #[cfg(feature = "std")]
 pub mod couscous {
 	use super::*;
-	use poly_multiproof::ark_serialize::CanonicalDeserialize;
-	use poly_multiproof::m1_blst;
-	use poly_multiproof::m1_blst::{G1, G2};
-
+	use pmp::ark_bls12_381::{G1Projective as G1, G2Projective as G2};
+	use pmp::ark_serialize::CanonicalDeserialize;
+	use pmp::method1::M1NoPrecomp;
+	use pmp::traits::MSMEngine;
+	use pmp::Pairing;
 	/// Constructs public parameters from pre-generated points for degree upto 1024
 	pub fn public_params() -> PublicParameters {
 		// We can also use the raw data to make deserilization faster at the cost of size of the data
@@ -208,14 +226,17 @@ pub mod couscous {
 	}
 
 	///  Construct public parameters from pre-generated points for degree upto 1024
-	pub fn multiproof_params() -> m1_blst::M1NoPrecomp {
+	pub fn multiproof_params<E: Pairing<G1 = G1, G2 = G2>, M: MSMEngine<E = E>>(
+	) -> M1NoPrecomp<E, M> {
 		let (g1, g2) = load_trusted_g1_g2();
-		m1_blst::M1NoPrecomp::new_from_powers(g1, g2)
+		<M1NoPrecomp<_, _>>::new_from_powers(&g1, &g2)
 	}
 
 	#[cfg(test)]
 	mod tests {
 		use super::*;
+		use crate::pmp::msm::blst::BlstMSMEngine;
+		use ark_bls12_381::{Bls12_381, Fr};
 		use dusk_plonk::{
 			commitment_scheme::kzg10::proof::Proof,
 			fft::{EvaluationDomain as DPEvaluationDomain, Evaluations},
@@ -228,15 +249,12 @@ pub mod couscous {
 			},
 			traits::KZGProof,
 		};
-		use poly_multiproof::{
-			m1_blst::Fr,
-			traits::{AsBytes, Committer},
-		};
+		use poly_multiproof::traits::{AsBytes, Committer};
 		use rand::thread_rng;
 
 		#[test]
 		fn test_consistent_testnet_params() {
-			let pmp = couscous::multiproof_params();
+			let pmp = couscous::multiproof_params::<Bls12_381, BlstMSMEngine>();
 			let pmp2 = couscous::public_params();
 
 			let points = DensePolynomial::<Fr>::rand(1023, &mut thread_rng()).coeffs;
@@ -276,7 +294,7 @@ pub mod couscous {
 			assert_eq!(proof.to_bytes().unwrap(), proof2.to_bytes());
 
 			let verify1 = pmp
-				.verify(&pmp_commit, pmp_domain_pts[1], points[1], &proof)
+				.verify::<BlstMSMEngine>(&pmp_commit, pmp_domain_pts[1], points[1], &proof)
 				.unwrap();
 
 			let dp_proof_obj = Proof {
