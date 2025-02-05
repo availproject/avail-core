@@ -1,5 +1,5 @@
 use crate::pmp::{
-	ark_bls12_381::{Bls12_381, Fr},
+	ark_bls12_381::Bls12_381,
 	ark_poly::{EvaluationDomain, GeneralEvaluationDomain},
 	merlin::Transcript,
 	method1::M1NoPrecomp,
@@ -28,6 +28,7 @@ use std::collections::BTreeMap;
 use thiserror_no_std::Error;
 
 use crate::{
+	ArkScalar,
 	com::{Cell, Error},
 	Seed,
 };
@@ -46,7 +47,6 @@ macro_rules! cfg_iter {
 }
 
 pub const SCALAR_SIZE: usize = 32;
-pub type ArkScalar = Fr;
 pub type Commitment = crate::pmp::Commitment<Bls12_381>;
 pub use poly_multiproof::traits::AsBytes;
 

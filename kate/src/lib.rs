@@ -12,7 +12,7 @@ use kate_recovery::matrix::Dimensions;
 use sp_arithmetic::traits::SaturatedConversion;
 use static_assertions::const_assert_ne;
 use thiserror_no_std::Error;
-
+use pmp::ark_bls12_381::Fr;
 pub const LOG_TARGET: &str = "kate";
 pub const U32_USIZE_ERR: &str = "`u32` cast to `usize` overflows, unsupported platform";
 
@@ -27,6 +27,7 @@ pub use poly_multiproof as pmp;
 pub type M1NoPrecomp =
     pmp::method1::M1NoPrecomp<pmp::ark_bls12_381::Bls12_381, pmp::msm::blst::BlstMSMEngine>;
 
+pub type ArkScalar = Fr;
 pub mod config {
     use super::{BlockLengthColumns, BlockLengthRows};
     use core::num::NonZeroU16;
