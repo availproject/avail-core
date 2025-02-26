@@ -59,6 +59,7 @@ std = [
 	"nalgebra/std",
 	"once_cell",
 	"parallel",
+	"poly-multiproof/std",
 	"poly-multiproof/blst",
 	"rand/std",
 	"rand_chacha/std",
