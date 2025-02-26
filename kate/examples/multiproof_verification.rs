@@ -1,4 +1,4 @@
-use ark_bls12_381::Bls12_381;
+use poly_multiproof::ark_bls12_381::Bls12_381;
 use avail_core::{AppExtrinsic, AppId, BlockLengthColumns, BlockLengthRows};
 use core::num::NonZeroU16;
 use hex_literal::hex;
@@ -90,7 +90,7 @@ fn multiproof_verification() -> Result<bool, AppError> {
 	let block_commits = &commits[mp_block.start_x..mp_block.end_x];
 	let evals_flat = evals
 		.chunks_exact(32)
-		.map(|e| kate::gridgen::ArkScalar::from_bytes(e.try_into().unwrap()))
+		.map(|e| kate::ArkScalar::from_bytes(e.try_into().unwrap()))
 		.collect::<Result<Vec<_>, _>>()
 		.unwrap();
 	let evals_grid = evals_flat
