@@ -145,18 +145,50 @@ impl EvaluationGrid {
 
 		let mut rng = ChaChaRng::from_seed(rng_seed);
 		// Flatten the grid
-		let grid = scalars
-			.into_iter()
-			.chain(iter::repeat(0).map(|_| {
-				let rnd_values: [u8; SCALAR_SIZE - 1] = rng.gen();
-				pad_to_bls_scalar(rnd_values).expect("less than SCALAR_SIZE values, can't fail")
-			}));
+		let grid = scalars.into_iter().chain(iter::repeat(0).map(|_| {
+			let rnd_values: [u8; SCALAR_SIZE - 1] = rng.gen();
+			pad_to_bls_scalar(rnd_values).expect("less than SCALAR_SIZE values, can't fail")
+		}));
 
 		let row_major_evals = DMatrix::from_row_iterator(rows, cols, grid);
 
 		Ok(EvaluationGrid {
 			lookup: DataLookup::default(),
 			evals: row_major_evals,
+		})
+	}
+
+	/// Merge multiple EvaluationGrids into one
+	pub fn merge(grids: Vec<EvaluationGrid>) -> Result<Self, Error> {
+		if grids.is_empty() {
+			return Err(Error::ZeroDimension);
+		}
+
+		let total_rows = grids.iter().map(|grid| grid.evals.nrows()).sum();
+		let cols = grids[0].evals.ncols();
+
+		// Ensure all grids have the same number of columns
+		for grid in &grids {
+			if grid.evals.ncols() != cols {
+				return Err(Error::DimensionsMismatch);
+			}
+		}
+
+		let mut merged_evals = DMatrix::zeros(total_rows, cols);
+		let mut current_row = 0;
+
+		for grid in grids {
+			let rows = grid.evals.nrows();
+			merged_evals
+				.rows_mut(current_row, rows)
+				.copy_from(&grid.evals);
+			current_row += rows;
+		}
+
+		Ok(EvaluationGrid {
+			// TODO: handle this properly
+			lookup: DataLookup::default(),
+			evals: merged_evals,
 		})
 	}
 
