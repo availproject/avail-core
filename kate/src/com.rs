@@ -47,7 +47,7 @@ use crate::{
 	padded_len_of_pad_iec_9797_1, BlockDimensions, Seed, TryFromBlockDimensionsError, LOG_TARGET,
 };
 #[cfg(feature = "std")]
-use kate_recovery::{matrix::Dimensions, testnet};
+use kate_recovery::matrix::Dimensions;
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Constructor, Clone, Copy, PartialEq, Eq, Debug)]
@@ -501,6 +501,7 @@ pub fn par_build_commitments<const CHUNK_SIZE: usize, M: Metrics>(
 	rng_seed: Seed,
 	metrics: &M,
 ) -> Result<(XtsLayout, Vec<u8>, BlockDimensions, DMatrix<BlsScalar>), Error> {
+	use crate::couscous;
 	use avail_core::from_substrate;
 
 	let start = Instant::now();
@@ -521,7 +522,7 @@ pub fn par_build_commitments<const CHUNK_SIZE: usize, M: Metrics>(
 
 	metrics.preparation_block_time(start.elapsed());
 
-	let public_params = testnet::public_params(block_dims_cols);
+	let public_params = couscous::public_params();
 
 	if log::log_enabled!(target: LOG_TARGET, log::Level::Debug) {
 		let raw_pp = public_params.to_raw_var_bytes();
@@ -535,7 +536,8 @@ pub fn par_build_commitments<const CHUNK_SIZE: usize, M: Metrics>(
 		);
 	}
 
-	let (prover_key, _) = public_params.trim(block_dims_cols)?;
+	// let (prover_key, _) = public_params.trim(block_dims_cols)?;
+	let prover_key = public_params.commit_key();
 	let row_eval_domain = EvaluationDomain::new(block_dims_cols)?;
 
 	let start = Instant::now();
@@ -899,8 +901,8 @@ mod tests {
 			prop_assert_eq!(data[0].as_slice(), &xt.data);
 		}
 
-		let dims_cols = usize::try_from(dims.cols.0).unwrap();
-		let public_params = testnet::public_params(dims_cols);
+		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
+		let public_params = couscous::public_params();
 		for cell in random_cells(dims.cols, dims.rows, Percent::one() ) {
 			let row = usize::try_from(cell.row.0).unwrap();
 
@@ -928,8 +930,8 @@ mod tests {
 		let (layout, commitments, dims, matrix) = par_build_commitments::<TCHUNK_SIZE,_>(BlockLengthRows(64), BlockLengthColumns(16), xts, Seed::default(), &IgnoreMetrics{}).unwrap();
 
 		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
-		let dims_cols = usize::try_from(dims.cols.0).unwrap();
-		let public_params = testnet::public_params(dims_cols);
+		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
+		let public_params = couscous::public_params();
 		let extended_dims = dims.try_into().unwrap();
 		let commitments = commitments::from_slice(&commitments).unwrap();
 		for xt in xts {
@@ -948,8 +950,8 @@ mod tests {
 		let (layout, commitments, dims, matrix) = par_build_commitments::<TCHUNK_SIZE,_>(BlockLengthRows(64), BlockLengthColumns(16), xts, Seed::default(), &IgnoreMetrics{}).unwrap();
 
 		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
-		let dims_cols = usize::try_from(dims.cols.0).unwrap();
-		let public_params = testnet::public_params(dims_cols);
+		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
+		let public_params = couscous::public_params();
 		let extended_dims =  dims.try_into().unwrap();
 		let commitments = commitments::from_slice(&commitments).unwrap();
 		for xt in xts {
@@ -1213,6 +1215,58 @@ mod tests {
 	}
 
 	#[test]
+	fn test_commitments_consistency() {
+		use crate::gridgen::AsBytes;
+		let tx_size: usize = 50 * 1024 * 32 - 1032;
+		let mut rng = rand::thread_rng();
+		let data: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
+		let app_extrinsics = vec![AppExtrinsic::from(data)];
+		let public_params = couscous::multiproof_params();
+		let start = Instant::now();
+		// Ensure pp used inside par_build_commitments is same as the one used in serial
+		let (_, commitments_bytes, _, _) = par_build_commitments::<CHUNK_SIZE, _>(
+			BlockLengthRows(1024),
+			BlockLengthColumns(1024),
+			&app_extrinsics,
+			Seed::default(),
+			&IgnoreMetrics {},
+		)
+		.unwrap();
+		println!("Time to build parallel commitments: {:?}", start.elapsed());
+		let start = Instant::now();
+		let grid = EvaluationGrid::from_extrinsics(app_extrinsics, 4, 1024, 1024, Seed::default())
+			.expect("Failed to create evaluation grid");
+
+		let poly_grid = grid
+			.make_polynomial_grid()
+			.expect("Failed to create polynomial grid");
+
+		let commitments_poly_grid = poly_grid
+			.extended_commitments(&public_params, 2)
+			.expect("Failed to generate commitments");
+		let mut commitments = Vec::new();
+		for c in commitments_poly_grid.iter() {
+			match c.to_bytes() {
+				Ok(bytes) => commitments.extend(bytes),
+				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+			}
+		}
+		println!(
+			"Time to build polynomial commitments: {:?}",
+			start.elapsed()
+		);
+		// println!("Serial Commitments (hex): {}", hex::encode(&commitments));
+		// println!(
+		// 	"Parallel Commitments (hex): {}",
+		// 	hex::encode(&commitments_bytes)
+		// );
+		assert_eq!(
+			commitments_bytes, commitments,
+			"Commitments generated using serial & parallel methods do not match"
+		);
+	}
+
+	#[test]
 	#[cfg(not(feature = "maximum-block-size"))]
 	fn test_build_commitments_simple_commitment_check() {
 		let block_rows = BlockLengthRows(256);
@@ -1233,7 +1287,7 @@ mod tests {
 			dimensions,
 			BlockDimensions::new(BlockLengthRows(1), BlockLengthColumns(4), TCHUNK).unwrap(),
 		);
-		let expected_commitments = hex!("911bc20a0709b046847fcc53eaa981d84738dd6a76beaf2495ec9efcb2da498dfed29a15b5724343ee54382a9a3102a3911bc20a0709b046847fcc53eaa981d84738dd6a76beaf2495ec9efcb2da498dfed29a15b5724343ee54382a9a3102a3");
+		let expected_commitments = hex!("a065fed16fecd58caa55232c60f91efe5e6ad351a3c9707ee279b35936abe74bcb992aaaf8b8b316649d6fe2f0a68802a065fed16fecd58caa55232c60f91efe5e6ad351a3c9707ee279b35936abe74bcb992aaaf8b8b316649d6fe2f0a68802");
 		assert_eq!(commitments, expected_commitments);
 	}
 
@@ -1479,7 +1533,7 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 		// There are two main cases that generate a zero degree polynomial. One is for data that is non-zero, but the same.
 		// The other is for all-zero data. They differ, as the former yields a polynomial with one coefficient, and latter generates zero coefficients.
 		let len = row_values.len();
-		let public_params = testnet::public_params(len);
+		let public_params = couscous::public_params();
 		let (prover_key, _) = public_params.trim(len).map_err(Error::from).unwrap();
 		let row_eval_domain = EvaluationDomain::new(len).map_err(Error::from).unwrap();
 
