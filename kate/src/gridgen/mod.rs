@@ -126,6 +126,7 @@ impl EvaluationGrid {
 	}
 
 	/// From the data, create a data grid of Scalars
+	/// The number of rows in this grid is not guaranteed to be a power of 2.
 	pub fn from_data(
 		data: Vec<u8>,
 		min_width: usize,
@@ -141,7 +142,7 @@ impl EvaluationGrid {
 
 		let grid_size = scalars.len();
 		let (rows, cols): (usize, usize) =
-			get_block_dims(grid_size, min_width, max_width, max_height)?.into();
+			get_tx_dims(grid_size, min_width, max_width, max_height)?.into();
 
 		let mut rng = ChaChaRng::from_seed(rng_seed);
 		// Flatten the grid
@@ -183,6 +184,55 @@ impl EvaluationGrid {
 				.rows_mut(current_row, rows)
 				.copy_from(&grid.evals);
 			current_row += rows;
+		}
+
+		Ok(EvaluationGrid {
+			// TODO: handle this properly
+			lookup: DataLookup::default(),
+			evals: merged_evals,
+		})
+	}
+
+	/// Merge multiple EvaluationGrids into one, ensuring the number of rows are in powers of 2 by padding additional rows if needed.
+	pub fn merge_with_padding(grids: Vec<EvaluationGrid>, rng_seed: Seed) -> Result<Self, Error> {
+		if grids.is_empty() {
+			return Err(Error::ZeroDimension);
+		}
+
+		let total_rows: usize = grids.iter().map(|grid| grid.evals.nrows()).sum();
+		let cols = grids[0].evals.ncols();
+
+		// Ensure all grids have the same number of columns
+		for grid in &grids {
+			if grid.evals.ncols() != cols {
+				return Err(Error::DimensionsMismatch);
+			}
+		}
+
+		// Calculate the next power of 2 for the total number of rows
+		let padded_rows = total_rows.next_power_of_two();
+
+		let mut merged_evals = DMatrix::zeros(padded_rows, cols);
+		let mut current_row = 0;
+
+		for grid in grids {
+			let rows = grid.evals.nrows();
+			merged_evals
+				.rows_mut(current_row, rows)
+				.copy_from(&grid.evals);
+			current_row += rows;
+		}
+
+		let mut rng = ChaChaRng::from_seed(rng_seed);
+		let random_row: Vec<ArkScalar> = (0..cols)
+			.map(|_| {
+				let rnd_values: [u8; SCALAR_SIZE - 1] = rng.gen();
+				pad_to_bls_scalar(rnd_values).expect("less than SCALAR_SIZE values, can't fail")
+			})
+			.collect();
+
+		for row in current_row..padded_rows {
+			merged_evals.row_mut(row).copy_from_slice(&random_row);
 		}
 
 		Ok(EvaluationGrid {
@@ -505,6 +555,40 @@ pub fn get_block_dims(
 		ensure!(height <= max_height, Error::BlockTooBig);
 
 		Dimensions::new_from(height, width).ok_or(Error::ZeroDimension)
+	}
+}
+
+// Similar to get_block_dims except that it wont round up the height to a power of 2
+pub fn get_tx_dims(
+	n_scalars: usize,
+	min_width: usize,
+	max_width: usize,
+	max_height: usize,
+) -> Result<Dimensions, Error> {
+	// Less than max_width wide block
+	if n_scalars < max_width {
+		let current_width = n_scalars;
+		// Don't let the width get lower than the minimum provided
+		let width = max(
+			current_width
+				.checked_next_power_of_two()
+				.ok_or(Error::BlockTooBig)?,
+			min_width,
+		);
+		let height = unsafe { NonZeroU16::new_unchecked(1) };
+
+		Dimensions::new_from(height, width).ok_or(Error::ZeroDimension)
+	} else {
+		let width = NonZeroU16::try_from(u16::try_from(max_width)?)?;
+		let current_height = round_up_to_multiple(n_scalars, width)
+			.checked_div(max_width)
+			.expect("`max_width` is non zero, checked one line before");
+
+		// No need to round the height up to a power of 2
+		// Error if height too big
+		ensure!(current_height <= max_height, Error::BlockTooBig);
+
+		Dimensions::new_from(current_height, width).ok_or(Error::ZeroDimension)
 	}
 }
 

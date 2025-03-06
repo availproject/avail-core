@@ -19,7 +19,7 @@ fn benchmark_commitments(c: &mut Criterion) {
 	let mut group = c.benchmark_group("commitments");
 
 	// Max tx size supported by the current setup
-	let tx_size: usize = ROWS * COLUMNS * CHUNK_SIZE - (ROWS*COLUMNS) - 32;
+	let tx_size: usize = ROWS * COLUMNS * CHUNK_SIZE - (ROWS * COLUMNS) - 32;
 	let mut rng = ChaChaRng::from_seed([0u8; 32]);
 	let data: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
 	let app_extrinsics = vec![AppExtrinsic::from(data)];
