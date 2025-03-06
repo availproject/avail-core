@@ -965,9 +965,183 @@ mod tests {
 	}
 
 	#[test]
+	// To test extension of commitments directly from the commitment bytes
+	fn test_commitments_extension() {
+		use crate::pmp::{m1_blst::Bls12_381, Commitment};
+		use poly_multiproof::traits::AsBytes;
+		// exact 4 rows
+		let tx_size: usize = 4 * 256 * 31 - 8;
+		let mut rng = ChaChaRng::from_seed([0u8; 32]);
+		let data: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
+
+		let grid = EvaluationGrid::from_extrinsics(
+			[AppExtrinsic::from(data)].to_vec(),
+			4,
+			256,
+			256,
+			Seed::default(),
+		)
+		.expect("Failed to create evaluation grid");
+
+		let poly_grid = grid
+			.make_polynomial_grid()
+			.map_err(|e| format!("Make polynomial grid failed: {e:?}"))
+			.unwrap();
+
+		let public_params = couscous::multiproof_params();
+
+		let poly_commitment = poly_grid.commitments(&public_params).unwrap();
+		let poly_extended_commitment =
+			poly_multiproof::Commitment::<Bls12_381>::extend_commitments(&poly_commitment, 2)
+				.unwrap();
+		let mut extended_commitment_bytes = Vec::new();
+		for c in poly_extended_commitment.iter() {
+			match c.to_bytes() {
+				Ok(bytes) => extended_commitment_bytes.extend(bytes),
+				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+			}
+		}
+
+		let mut commitment_bytes = Vec::new();
+		for c in poly_commitment.iter() {
+			match c.to_bytes() {
+				Ok(bytes) => commitment_bytes.extend(bytes),
+				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+			}
+		}
+		let commitments_vec =
+			commitments::from_slice(&commitment_bytes).expect("Failed to parse commitments");
+
+		// Now get back Vec<Commitment> from Vec<[u8; COMMITMENT_SIZE]>
+		let commitments: Vec<Commitment<Bls12_381>> = commitments_vec
+			.iter()
+			.map(|c| Commitment::from_bytes(c))
+			.collect::<Result<Vec<_>, _>>()
+			.expect("Failed to convert commitment bytes to commitment");
+
+		let extended_commitments =
+			poly_multiproof::Commitment::<Bls12_381>::extend_commitments(&commitments, 2).unwrap();
+		let mut commitments = Vec::new();
+		for c in extended_commitments.iter() {
+			match c.to_bytes() {
+				Ok(bytes) => commitments.extend(bytes),
+				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+			}
+		}
+		// println!("Directly Extended Commitment (hex): {}", hex::encode(&commitments));
+		assert_eq!(commitments, extended_commitment_bytes);
+	}
+
+	#[test]
+	fn test_row_padding_at_unified_grid() {
+		use crate::gridgen::AsBytes;
+
+		// exact 3 rows
+		let tx_size: usize = 3 * 256 * 31;
+		let mut rng = rand::thread_rng();
+		let data1: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
+		let grid1 = EvaluationGrid::from_data(data1, 256, 256, 256, Seed::default())
+			.expect("Failed to create evaluation grid");
+
+		let poly_grid1 = grid1
+			.make_polynomial_grid()
+			.map_err(|e| format!("Make polynomial grid failed: {e:?}"))
+			.unwrap();
+
+		// 3 * 256
+		println!("grid1 dims: {:?}", grid1.dims());
+		let public_params = couscous::multiproof_params();
+		let extended_grid = poly_grid1
+			.commitments(&public_params)
+			.map_err(|e| format!("Commitments generation failed: {e:?}"))
+			.unwrap();
+
+		let mut commitments = Vec::new();
+		for c in extended_grid.iter() {
+			match c.to_bytes() {
+				Ok(bytes) => commitments.extend(bytes),
+				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+			}
+		}
+		println!("Commitments1 (hex): {}", hex::encode(&commitments));
+
+		// exact 2 rows
+		let tx_size: usize = 2 * 256 * 31;
+		let data2: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
+		let grid2 = EvaluationGrid::from_data(data2, 256, 256, 256, Seed::default())
+			.expect("Failed to create evaluation grid");
+
+		let poly_grid2 = grid2
+			.make_polynomial_grid()
+			.map_err(|e| format!("Make polynomial grid failed: {e:?}"))
+			.unwrap();
+
+		// 2 * 256
+		println!("grid2 dims: {:?}", grid2.dims());
+		let extended_grid2 = poly_grid2
+			.commitments(&public_params)
+			.map_err(|e| format!("Commitments generation: {e:?}"))
+			.unwrap();
+
+		let mut commitments2 = Vec::new();
+		for c in extended_grid2.iter() {
+			match c.to_bytes() {
+				Ok(bytes) => commitments2.extend(bytes),
+				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+			}
+		}
+		println!("Commitments1 (hex): {}", hex::encode(&commitments2));
+		// let grid1 = grid1
+		// 	.extend_columns(NonZeroU16::new(2).expect("2>0"))
+		// 	.unwrap();
+		// let grid2 = grid2
+		// 	.extend_columns(NonZeroU16::new(2).expect("2>0"))
+		// 	.unwrap();
+		// merge the grids
+		let grids = vec![grid1, grid2];
+		let merged_grid = EvaluationGrid::merge_with_padding(grids, Seed::default()).unwrap();
+		// 8 * 256
+		println!("merged grid dims: {:?}", merged_grid.dims());
+		// print 5th row of the merged grid
+		println!(
+			"merged grid row 5 {}",
+			hex::encode(
+				merged_grid
+					.row(5)
+					.unwrap()
+					.iter()
+					.map(|s| s.to_bytes().unwrap())
+					.collect::<Vec<_>>()
+					.concat()
+			)
+		);
+		println!(
+			"merged grid row 6 {}",
+			hex::encode(
+				merged_grid
+					.row(6)
+					.unwrap()
+					.iter()
+					.map(|s| s.to_bytes().unwrap())
+					.collect::<Vec<_>>()
+					.concat()
+			)
+		);
+		// commitments.extend(commitments2);
+		// println!("merged commitments (hex): {}", hex::encode(&commitments));
+		// let commitments_vec =
+		// 	commitments::from_slice(&commitments).expect("Failed to parse commitments");
+
+		// let extended_poly_grid = merged_grid
+		// 	.make_polynomial_grid()
+		// 	.map_err(|e| format!("Make polynomial grid failed: {e:?}"))
+		// 	.unwrap();
+		// println!("extended grid dims: {:?}", merged_grid.dims());
+	}
+
+	#[test]
 	fn test_simple_build_and_verify() {
 		use crate::gridgen::AsBytes;
-		// use core::num::NonZeroU16;
 
 		let original_data = br#"Testing Avail DA verification"#;
 		println!("Original data (hex): {}", hex::encode(original_data));
