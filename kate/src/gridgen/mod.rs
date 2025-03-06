@@ -30,6 +30,11 @@ use crate::{
 	Seed,
 };
 
+use std::sync::Mutex;
+use once_cell::sync::Lazy;
+use lru::LruCache;
+use crate::couscous;
+
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
@@ -50,6 +55,13 @@ pub use poly_multiproof::traits::AsBytes;
 
 #[cfg(test)]
 mod tests;
+
+// Since we wont be changing the column length very often, 8 is a good number to cache
+const CACHE_CAPACITY: usize = 8;
+
+static CACHED_ROWS: Lazy<Mutex<LruCache<usize, (Vec<ArkScalar>, Vec<u8>)>>> = Lazy::new(|| {
+	Mutex::new(LruCache::new(CACHE_CAPACITY))
+});
 
 pub struct EvaluationGrid {
 	lookup: DataLookup,
@@ -372,6 +384,44 @@ impl EvaluationGrid {
 			inner,
 		})
 	}
+}
+
+/// Generate and cache a random row and its commitment given the column length.
+/// This function uses a default seed and a pregenerated SRS from couscous.
+///
+/// # Arguments
+///
+/// * `column_length` - The length of the column for which to generate the row and commitment.
+///
+/// # Returns
+///
+/// A tuple containing the generated row and its commitment.
+pub fn get_pregenerated_row_and_commitment(
+	column_length: usize,
+) -> Result<(Vec<ArkScalar>, Vec<u8>), Error> {
+	let mut cache = CACHED_ROWS.lock().unwrap();
+
+	if let Some((row, commitment)) = cache.get(&column_length) {
+		return Ok((row.clone(), commitment.clone()));
+	}
+
+	let rng_seed = Seed::default();
+	let srs = couscous::multiproof_params();
+
+	let mut rng = ChaChaRng::from_seed(rng_seed);
+	let random_row: Vec<ArkScalar> = (0..column_length)
+		.map(|_| {
+			let rnd_values: [u8; SCALAR_SIZE - 1] = rng.gen();
+			pad_to_bls_scalar(rnd_values).expect("less than SCALAR_SIZE values, can't fail")
+		})
+		.collect();
+
+	// TODO: update the correct error type
+	let commitment = srs.commit(&random_row).map_err(Error::MultiproofError)?;
+	let commitment_bytes: Vec<u8> = commitment.to_bytes().expect("commitment to bytes").to_vec() ;
+	cache.put(column_length, (random_row.clone(), commitment_bytes.clone()));
+
+	Ok((random_row, commitment_bytes))
 }
 
 pub struct PolynomialGrid {

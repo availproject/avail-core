@@ -36,6 +36,7 @@ rand_chacha = { workspace = true, optional = true }
 rayon = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
+lru = "0.7.1"
 
 [dev-dependencies]
 avail-core = { path = "../core", default-features = false, features = ["runtime"] }
