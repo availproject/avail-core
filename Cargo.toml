@@ -49,7 +49,7 @@ blake2b_simd = { version = "1.0.2", default-features = false }
 sha2 = { version = "0.10.7", default-features = false }
 sha3 = { version = "0.10.0", default-features = false }
 
-poly-multiproof = { git = "https://github.com/availproject/poly-multiproof", default-features = false, tag = "v0.0.1" }
+poly-multiproof = { git = "https://github.com/availproject/poly-multiproof", default-features = false, branch = "toufeeq/blst-0.3.11" }
 dusk-plonk = { git = "https://github.com/availproject/plonk.git", default-features = false, features = ["alloc"], tag = "v0.12.0-polygon-2" }
 
 hash-db = { version = "0.16.0",  default-features = false }
