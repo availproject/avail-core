@@ -992,7 +992,7 @@ mod tests {
 
 		let poly_commitment = poly_grid.commitments(&public_params).unwrap();
 		let poly_extended_commitment =
-			poly_multiproof::Commitment::<Bls12_381>::extend_commitments(&poly_commitment, 2)
+			poly_multiproof::Commitment::<Bls12_381>::extend_commitments(&poly_commitment, poly_commitment.len() * 2)
 				.unwrap();
 		let mut extended_commitment_bytes = Vec::new();
 		for c in poly_extended_commitment.iter() {
@@ -1019,8 +1019,12 @@ mod tests {
 			.collect::<Result<Vec<_>, _>>()
 			.expect("Failed to convert commitment bytes to commitment");
 
-		let extended_commitments =
-			poly_multiproof::Commitment::<Bls12_381>::extend_commitments(&commitments, 2).unwrap();
+		let extended_commitments = poly_multiproof::Commitment::<Bls12_381>::extend_commitments(
+			&commitments,
+			commitments.len() * 2,
+		)
+		.unwrap();
+
 		let mut commitments = Vec::new();
 		for c in extended_commitments.iter() {
 			match c.to_bytes() {
@@ -1099,7 +1103,7 @@ mod tests {
 		// 	.unwrap();
 		// merge the grids
 		let grids = vec![grid1, grid2];
-		let merged_grid = EvaluationGrid::merge_with_padding(grids, Seed::default()).unwrap();
+		let merged_grid = EvaluationGrid::merge_with_padding(grids).unwrap();
 		// 8 * 256
 		println!("merged grid dims: {:?}", merged_grid.dims());
 		// print 5th row of the merged grid
@@ -1127,16 +1131,71 @@ mod tests {
 					.concat()
 			)
 		);
-		// commitments.extend(commitments2);
-		// println!("merged commitments (hex): {}", hex::encode(&commitments));
-		// let commitments_vec =
-		// 	commitments::from_slice(&commitments).expect("Failed to parse commitments");
+	}
 
-		// let extended_poly_grid = merged_grid
-		// 	.make_polynomial_grid()
-		// 	.map_err(|e| format!("Make polynomial grid failed: {e:?}"))
-		// 	.unwrap();
-		// println!("extended grid dims: {:?}", merged_grid.dims());
+	#[test]
+	fn test_pre_generated_row() {
+		use crate::gridgen::AsBytes;
+
+		// exact 3 rows
+		let tx_size: usize = 3 * 256 * 31;
+		let mut rng = rand::thread_rng();
+		let data1: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
+		let grid1 = EvaluationGrid::from_data(data1, 256, 256, 256, Seed::default())
+			.expect("Failed to create evaluation grid");
+
+		let poly_grid1 = grid1
+			.make_polynomial_grid()
+			.map_err(|e| format!("Make polynomial grid failed: {e:?}"))
+			.unwrap();
+
+		// 3 * 256
+		println!("grid1 dims: {:?}", grid1.dims());
+		let public_params = couscous::multiproof_params();
+		let comms = poly_grid1
+			.commitments(&public_params)
+			.map_err(|e| format!("Commitments generation failed: {e:?}"))
+			.unwrap();
+
+		let mut header_commitments = Vec::new();
+		for c in comms.iter() {
+			match c.to_bytes() {
+				Ok(bytes) => header_commitments.extend(bytes),
+				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+			}
+		}
+		// lets check & ensure the number of rows are in power  of 2
+		let original_rows = comms.len();
+		let padded_rows = original_rows.next_power_of_two();
+		if padded_rows > original_rows {
+			// we need to perform row padding using pregenrated rows
+			let (_padded_row, padded_row_commitment) =
+				crate::gridgen::get_pregenerated_row_and_commitment(256)
+					.expect("lets hope, it works :)");
+
+			header_commitments = header_commitments
+				.into_iter()
+				.chain(
+					std::iter::repeat(padded_row_commitment)
+						.take((padded_rows - original_rows) as usize)
+						.flat_map(|x| x),
+				)
+				.collect();
+		}
+
+		let grids = vec![grid1];
+		let uni_grid = EvaluationGrid::merge_with_padding(grids).unwrap();
+
+		let poly = uni_grid.make_polynomial_grid().unwrap();
+		let pol_comms = poly.commitments(&public_params).unwrap();
+		let mut proof_comms: Vec<u8> = Vec::new();
+		for c in pol_comms.iter() {
+			match c.to_bytes() {
+				Ok(bytes) => proof_comms.extend(bytes),
+				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+			}
+		}
+		assert_eq!(header_commitments, proof_comms);
 	}
 
 	#[test]

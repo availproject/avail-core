@@ -30,10 +30,10 @@ use crate::{
 	Seed,
 };
 
-use std::sync::Mutex;
-use once_cell::sync::Lazy;
-use lru::LruCache;
 use crate::couscous;
+use lru::LruCache;
+use once_cell::sync::Lazy;
+use std::sync::Mutex;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
@@ -59,9 +59,8 @@ mod tests;
 // Since we wont be changing the column length very often, 8 is a good number to cache
 const CACHE_CAPACITY: usize = 8;
 
-static CACHED_ROWS: Lazy<Mutex<LruCache<usize, (Vec<ArkScalar>, Vec<u8>)>>> = Lazy::new(|| {
-	Mutex::new(LruCache::new(CACHE_CAPACITY))
-});
+static CACHED_ROWS: Lazy<Mutex<LruCache<usize, (Vec<ArkScalar>, Vec<u8>)>>> =
+	Lazy::new(|| Mutex::new(LruCache::new(CACHE_CAPACITY)));
 
 pub struct EvaluationGrid {
 	lookup: DataLookup,
@@ -206,7 +205,7 @@ impl EvaluationGrid {
 	}
 
 	/// Merge multiple EvaluationGrids into one, ensuring the number of rows are in powers of 2 by padding additional rows if needed.
-	pub fn merge_with_padding(grids: Vec<EvaluationGrid>, rng_seed: Seed) -> Result<Self, Error> {
+	pub fn merge_with_padding(grids: Vec<EvaluationGrid>) -> Result<Self, Error> {
 		if grids.is_empty() {
 			return Err(Error::ZeroDimension);
 		}
@@ -235,13 +234,8 @@ impl EvaluationGrid {
 			current_row += rows;
 		}
 
-		let mut rng = ChaChaRng::from_seed(rng_seed);
-		let random_row: Vec<ArkScalar> = (0..cols)
-			.map(|_| {
-				let rnd_values: [u8; SCALAR_SIZE - 1] = rng.gen();
-				pad_to_bls_scalar(rnd_values).expect("less than SCALAR_SIZE values, can't fail")
-			})
-			.collect();
+		let (random_row, _) =
+			get_pregenerated_row_and_commitment(cols).expect("lets hope, it works :)");
 
 		for row in current_row..padded_rows {
 			merged_evals.row_mut(row).copy_from_slice(&random_row);
@@ -401,6 +395,7 @@ pub fn get_pregenerated_row_and_commitment(
 ) -> Result<(Vec<ArkScalar>, Vec<u8>), Error> {
 	let mut cache = CACHED_ROWS.lock().unwrap();
 
+	// Check cache first
 	if let Some((row, commitment)) = cache.get(&column_length) {
 		return Ok((row.clone(), commitment.clone()));
 	}
@@ -416,10 +411,29 @@ pub fn get_pregenerated_row_and_commitment(
 		})
 		.collect();
 
-	// TODO: update the correct error type
-	let commitment = srs.commit(&random_row).map_err(Error::MultiproofError)?;
-	let commitment_bytes: Vec<u8> = commitment.to_bytes().expect("commitment to bytes").to_vec() ;
-	cache.put(column_length, (random_row.clone(), commitment_bytes.clone()));
+	// Create row major evaluations
+	let row_major_evals = DMatrix::from_row_iterator(1, column_length, random_row.iter().cloned());
+
+	let row_ev_grid = EvaluationGrid {
+		lookup: DataLookup::default(),
+		evals: row_major_evals,
+	};
+
+	let poly = row_ev_grid.make_polynomial_grid().unwrap();
+	let commitment_bytes: Vec<u8> = poly
+		.commitments(&srs)
+		.unwrap()
+		.first()
+		.unwrap()
+		.to_bytes()
+		.expect("Failed to convert comms to bytes")
+		.to_vec();
+
+	// Store the result in cache
+	cache.put(
+		column_length,
+		(random_row.clone(), commitment_bytes.clone()),
+	);
 
 	Ok((random_row, commitment_bytes))
 }
