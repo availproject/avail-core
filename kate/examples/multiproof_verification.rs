@@ -31,7 +31,7 @@ fn multiproof_verification() -> Result<bool, AppError> {
 	type E = Bls12_381;
 	type M = BlstMSMEngine;
 	let target_dims = Dimensions::new_from(16, 64).unwrap();
-	let pp = multiproof_params();
+	let pp: M1NoPrecomp<E, M> = multiproof_params();
 	let points = kate::gridgen::domain_points(256)?;
 	let exts_data = vec![
 		hex!("CAFEBABE00000000000000000000000000000000000000").to_vec(),
