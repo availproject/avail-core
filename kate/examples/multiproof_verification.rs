@@ -4,7 +4,7 @@ use hex_literal::hex;
 use kate::{
 	gridgen::EvaluationGrid,
 	pmp::{merlin::Transcript, traits::PolyMultiProofNoPrecomp},
-	testnet::multiproof_params,
+	couscous::multiproof_params,
 	Seed,
 };
 use kate_recovery::matrix::Dimensions;
@@ -26,7 +26,7 @@ fn main() -> Result<(), AppError> {
 
 fn multiproof_verification() -> Result<bool, AppError> {
 	let target_dims = Dimensions::new_from(16, 64).unwrap();
-	let pp = multiproof_params(256, 256);
+	let pp = multiproof_params();
 	let points = kate::gridgen::domain_points(256)?;
 	let exts_data = vec![
 		hex!("CAFEBABE00000000000000000000000000000000000000").to_vec(),
