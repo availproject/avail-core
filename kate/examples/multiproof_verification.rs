@@ -2,9 +2,9 @@ use avail_core::{AppExtrinsic, AppId, BlockLengthColumns, BlockLengthRows};
 use core::num::NonZeroU16;
 use hex_literal::hex;
 use kate::{
+	couscous::multiproof_params,
 	gridgen::EvaluationGrid,
 	pmp::{merlin::Transcript, traits::PolyMultiProofNoPrecomp},
-	couscous::multiproof_params,
 	Seed,
 };
 use kate_recovery::matrix::Dimensions;
