@@ -9,7 +9,6 @@ use kate::{
 };
 use kate_recovery::matrix::Dimensions;
 use poly_multiproof::traits::AsBytes;
-use rand::thread_rng;
 use thiserror_no_std::Error;
 
 #[derive(Error, Debug)]
@@ -28,7 +27,6 @@ fn main() -> Result<(), AppError> {
 fn multiproof_verification() -> Result<bool, AppError> {
 	let target_dims = Dimensions::new_from(16, 64).unwrap();
 	let pp = multiproof_params(256, 256);
-	let pmp = poly_multiproof::m1_blst::M1NoPrecomp::new(256, 256, &mut thread_rng());
 	let points = kate::gridgen::domain_points(256)?;
 	let exts_data = vec![
 		hex!("CAFEBABE00000000000000000000000000000000000000").to_vec(),
@@ -57,7 +55,7 @@ fn multiproof_verification() -> Result<bool, AppError> {
 
 		let multiproof = polys
 			.multiproof(
-				&pmp,
+				&pp,
 				&kate::com::Cell::new(BlockLengthRows(0), BlockLengthColumns(0)),
 				&grid,
 				target_dims,
@@ -94,7 +92,7 @@ fn multiproof_verification() -> Result<bool, AppError> {
 
 	let proof = kate::pmp::m1_blst::Proof::from_bytes(&proof)?;
 
-	let verified = pmp.verify(
+	let verified = pp.verify(
 		&mut Transcript::new(b"avail-mp"),
 		block_commits,
 		&points[mp_block.start_x..mp_block.end_x],
