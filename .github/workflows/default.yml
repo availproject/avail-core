@@ -20,7 +20,7 @@ jobs:
 
         # A repository can have up to 10GB of caches.
         # Check https://github.com/actions/cache for details.
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.cargo/bin/
