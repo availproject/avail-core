@@ -799,6 +799,25 @@ mod tests {
 		}
 	}
 
+	// returns the random cell positions by respecting the max col_percent % per column
+	fn sampled_cells(dimensions: Dimensions, col_percent: Percent) -> Vec<Position> {
+		let mut rng = rand::thread_rng();
+		let mut sampled_positions = vec![];
+
+		for col in 0..dimensions.cols().get() {
+			let total_cells = dimensions.rows().get();
+			let sample_size = col_percent.mul_floor(total_cells).saturated_into::<usize>();
+
+			let col_positions: Vec<Position> = (0..total_cells)
+				.map(|row| Position::new(row as u32, col))
+				.choose_multiple(&mut rng, sample_size);
+
+			sampled_positions.extend(col_positions);
+		}
+
+		sampled_positions
+	}
+
 	fn sample_cells_from_matrix(
 		matrix: &DMatrix<BlsScalar>,
 		columns: Option<&[u16]>,
@@ -992,8 +1011,11 @@ mod tests {
 
 		let poly_commitment = poly_grid.commitments(&public_params).unwrap();
 		let poly_extended_commitment =
-			poly_multiproof::Commitment::<Bls12_381>::extend_commitments(&poly_commitment, poly_commitment.len() * 2)
-				.unwrap();
+			poly_multiproof::Commitment::<Bls12_381>::extend_commitments(
+				&poly_commitment,
+				poly_commitment.len() * 2,
+			)
+			.unwrap();
 		let mut extended_commitment_bytes = Vec::new();
 		for c in poly_extended_commitment.iter() {
 			match c.to_bytes() {
@@ -1761,7 +1783,6 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 	#[test_case( ([1,1,1,1]).to_vec(); "All values are non-zero but same")]
 	#[test_case( ([0,0,0,0]).to_vec(); "All values are zero")]
 	#[test_case( ([0,5,2,1]).to_vec(); "All values are different")]
-	// newapi done
 	fn test_zero_deg_poly_commit(row_values: Vec<u8>) {
 		// There are two main cases that generate a zero degree polynomial. One is for data that is non-zero, but the same.
 		// The other is for all-zero data. They differ, as the former yields a polynomial with one coefficient, and latter generates zero coefficients.
@@ -1844,5 +1865,75 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 		let (actual_row, actual_col) = cell.get_dimensions().unwrap();
 		assert_eq!(actual_row, expected_row);
 		assert_eq!(actual_col, expected_col);
+	}
+
+	#[test]
+	fn test_data_reconstruction() {
+		// use codec::Decode;
+		use poly_multiproof::traits::AsBytes;
+		use std::num::NonZeroU16;
+
+		let mut rng = rand::thread_rng();
+
+		// 4 rows
+		let tx_size = 3 * 31 * 256;
+		let original_data: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
+
+		let seed = Seed::default();
+		let grid = EvaluationGrid::from_data(original_data.to_vec(), 4, 256, 256, seed)
+			.expect("Failed to create evaluation grids");
+		println!("orginal grid dims: {:?}", grid.dims());
+		let extended_grid = grid
+			.extend_columns(NonZeroU16::new(2).expect("2>0"))
+			.expect("Failed to extend columns");
+		println!("extended grid dims: {:?}", extended_grid.dims());
+		let mut app_rows: Vec<(AppId, usize)> = Vec::new();
+		app_rows.push((AppId(2), grid.dims().height()));
+		let lookup = DataLookup::from_id_and_len_iter(app_rows.into_iter()).unwrap();
+
+		// if any of the column has less than 50% of cells, that column wont be able to reconstructed
+		let sampled_cells = sampled_cells(extended_grid.dims(), Percent::from_percent(50));
+		println!("Got {} random cells", sampled_cells.len());
+		let data_cells: Vec<_> = sampled_cells
+			.iter()
+			.map(|position| {
+				let data = extended_grid
+					.get(position.row as usize, position.col)
+					.expect("Every valid cell position should have a data")
+					.to_bytes()
+					.expect("ArkScalar to byte conversion should work");
+				DataCell {
+					data,
+					position: *position,
+				}
+			})
+			.collect();
+
+		// OPTION 1
+		// let rows = reconstruct_rows(grid.dims(), data_cells).unwrap();
+		// // flatten the rows into vec<u8>
+		// let padded_data: Vec<u8> = rows.concat();
+		// let reconstructed_data = {
+		// 	assert!(padded_data.len() % CHUNK_SIZE == 0, "corrupt data");
+		// 	let encoded_data = padded_data
+		// 		.chunks(CHUNK_SIZE)
+		// 		.flat_map(|chunk| &chunk[0..DATA_CHUNK_SIZE])
+		// 		.cloned()
+		// 		.collect::<Vec<u8>>();
+		// 	let mut encoded_slice = &encoded_data[..];
+		// 	let decoded = Vec::<u8>::decode(&mut encoded_slice).unwrap();
+		// 	decoded
+		// };
+		// assert_eq!(original_data, reconstructed_data);
+
+		// OPTION 2
+		// let reconstruct = reconstruct_extrinsics_data(&lookup, grid.dims(), data_cells).unwrap();
+		// let (_app_id, reconstructed_data) = &reconstruct[0];
+		// assert_eq!(original_data, reconstructed_data.concat());
+
+		// OPTION 3
+		let reconstructed_data =
+			reconstruct_app_extrinsic_data(AppId(2), &lookup, grid.dims(), data_cells).unwrap();
+		assert_eq!(original_data, reconstructed_data.concat());
 	}
 }
