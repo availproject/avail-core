@@ -145,8 +145,10 @@ impl EvaluationGrid {
 		max_height: usize,
 		rng_seed: Seed,
 	) -> Result<Self, Error> {
+		// Encode the data to facilitate easier extraction from the padded bytes during retrieval
+		let encoded_data = data.encode();
 		// Convert data into scalars
-		let scalars = data
+		let scalars = encoded_data
 			.chunks(DATA_CHUNK_SIZE)
 			.map(pad_to_bls_scalar)
 			.collect::<Result<Vec<_>, _>>()?;
