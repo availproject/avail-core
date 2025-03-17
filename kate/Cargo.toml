@@ -67,7 +67,7 @@ std = [
 	"sp-arithmetic/std",
 ]
 
-serde = [ "dep:serde", "avail-core/serde" ]
+serde = [ "avail-core/serde", "dep:serde" ]
 
 extended-columns = []
 maximum-block-size = []

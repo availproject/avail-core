@@ -145,9 +145,9 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fb00293ba84f51ce3bd026bd0de55899c4e68f0a39a5728cebae3a73ffdc0a4f"
 dependencies = [
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
- "ark-std 0.4.0",
+ "ark-ec",
+ "ark-ff",
+ "ark-std",
 ]
 
 [[package]]
@@ -157,9 +157,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20c7021f180a0cbea0380eba97c2af3c57074cdaffe0eef7e840e1c9f2841e55"
 dependencies = [
  "ark-bls12-377",
- "ark-ec 0.4.2",
+ "ark-ec",
  "ark-models-ext",
- "ark-std 0.4.0",
+ "ark-std",
 ]
 
 [[package]]
@@ -168,10 +168,10 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c775f0d12169cba7aae4caeb547bb6a50781c7449a8aa53793827c9ec4abf488"
 dependencies = [
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
+ "ark-ec",
+ "ark-ff",
+ "ark-serialize",
+ "ark-std",
 ]
 
 [[package]]
@@ -181,11 +181,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1dc4b3d08f19e8ec06e949712f95b8361e43f1391d94f65e4234df03480631c"
 dependencies = [
  "ark-bls12-381",
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
+ "ark-ec",
+ "ark-ff",
  "ark-models-ext",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
+ "ark-serialize",
+ "ark-std",
 ]
 
 [[package]]
@@ -195,9 +195,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2e0605daf0cc5aa2034b78d008aaf159f56901d92a52ee4f6ecdfdac4f426700"
 dependencies = [
  "ark-bls12-377",
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
- "ark-std 0.4.0",
+ "ark-ec",
+ "ark-ff",
+ "ark-std",
 ]
 
 [[package]]
@@ -207,10 +207,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ccee5fba47266f460067588ee1bf070a9c760bf2050c1c509982c5719aadb4f2"
 dependencies = [
  "ark-bw6-761",
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
+ "ark-ec",
+ "ark-ff",
  "ark-models-ext",
- "ark-std 0.4.0",
+ "ark-std",
 ]
 
 [[package]]
@@ -219,36 +219,15 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "defd9a439d56ac24968cca0571f598a61bc8c55f71d50a89cda591cb750670ba"
 dependencies = [
- "ark-ff 0.4.2",
- "ark-poly 0.4.2",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
+ "ark-ff",
+ "ark-poly",
+ "ark-serialize",
+ "ark-std",
  "derivative",
  "hashbrown 0.13.2",
  "itertools 0.10.5",
  "num-traits",
  "rayon",
- "zeroize",
-]
-
-[[package]]
-name = "ark-ec"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43d68f2d516162846c1238e755a7c4d131b892b70cc70c471a8e3ca3ed818fce"
-dependencies = [
- "ahash 0.8.8",
- "ark-ff 0.5.0",
- "ark-poly 0.5.0",
- "ark-serialize 0.5.0",
- "ark-std 0.5.0",
- "educe",
- "fnv",
- "hashbrown 0.15.2",
- "itertools 0.13.0",
- "num-bigint",
- "num-integer",
- "num-traits",
  "zeroize",
 ]
 
@@ -259,9 +238,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b10d901b9ac4b38f9c32beacedfadcdd64e46f8d7f8e88c1ae1060022cf6f6c6"
 dependencies = [
  "ark-bls12-377",
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
- "ark-std 0.4.0",
+ "ark-ec",
+ "ark-ff",
+ "ark-std",
 ]
 
 [[package]]
@@ -270,11 +249,11 @@ version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "524a4fb7540df2e1a8c2e67a83ba1d1e6c3947f4f9342cc2359fc2e789ad731d"
 dependencies = [
- "ark-ec 0.4.2",
+ "ark-ec",
  "ark-ed-on-bls12-377",
- "ark-ff 0.4.2",
+ "ark-ff",
  "ark-models-ext",
- "ark-std 0.4.0",
+ "ark-std",
 ]
 
 [[package]]
@@ -284,9 +263,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9cde0f2aa063a2a5c28d39b47761aa102bda7c13c84fc118a61b87c7b2f785c"
 dependencies = [
  "ark-bls12-381",
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
- "ark-std 0.4.0",
+ "ark-ec",
+ "ark-ff",
+ "ark-std",
 ]
 
 [[package]]
@@ -295,11 +274,11 @@ version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d15185f1acb49a07ff8cbe5f11a1adc5a93b19e211e325d826ae98e98e124346"
 dependencies = [
- "ark-ec 0.4.2",
+ "ark-ec",
  "ark-ed-on-bls12-381-bandersnatch",
- "ark-ff 0.4.2",
+ "ark-ff",
  "ark-models-ext",
- "ark-std 0.4.0",
+ "ark-std",
 ]
 
 [[package]]
@@ -308,10 +287,10 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec847af850f44ad29048935519032c33da8aa03340876d351dfab5660d2966ba"
 dependencies = [
- "ark-ff-asm 0.4.2",
- "ark-ff-macros 0.4.2",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
+ "ark-ff-asm",
+ "ark-ff-macros",
+ "ark-serialize",
+ "ark-std",
  "derivative",
  "digest 0.10.7",
  "itertools 0.10.5",
@@ -323,26 +302,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ark-ff"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a177aba0ed1e0fbb62aa9f6d0502e9b46dad8c2eab04c14258a1212d2557ea70"
-dependencies = [
- "ark-ff-asm 0.5.0",
- "ark-ff-macros 0.5.0",
- "ark-serialize 0.5.0",
- "ark-std 0.5.0",
- "arrayvec 0.7.4",
- "digest 0.10.7",
- "educe",
- "itertools 0.13.0",
- "num-bigint",
- "num-traits",
- "paste",
- "zeroize",
-]
-
-[[package]]
 name = "ark-ff-asm"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -350,16 +309,6 @@ checksum = "3ed4aa4fe255d0bc6d79373f7e31d2ea147bcf486cba1be5ba7ea85abdb92348"
 dependencies = [
  "quote",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "ark-ff-asm"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62945a2f7e6de02a31fe400aa489f0e0f5b2502e69f95f853adb82a96c7a6b60"
-dependencies = [
- "quote",
- "syn 2.0.48",
 ]
 
 [[package]]
@@ -376,28 +325,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "ark-ff-macros"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09be120733ee33f7693ceaa202ca41accd5653b779563608f1234f78ae07c4b3"
-dependencies = [
- "num-bigint",
- "num-traits",
- "proc-macro2",
- "quote",
- "syn 2.0.48",
-]
-
-[[package]]
 name = "ark-models-ext"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e9eab5d4b5ff2f228b763d38442adc9b084b0a465409b059fac5c2308835ec2"
 dependencies = [
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
+ "ark-ec",
+ "ark-ff",
+ "ark-serialize",
+ "ark-std",
  "derivative",
 ]
 
@@ -407,26 +343,11 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d320bfc44ee185d899ccbadfa8bc31aab923ce1558716e1997a1e74057fe86bf"
 dependencies = [
- "ark-ff 0.4.2",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
+ "ark-ff",
+ "ark-serialize",
+ "ark-std",
  "derivative",
  "hashbrown 0.13.2",
-]
-
-[[package]]
-name = "ark-poly"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "579305839da207f02b89cd1679e50e67b4331e2f9294a57693e5051b7703fe27"
-dependencies = [
- "ahash 0.8.8",
- "ark-ff 0.5.0",
- "ark-serialize 0.5.0",
- "ark-std 0.5.0",
- "educe",
- "fnv",
- "hashbrown 0.15.2",
 ]
 
 [[package]]
@@ -435,10 +356,10 @@ version = "0.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f69c00b3b529be29528a6f2fd5fa7b1790f8bed81b9cdca17e326538545a179"
 dependencies = [
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
+ "ark-ec",
+ "ark-ff",
+ "ark-serialize",
+ "ark-std",
  "parity-scale-codec",
  "scale-info",
 ]
@@ -446,13 +367,13 @@ dependencies = [
 [[package]]
 name = "ark-secret-scalar"
 version = "0.0.2"
-source = "git+https://github.com/w3f/ring-vrf?rev=e9782f9#e9782f938629c90f3adb3fff2358bc8d1386af3e"
+source = "git+https://github.com/availproject/ring-vrf?tag=locked#b91a9635bacc4fb542296caeef5f801ccf9c1dd1"
 dependencies = [
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
- "ark-transcript 0.0.2",
+ "ark-ec",
+ "ark-ff",
+ "ark-serialize",
+ "ark-std",
+ "ark-transcript 0.0.2 (git+https://github.com/availproject/ring-vrf?tag=locked)",
  "digest 0.10.7",
  "getrandom_or_panic",
  "zeroize",
@@ -464,21 +385,8 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adb7b85a02b83d2f22f89bd5cac66c9c89474240cb6207cb1efc16d098e822a5"
 dependencies = [
- "ark-serialize-derive 0.4.2",
- "ark-std 0.4.0",
- "digest 0.10.7",
- "num-bigint",
-]
-
-[[package]]
-name = "ark-serialize"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f4d068aaf107ebcd7dfb52bc748f8030e0fc930ac8e360146ca54c1203088f7"
-dependencies = [
- "ark-serialize-derive 0.5.0",
- "ark-std 0.5.0",
- "arrayvec 0.7.4",
+ "ark-serialize-derive",
+ "ark-std",
  "digest 0.10.7",
  "num-bigint",
 ]
@@ -495,17 +403,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ark-serialize-derive"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "213888f660fddcca0d257e88e54ac05bca01885f258ccdf695bafd77031bb69d"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.48",
-]
-
-[[package]]
 name = "ark-std"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -517,23 +414,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "ark-std"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "246a225cc6131e9ee4f24619af0f19d67761fff15d7ccc22e42b80846e69449a"
-dependencies = [
- "num-traits",
- "rand",
-]
-
-[[package]]
 name = "ark-transcript"
 version = "0.0.2"
-source = "git+https://github.com/w3f/ring-vrf?rev=e9782f9#e9782f938629c90f3adb3fff2358bc8d1386af3e"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "563084372d89271122bd743ef0a608179726f5fad0566008ba55bd0f756489b8"
 dependencies = [
- "ark-ff 0.4.2",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
+ "ark-ff",
+ "ark-serialize",
+ "ark-std",
  "digest 0.10.7",
  "rand_core 0.6.4",
  "sha3",
@@ -541,12 +429,12 @@ dependencies = [
 
 [[package]]
 name = "ark-transcript"
-version = "0.0.3"
-source = "git+https://github.com/w3f/ark-transcript#37a169f587f45d67e5afad143bc2a7c9c864884b"
+version = "0.0.2"
+source = "git+https://github.com/availproject/ring-vrf?tag=locked#b91a9635bacc4fb542296caeef5f801ccf9c1dd1"
 dependencies = [
- "ark-ff 0.5.0",
- "ark-serialize 0.5.0",
- "ark-std 0.5.0",
+ "ark-ff",
+ "ark-serialize",
+ "ark-std",
  "digest 0.10.7",
  "rand_core 0.6.4",
  "sha3",
@@ -661,17 +549,15 @@ dependencies = [
 [[package]]
 name = "bandersnatch_vrfs"
 version = "0.0.4"
-source = "git+https://github.com/w3f/ring-vrf?rev=e9782f9#e9782f938629c90f3adb3fff2358bc8d1386af3e"
+source = "git+https://github.com/availproject/ring-vrf?tag=locked#b91a9635bacc4fb542296caeef5f801ccf9c1dd1"
 dependencies = [
  "ark-bls12-381",
- "ark-ec 0.4.2",
+ "ark-ec",
  "ark-ed-on-bls12-381-bandersnatch",
- "ark-ff 0.4.2",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
+ "ark-ff",
+ "ark-serialize",
+ "ark-std",
  "dleq_vrf",
- "fflonk",
- "merlin 3.0.0",
  "rand_chacha",
  "rand_core 0.6.4",
  "ring",
@@ -702,7 +588,7 @@ checksum = "8c3c1a368f70d6cf7302d78f8f7093da241fb8e8807c05cc9e51a125895a6d5b"
 [[package]]
 name = "binary-merkle-tree"
 version = "13.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "hash-db",
  "log",
@@ -995,13 +881,13 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.1.0"
-source = "git+https://github.com/w3f/ring-proof#1eedf08d97effe1921f4aa2e926575088b068e2b"
+source = "git+https://github.com/availproject/ring-proof?tag=locked#6e646ed5e598a1e89130ab63e650c99ab3d6d60e"
 dependencies = [
- "ark-ec 0.5.0",
- "ark-ff 0.5.0",
- "ark-poly 0.5.0",
- "ark-serialize 0.5.0",
- "ark-std 0.5.0",
+ "ark-ec",
+ "ark-ff",
+ "ark-poly",
+ "ark-serialize",
+ "ark-std",
  "fflonk",
  "getrandom_or_panic",
  "rand_core 0.6.4",
@@ -1330,15 +1216,15 @@ dependencies = [
 [[package]]
 name = "dleq_vrf"
 version = "0.0.2"
-source = "git+https://github.com/w3f/ring-vrf?rev=e9782f9#e9782f938629c90f3adb3fff2358bc8d1386af3e"
+source = "git+https://github.com/availproject/ring-vrf?tag=locked#b91a9635bacc4fb542296caeef5f801ccf9c1dd1"
 dependencies = [
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
+ "ark-ec",
+ "ark-ff",
  "ark-scale",
  "ark-secret-scalar",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
- "ark-transcript 0.0.2",
+ "ark-serialize",
+ "ark-std",
+ "ark-transcript 0.0.2 (git+https://github.com/availproject/ring-vrf?tag=locked)",
  "arrayvec 0.7.4",
  "zeroize",
 ]
@@ -1501,18 +1387,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "educe"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d7bc049e1bd8cdeb31b68bbd586a9464ecf9f3944af3958a7a9d0f8b9799417"
-dependencies = [
- "enum-ordinalize",
- "proc-macro2",
- "quote",
- "syn 2.0.48",
-]
-
-[[package]]
 name = "either"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1535,26 +1409,6 @@ dependencies = [
  "sec1",
  "subtle",
  "zeroize",
-]
-
-[[package]]
-name = "enum-ordinalize"
-version = "4.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fea0dcfa4e54eeb516fe454635a95753ddd39acda650ce703031c6973e315dd5"
-dependencies = [
- "enum-ordinalize-derive",
-]
-
-[[package]]
-name = "enum-ordinalize-derive"
-version = "4.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d28318a75d4aead5c4db25382e8ef717932d0346600cacae6357eb5941bc5ff"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.48",
 ]
 
 [[package]]
@@ -1654,14 +1508,14 @@ dependencies = [
 
 [[package]]
 name = "fflonk"
-version = "0.1.1"
-source = "git+https://github.com/w3f/fflonk#eda051ea3b80042e844a3ebd17c2f60536e6ee3f"
+version = "0.1.0"
+source = "git+https://github.com/w3f/fflonk?rev=1e854f35e9a65d08b11a86291405cdc95baa0a35#1e854f35e9a65d08b11a86291405cdc95baa0a35"
 dependencies = [
- "ark-ec 0.5.0",
- "ark-ff 0.5.0",
- "ark-poly 0.5.0",
- "ark-serialize 0.5.0",
- "ark-std 0.5.0",
+ "ark-ec",
+ "ark-ff",
+ "ark-poly",
+ "ark-serialize",
+ "ark-std",
  "merlin 3.0.0",
 ]
 
@@ -1713,7 +1567,7 @@ dependencies = [
 [[package]]
 name = "frame-support"
 version = "28.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "aquamarine",
  "array-bytes",
@@ -1754,7 +1608,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural"
 version = "23.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "Inflector",
  "cfg-expr",
@@ -1773,7 +1627,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural-tools"
 version = "10.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "frame-support-procedural-tools-derive",
  "proc-macro-crate 3.1.0",
@@ -1785,7 +1639,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural-tools-derive"
 version = "11.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2032,15 +1886,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hashbrown"
-version = "0.15.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf151400ff0baff5465007dd2f3e717f3fe502074ca563069ce3a6629d07b289"
-dependencies = [
- "allocator-api2",
-]
-
-[[package]]
 name = "hermit-abi"
 version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2255,15 +2100,6 @@ name = "itertools"
 version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
-dependencies = [
- "either",
-]
-
-[[package]]
-name = "itertools"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
 dependencies = [
  "either",
 ]
@@ -2847,11 +2683,11 @@ version = "0.0.1"
 source = "git+https://github.com/availproject/poly-multiproof?tag=v0.0.1#cd8d31b7eb568dea2fddfc9237e2e31ea7ae7ed3"
 dependencies = [
  "ark-bls12-381",
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
- "ark-poly 0.4.2",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
+ "ark-ec",
+ "ark-ff",
+ "ark-poly",
+ "ark-serialize",
+ "ark-std",
  "blst",
  "merlin 3.0.0",
 ]
@@ -3154,14 +2990,15 @@ dependencies = [
 [[package]]
 name = "ring"
 version = "0.1.0"
-source = "git+https://github.com/w3f/ring-proof#1eedf08d97effe1921f4aa2e926575088b068e2b"
+source = "git+https://github.com/availproject/ring-proof?tag=locked#6e646ed5e598a1e89130ab63e650c99ab3d6d60e"
 dependencies = [
- "ark-ec 0.5.0",
- "ark-ff 0.5.0",
- "ark-poly 0.5.0",
- "ark-serialize 0.5.0",
- "ark-std 0.5.0",
- "ark-transcript 0.0.3",
+ "ark-ec",
+ "ark-ff",
+ "ark-poly",
+ "ark-serialize",
+ "ark-std",
+ "ark-transcript 0.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "arrayvec 0.7.4",
  "blake2",
  "common",
  "fflonk",
@@ -3532,7 +3369,7 @@ checksum = "e6ecd384b10a64542d77071bd64bd7b231f4ed5940fba55e98c3de13824cf3d7"
 [[package]]
 name = "sp-api"
 version = "26.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "hash-db",
  "log",
@@ -3553,7 +3390,7 @@ dependencies = [
 [[package]]
 name = "sp-api-proc-macro"
 version = "15.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "Inflector",
  "blake2",
@@ -3567,7 +3404,7 @@ dependencies = [
 [[package]]
 name = "sp-application-crypto"
 version = "30.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -3580,7 +3417,7 @@ dependencies = [
 [[package]]
 name = "sp-arithmetic"
 version = "23.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "integer-sqrt",
  "num-traits",
@@ -3594,7 +3431,7 @@ dependencies = [
 [[package]]
 name = "sp-ark-bls12-381"
 version = "0.4.2"
-source = "git+https://github.com/paritytech/arkworks-substrate#caa2eed74beb885dd07c7db5f916f2281dad818f"
+source = "git+https://github.com/paritytech/arkworks-substrate#f08093a5f7c32778eae1295430ec064dccd062a6"
 dependencies = [
  "ark-bls12-381-ext",
  "sp-crypto-ec-utils",
@@ -3603,7 +3440,7 @@ dependencies = [
 [[package]]
 name = "sp-ark-ed-on-bls12-381-bandersnatch"
 version = "0.4.2"
-source = "git+https://github.com/paritytech/arkworks-substrate#caa2eed74beb885dd07c7db5f916f2281dad818f"
+source = "git+https://github.com/paritytech/arkworks-substrate#f08093a5f7c32778eae1295430ec064dccd062a6"
 dependencies = [
  "ark-ed-on-bls12-381-bandersnatch-ext",
  "sp-crypto-ec-utils",
@@ -3612,7 +3449,7 @@ dependencies = [
 [[package]]
 name = "sp-core"
 version = "28.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "array-bytes",
  "bandersnatch_vrfs",
@@ -3658,7 +3495,7 @@ dependencies = [
 [[package]]
 name = "sp-crypto-ec-utils"
 version = "0.10.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "ark-bls12-377",
  "ark-bls12-377-ext",
@@ -3666,7 +3503,7 @@ dependencies = [
  "ark-bls12-381-ext",
  "ark-bw6-761",
  "ark-bw6-761-ext",
- "ark-ec 0.4.2",
+ "ark-ec",
  "ark-ed-on-bls12-377",
  "ark-ed-on-bls12-377-ext",
  "ark-ed-on-bls12-381-bandersnatch",
@@ -3679,7 +3516,7 @@ dependencies = [
 [[package]]
 name = "sp-crypto-hashing"
 version = "0.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "blake2b_simd",
  "byteorder",
@@ -3692,7 +3529,7 @@ dependencies = [
 [[package]]
 name = "sp-crypto-hashing-proc-macro"
 version = "0.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "quote",
  "sp-crypto-hashing",
@@ -3702,7 +3539,7 @@ dependencies = [
 [[package]]
 name = "sp-debug-derive"
 version = "14.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3712,7 +3549,7 @@ dependencies = [
 [[package]]
 name = "sp-externalities"
 version = "0.25.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "environmental",
  "parity-scale-codec",
@@ -3723,7 +3560,7 @@ dependencies = [
 [[package]]
 name = "sp-genesis-builder"
 version = "0.7.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "serde_json",
  "sp-api",
@@ -3734,7 +3571,7 @@ dependencies = [
 [[package]]
 name = "sp-inherents"
 version = "26.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "async-trait",
  "impl-trait-for-tuples",
@@ -3748,7 +3585,7 @@ dependencies = [
 [[package]]
 name = "sp-io"
 version = "30.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "bytes",
  "ed25519-dalek",
@@ -3773,7 +3610,7 @@ dependencies = [
 [[package]]
 name = "sp-keystore"
 version = "0.34.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "parity-scale-codec",
  "parking_lot",
@@ -3785,7 +3622,7 @@ dependencies = [
 [[package]]
 name = "sp-metadata-ir"
 version = "0.6.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "frame-metadata",
  "parity-scale-codec",
@@ -3796,7 +3633,7 @@ dependencies = [
 [[package]]
 name = "sp-panic-handler"
 version = "13.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "backtrace",
  "lazy_static",
@@ -3806,7 +3643,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime"
 version = "31.0.1"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "docify",
  "either",
@@ -3830,7 +3667,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface"
 version = "24.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "bytes",
  "impl-trait-for-tuples",
@@ -3848,7 +3685,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface-proc-macro"
 version = "17.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "Inflector",
  "expander",
@@ -3861,7 +3698,7 @@ dependencies = [
 [[package]]
 name = "sp-staking"
 version = "26.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "impl-trait-for-tuples",
  "parity-scale-codec",
@@ -3875,7 +3712,7 @@ dependencies = [
 [[package]]
 name = "sp-state-machine"
 version = "0.35.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "hash-db",
  "log",
@@ -3896,12 +3733,12 @@ dependencies = [
 [[package]]
 name = "sp-std"
 version = "14.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 
 [[package]]
 name = "sp-storage"
 version = "19.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "impl-serde 0.4.0",
  "parity-scale-codec",
@@ -3914,7 +3751,7 @@ dependencies = [
 [[package]]
 name = "sp-tracing"
 version = "16.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "parity-scale-codec",
  "sp-std",
@@ -3926,7 +3763,7 @@ dependencies = [
 [[package]]
 name = "sp-trie"
 version = "29.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "ahash 0.8.8",
  "hash-db",
@@ -3950,7 +3787,7 @@ dependencies = [
 [[package]]
 name = "sp-version"
 version = "29.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "impl-serde 0.4.0",
  "parity-scale-codec",
@@ -3967,7 +3804,7 @@ dependencies = [
 [[package]]
 name = "sp-version-proc-macro"
 version = "13.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "parity-scale-codec",
  "proc-macro2",
@@ -3978,7 +3815,7 @@ dependencies = [
 [[package]]
 name = "sp-wasm-interface"
 version = "20.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "anyhow",
  "impl-trait-for-tuples",
@@ -3991,7 +3828,7 @@ dependencies = [
 [[package]]
 name = "sp-weights"
 version = "27.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#7365b0ec700137c57a1bff06900861597bf0df67"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=fusion-mvp#81366efd411ac83936383220ded36f0d8e53bc48"
 dependencies = [
  "bounded-collections",
  "parity-scale-codec",
@@ -4504,10 +4341,10 @@ checksum = "7335e4c132c28cc43caef6adb339789e599e39adbe78da0c4d547fad48cbc331"
 dependencies = [
  "ark-bls12-377",
  "ark-bls12-381",
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
- "ark-serialize 0.4.2",
- "ark-serialize-derive 0.4.2",
+ "ark-ec",
+ "ark-ff",
+ "ark-serialize",
+ "ark-serialize-derive",
  "arrayref",
  "constcat",
  "digest 0.10.7",
