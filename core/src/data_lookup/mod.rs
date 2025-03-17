@@ -25,6 +25,8 @@ pub enum Error {
 	DataEmptyOn(AppId),
 	#[error("Offset overflows")]
 	OffsetOverflows,
+	#[error("Lookup has no transactions")]
+	EmptyTransactions,
 }
 
 #[derive(PartialEq, Eq, Clone, Default)]
@@ -36,6 +38,7 @@ pub enum Error {
 #[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
 pub struct DataLookup {
 	pub(crate) index: Vec<(AppId, DataLookupRange)>,
+	pub(crate) rows_per_tx: Vec<u16>,
 }
 
 impl DataLookup {
@@ -86,9 +89,52 @@ impl DataLookup {
 			})
 			.collect()
 	}
-}
 
-impl DataLookup {
+	/// Returns the tx row indices associated with a given app_id.
+	pub fn app_txs(&self, app_id: AppId) -> Option<Vec<Vec<u32>>> {
+		let range = self.range_of(app_id)?;
+		let start = range.start as usize;
+		let end = range.end as usize;
+
+		let mut tx_rows = Vec::new();
+		let mut tx_start = start;
+		let mut current_index = 0;
+
+		for &rows in &self.rows_per_tx {
+			let rows = rows as usize;
+			if current_index + rows > start {
+				let tx_row_indices = (tx_start..tx_start + rows.min(end - tx_start))
+					.map(|i| i as u32)
+					.collect();
+				tx_rows.push(tx_row_indices);
+				tx_start += rows;
+			}
+			current_index += rows;
+			if tx_start >= end {
+				break;
+			}
+		}
+
+		Some(tx_rows)
+	}
+
+	/// Returns the transaction row indices for all app_ids in the lookup.
+	pub fn transactions(&self) -> Option<Vec<(AppId, Vec<Vec<u32>>)>> {
+		let mut result = Vec::new();
+
+		for (app_id, _) in &self.index {
+			if let Some(tx_rows) = self.app_txs(*app_id) {
+				result.push((*app_id, tx_rows));
+			}
+		}
+
+		if result.is_empty() {
+			None
+		} else {
+			Some(result)
+		}
+	}
+
 	pub fn from_id_and_len_iter<I, A, L>(iter: I) -> Result<Self, Error>
 	where
 		I: Iterator<Item = (A, L)>,
@@ -96,41 +142,60 @@ impl DataLookup {
 		u32: TryFrom<L>,
 	{
 		let mut offset: u32 = 0;
-		let mut maybe_prev_id = None;
+		let mut last_id: Option<AppId> = None;
+		let mut index = Vec::new();
+		let mut rows_per_tx = Vec::new();
+		let mut current_rows_per_tx = Vec::new(); // Temporary storage for per-app transactions
 
-		let index = iter
-			.map(|(id, len)| {
-				// Check sorted by AppId
-				let id = AppId(id.into());
-				if let Some(prev_id) = maybe_prev_id.replace(id) {
-					ensure!(prev_id < id, Error::DataNotSorted);
+		for (id, len) in iter {
+			let id = AppId(id.into());
+			let len = u32::try_from(len).map_err(|_| Error::OffsetOverflows)?;
+			ensure!(len > 0, Error::DataEmptyOn(id));
+
+			// Enforce sorted order: App IDs must be non-decreasing
+			if let Some(prev_id) = last_id {
+				ensure!(id.0 >= prev_id.0, Error::DataNotSorted);
+			}
+
+			if Some(id) != last_id {
+				// If switching to a new app_id, store previous index and rows_per_tx data
+				if let Some(prev_id) = last_id {
+					let range_start =
+						offset - current_rows_per_tx.iter().map(|&r| r as u32).sum::<u32>();
+					index.push((prev_id, range_start..offset));
+					rows_per_tx.extend(current_rows_per_tx.iter());
 				}
+				last_id = Some(id);
+				current_rows_per_tx.clear();
+			}
 
-				// Check non-empty data per AppId
-				let len = u32::try_from(len).map_err(|_| Error::OffsetOverflows)?;
-				ensure!(len > 0, Error::DataEmptyOn(id));
+			offset = offset.checked_add(len).ok_or(Error::OffsetOverflows)?;
+			current_rows_per_tx.push(len as u16);
+		}
 
-				// Create range and update `offset`.
-				let end = offset.checked_add(len).ok_or(Error::OffsetOverflows)?;
-				let range = offset..end;
-				offset = end;
+		// Add the last app_id's data
+		if let Some(last_id) = last_id {
+			let range_start = offset - current_rows_per_tx.iter().map(|&r| r as u32).sum::<u32>();
+			index.push((last_id, range_start..offset));
+			rows_per_tx.extend(current_rows_per_tx.iter());
+		}
 
-				Ok((id, range))
-			})
-			.collect::<Result<_, _>>()?;
-
-		Ok(Self { index })
+		Ok(Self { index, rows_per_tx })
 	}
 
 	/// This function is used a block contains no data submissions.
 	pub fn new_empty() -> Self {
-		Self { index: Vec::new() }
+		Self {
+			index: Vec::new(),
+			rows_per_tx: Vec::new(),
+		}
 	}
 
 	/// This function is only used when something has gone wrong during header extension building
 	pub fn new_error() -> Self {
 		Self {
 			index: vec![(AppId(0), 0..0)],
+			rows_per_tx: Vec::new(),
 		}
 	}
 }
@@ -164,7 +229,11 @@ impl TryFrom<CompactDataLookup> for DataLookup {
 			index.push((prev_id, last_range));
 		}
 
-		let lookup = DataLookup { index };
+		let lookup = DataLookup {
+			index,
+			rows_per_tx: compacted.rows_per_tx,
+		};
+
 		ensure!(lookup.len() == compacted.size, Error::DataNotSorted);
 
 		Ok(lookup)
@@ -222,10 +291,17 @@ mod test {
 		})
 	}
 
-	#[test_case( vec![(0, 15), (1, 20), (2, 150)] => CompactDataLookup::new(185, vec![(1u32, 15u32).into(),(2u32,35u32).into()]).encode(); "Valid case")]
-	#[test_case( vec![(0, 100)] => CompactDataLookup::new(100, vec![]).encode(); "Only Zero AppId")]
-	#[test_case( vec![] => CompactDataLookup::new(0, vec![]).encode(); "Empty")]
-
+	#[test_case(
+		vec![(0, 15),(1, 20),(2, 150)]
+		=> CompactDataLookup::new(185, vec![(1u32, 15u32).into(),(2u32,35u32).into()],vec![15, 20, 150]).encode();
+		"Valid case"
+	)]
+	#[test_case(
+		vec![(0, 100)]
+		=> CompactDataLookup::new(100, vec![], vec![100]).encode();
+		"Only Zero AppId"
+	)]
+	#[test_case( vec![] => CompactDataLookup::new(0, vec![], vec![]).encode(); "Empty")]
 	fn check_compressed_encode(id_lens: Vec<(u32, usize)>) -> Vec<u8> {
 		let lookup = DataLookup::from_id_and_len_iter(id_lens.into_iter()).unwrap();
 		lookup.encode()
@@ -256,5 +332,50 @@ mod test {
 		let expanded_lookup = DataLookup::try_from(compressed_from_json.clone()).unwrap();
 
 		assert_eq!(lookup, expanded_lookup);
+	}
+
+	#[test]
+	fn test_from_id_and_len_iter() {
+		let input: Vec<(u32, u32)> = vec![(1, 15), (1, 20), (2, 150)];
+		let data_lookup = DataLookup::from_id_and_len_iter(input.into_iter()).unwrap();
+
+		assert_eq!(data_lookup.rows_per_tx, vec![15, 20, 150]); // Ensuring correct row counts
+		assert_eq!(
+			data_lookup.index,
+			vec![(AppId(1), 0..35), (AppId(2), 35..185)]
+		); // Ensuring correct indexing
+	}
+
+	#[test]
+	fn test_app_txs() {
+		let app_id_len = vec![(AppId(3), 2), (AppId(3), 2), (AppId(4), 3)];
+		let data_lookup = DataLookup::from_id_and_len_iter(app_id_len.into_iter()).unwrap();
+
+		let compact_lookup = CompactDataLookup::from_data_lookup(&data_lookup);
+		println!("compact_lookup: {:#?}", compact_lookup);
+		let rec_compact_lookup = DataLookup::try_from(compact_lookup).unwrap();
+		println!("rec_compact_lookup: {:#?}", rec_compact_lookup);
+
+		// Test for AppId 3
+		let app_id_3_txs = data_lookup.app_txs(AppId(3)).unwrap();
+		assert_eq!(app_id_3_txs, vec![vec![0, 1], vec![2, 3]]);
+
+		// Test for AppId 4
+		let app_id_4_txs = data_lookup.app_txs(AppId(4)).unwrap();
+		assert_eq!(app_id_4_txs, vec![vec![4, 5, 6]]);
+
+		// Test for non-existent AppId
+		let app_id_5_txs = data_lookup.app_txs(AppId(5));
+		assert!(app_id_5_txs.is_none());
+
+		// Test transactions
+		let txs = data_lookup.transactions().unwrap();
+		assert_eq!(
+			txs,
+			vec![
+				(AppId(3), vec![vec![0, 1], vec![2, 3]]),
+				(AppId(4), vec![vec![4, 5, 6]])
+			]
+		);
 	}
 }
