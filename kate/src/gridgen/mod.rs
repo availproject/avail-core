@@ -397,8 +397,8 @@ pub fn multiproof_block(
     target: Dimensions,
 ) -> Option<CellBlock> {
     let mp_grid_dims = multiproof_dims(grid, target)?;
-    println!("mp_grid_dims: {:?}", mp_grid_dims);
-    println!("x , y : {:?}, {:?}", x, y);
+    log::info!("mp_grid_dims: {:?}", mp_grid_dims);
+    log::info!("x , y : {:?}, {:?}", x, y);
     let (g_rows, g_cols): (usize, usize) = grid.into();
     if x >= mp_grid_dims.width() || y >= mp_grid_dims.height() {
         return None;
