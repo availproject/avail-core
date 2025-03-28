@@ -641,6 +641,7 @@ mod tests {
 		constants::kate::{CHUNK_SIZE, COMMITMENT_SIZE, DATA_CHUNK_SIZE},
 		DataLookup,
 	};
+	use codec::{Compact, CompactLen as _};
 	use dusk_bytes::Serializable;
 	use dusk_plonk::bls12_381::BlsScalar;
 	use hex_literal::hex;
@@ -664,7 +665,7 @@ mod tests {
 	use crate::{
 		com::{pad_iec_9797_1, par_extend_data_matrix, BlockDimensions},
 		couscous,
-		gridgen::EvaluationGrid,
+		gridgen::{EvaluationGrid, Multiproof},
 		metrics::IgnoreMetrics,
 		padded_len,
 	};
@@ -1549,7 +1550,7 @@ mod tests {
 	#[test]
 	// newapi wip
 	fn test_reconstruct_app_extrinsics_with_app_id() -> Result<(), Error> {
-		let app_id_1_data = br#""This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns 
+		let app_id_1_data = br#""This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns
 get erasure coded to ensure redundancy."#;
 
 		let app_id_2_data = br#""Let's see how this gets encoded and then reconstructed by sampling only some data."#;
@@ -1587,7 +1588,7 @@ get erasure coded to ensure redundancy."#;
 	#[test]
 	// newapi done
 	fn test_decode_app_extrinsics() -> Result<(), Error> {
-		let app_id_1_data = br#""This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns 
+		let app_id_1_data = br#""This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns
 get erasure coded to ensure redundancy."#;
 
 		let app_id_2_data = br#""Let's see how this gets encoded and then reconstructed by sampling only some data."#;
@@ -1635,7 +1636,7 @@ get erasure coded to ensure redundancy."#;
 	#[test]
 	// newapi done
 	fn test_extend_mock_data() -> Result<(), Error> {
-		let orig_data = br#"This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns 
+		let orig_data = br#"This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns
 get erasure coded to ensure redundancy.
 Let's see how this gets encoded and then reconstructed by sampling only some data."#;
 
@@ -1935,5 +1936,80 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 		let reconstructed_data =
 			reconstruct_app_extrinsic_data(AppId(2), &lookup, grid.dims(), data_cells).unwrap();
 		assert_eq!(original_data, reconstructed_data.concat());
+	}
+
+	fn compact_len(value: &u32) -> Option<u32> {
+		let len = Compact::<u32>::compact_len(value);
+		len.try_into().ok()
+	}
+
+	#[test]
+	fn test_multiproof_verification_from_data() {
+		use crate::pmp::{merlin::Transcript, traits::PolyMultiProofNoPrecomp};
+		use avail_core::{BlockLengthColumns, BlockLengthRows};
+
+		let rows: u16 = 1;
+		let cols: u16 = 16;
+		let target_dims = Dimensions::new_from(1, 8).unwrap();
+
+		// Compute transaction size
+		let tx_size: u32 = rows as u32 * cols as u32 * 31;
+		let encoding_overhead = compact_len(&tx_size).unwrap();
+		let tx_size = tx_size.saturating_sub(encoding_overhead) as usize;
+
+		// Generate random data
+		let mut rng = rand::thread_rng();
+		let data: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
+		let seed = Seed::default();
+
+		let pp = crate::couscous::multiproof_params();
+
+		let points = crate::gridgen::domain_points(cols.into()).unwrap();
+		let grid = crate::gridgen::EvaluationGrid::from_data(
+			data,
+			cols.into(),
+			cols.into(),
+			rows.into(),
+			seed,
+		)
+		.unwrap();
+		println!("original grid dimension: {:#?}", grid.dims());
+		println!("target grid dimension: {:#?}", target_dims);
+		let polys = grid.make_polynomial_grid().unwrap();
+		let commitments = polys.commitments(&pp).unwrap();
+
+		for row in 0..target_dims.rows().get() {
+			for col in 0..target_dims.cols().get() {
+				println!("Testing multiproof for cell ({}, {})", row, col);
+				let Multiproof {
+					proof,
+					evals,
+					block,
+				} = polys
+					.multiproof(
+						&pp,
+						&Cell::new(BlockLengthRows(row.into()), BlockLengthColumns(col.into())),
+						&grid,
+						target_dims,
+					)
+					.unwrap();
+				println!("mp_block: {:#?}", block);
+				let verified = pp
+					.verify(
+						&mut Transcript::new(b"avail-mp"),
+						&commitments,
+						&points[block.start_x..block.end_x],
+						&evals,
+						&proof,
+					)
+					.unwrap();
+
+				assert!(
+					verified,
+					"Multiproof verification failed for cell ({}, {})",
+					row, col
+				);
+			}
+		}
 	}
 }
