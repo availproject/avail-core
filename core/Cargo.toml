@@ -50,43 +50,44 @@ trybuild = "1.0.96"
 [features]
 default = [ "std" ]
 std = [
+	"binary-merkle-tree?/std",
 	"bounded-collections/std",
 	"codec/std",
 	"derive_more/display",
 	"ethabi-decode/std",
+	"frame-support?/std",
 	"hash256-std-hasher/std",
 	"hex/std",
 	"log/std",
+	"primitive-types/std",
 	"scale-info/std",
 	"serde?/std",
-	"sp-std/std",
 	"sp-arithmetic/std",
-	"frame-support?/std",
-	"binary-merkle-tree?/std",
 	"sp-runtime-interface?/std",
 	"sp-runtime?/std",
+	"sp-std/std",
 	"sp-trie?/std",
-	"primitive-types/std",
 ]
 
 runtime = [
+	"binary-merkle-tree",
 	"frame-support",
+	"serde",
+	"sp-debug-derive",
 	"sp-runtime",
 	"sp-runtime-interface",
-	"sp-trie",
 	"sp-storage",
-	"sp-debug-derive",
-	"binary-merkle-tree",
-	"serde",
+	"sp-trie",
 ]
 
 try-runtime = [ "runtime", "sp-runtime/try-runtime" ]
 
-serde = [ 
-	"dep:serde", 
-	"hex/serde", 
-	"log/serde", 
-	"impl-serde", 
-	"primitive-types/serde_no_std", # TODO If std is enabled then `primitive-types/serde` "should" be enabled. Don't want to deal with that rn.
-	"bounded-collections/serde"
+serde = [
+	# TODO If std is enabled then `primitive-types/serde` "should" be enabled. Don't want to deal with that rn.
+	"bounded-collections/serde",
+	"dep:serde",
+	"hex/serde",
+	"impl-serde",
+	"log/serde",
+	"primitive-types/serde_no_std",
 ]
