@@ -12,5 +12,5 @@ pub mod extended_block;
 pub use extended_block::ExtendedBlock;
 
 pub trait MaybeCaller<A> {
-	fn caller(&self) -> Option<&A>;
+    fn caller(&self) -> Option<&A>;
 }

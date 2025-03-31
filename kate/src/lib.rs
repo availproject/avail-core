@@ -9,10 +9,10 @@ use core::{
 #[cfg(feature = "std")]
 pub use dusk_plonk::{commitment_scheme::kzg10::PublicParameters, prelude::BlsScalar};
 use kate_recovery::matrix::Dimensions;
+use poly_multiproof::ark_bls12_381::Fr;
 use sp_arithmetic::traits::SaturatedConversion;
 use static_assertions::const_assert_ne;
 use thiserror_no_std::Error;
-use poly_multiproof::ark_bls12_381::Fr;
 pub const LOG_TARGET: &str = "kate";
 pub const U32_USIZE_ERR: &str = "`u32` cast to `usize` overflows, unsupported platform";
 
@@ -245,10 +245,7 @@ pub mod couscous {
             },
             traits::KZGProof,
         };
-        use poly_multiproof::{
-            ark_bls12_381,
-            traits::Committer,
-        };
+        use poly_multiproof::{ark_bls12_381, traits::Committer};
         use rand::thread_rng;
 
         #[test]
