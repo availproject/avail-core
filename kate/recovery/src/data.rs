@@ -103,6 +103,12 @@ impl CellVariant {
     }
 }
 
+impl From<Cell> for CellVariant {
+    fn from(cell: Cell) -> Self {
+        CellVariant::Cell(cell)
+    }
+}
+
 /// Merges cells data per row.
 /// Cells are sorted before merge.
 pub fn rows(dimensions: Dimensions, cells: &[&CellVariant]) -> Vec<(RowIndex, Vec<u8>)> {
@@ -128,6 +134,12 @@ impl From<Cell> for DataCell {
             position: cell.position,
             data: cell.data(),
         }
+    }
+}
+
+impl From<MCell> for CellVariant {
+    fn from(mcell: MCell) -> Self {
+        CellVariant::MCell(mcell)
     }
 }
 
@@ -158,47 +170,47 @@ mod tests {
     #[test]
     fn rows_ok() {
         let dimensions = Dimensions::new(1, 2).unwrap();
-
-        let cell_variants= vec![
-            CellVariant::Cell(cell(position(1, 1), content([3; 32]))),
-            CellVariant::Cell(cell(position(1, 0), content([2; 32]))),
-            CellVariant::Cell(cell(position(0, 0), content([0; 32]))),
-            CellVariant::Cell(cell(position(0, 1), content([1; 32]))),
+    
+        let cell_variants = vec![
+            cell(position(1, 1), content([3; 32])).into(),
+            cell(position(1, 0), content([2; 32])).into(),
+            cell(position(0, 0), content([0; 32])).into(),
+            cell(position(0, 1), content([1; 32])).into(),
         ];
-
+    
         let cells: Vec<&CellVariant> = cell_variants.iter().collect();
         let mut rows = rows(dimensions, &cells);
         rows.sort_by_key(|(key, _)| key.0);
-
+    
         let expected = [
             [[0u8; 32], [1u8; 32]].concat(),
             [[2u8; 32], [3u8; 32]].concat(),
         ];
-
+    
         for i in 0..1 {
             let (row_index, row) = &rows[i];
             assert_eq!(row_index.0, i as u32);
             assert_eq!(*row, expected[i]);
         }
     }
-
+    
     #[test]
     fn rows_incomplete() {
         let dimensions = Dimensions::new(1, 2).unwrap();
-
+    
         let cell_variants = vec![
-            CellVariant::Cell(cell(position(1, 1), content([3; 32]))),
-            CellVariant::Cell(cell(position(0, 0), content([0; 32]))),
-            CellVariant::Cell(cell(position(0, 1), content([1; 32]))),
+            cell(position(1, 1), content([3; 32])).into(),
+            cell(position(0, 0), content([0; 32])).into(),
+            cell(position(0, 1), content([1; 32])).into(),
         ];
-        
+    
         let cells: Vec<&CellVariant> = cell_variants.iter().collect();
         let mut rows = rows(dimensions, &cells);
         rows.sort_by_key(|(key, _)| key.0);
-
+    
         assert_eq!(rows.len(), 1);
         let (row_index, row) = &rows[0];
         assert_eq!(row_index.0, 0);
         assert_eq!(*row, [[0u8; 32], [1u8; 32]].concat());
-    }
+    }    
 }
