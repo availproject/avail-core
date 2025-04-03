@@ -42,6 +42,30 @@ impl Cell {
     }
 }
 
+/// Position and content of a multiproof cell in extended matrix
+#[derive(Debug, Clone, Constructor)]
+pub struct MCell {
+    /// Position of a multiproof cell
+    pub position: Position,
+    /// Concatenated cell data 
+    pub content: Vec<u8>,
+}
+
+impl MCell {
+    #[cfg(any(target_arch = "wasm32", feature = "std"))]
+    pub fn reference(&self, block: u32) -> String {
+        self.position.reference(block)
+    }
+
+    pub fn data(&self) -> [u8; 32] {
+        self.content[48..].try_into().expect("content is 80 bytes")
+    }
+
+    pub fn proof(&self) -> [u8; 48] {
+        self.content[..48].try_into().expect("content is 80 bytes")
+    }
+}
+
 /// Merges cells data per row.
 /// Cells are sorted before merge.
 pub fn rows(dimensions: Dimensions, cells: &[&Cell]) -> Vec<(RowIndex, Vec<u8>)> {
