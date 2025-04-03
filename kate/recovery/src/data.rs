@@ -57,12 +57,42 @@ impl MCell {
         self.position.reference(block)
     }
 
-    pub fn data(&self) -> [u8; 32] {
-        self.content[48..].try_into().expect("content is 80 bytes")
+    pub fn data(&self) -> Vec<u8> {
+        self.content[48..].to_vec()
     }
 
     pub fn proof(&self) -> [u8; 48] {
         self.content[..48].try_into().expect("content is 80 bytes")
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum CellVariant {
+	Cell(Cell),
+	MCell(MCell),
+}
+
+impl CellVariant {
+    #[cfg(any(target_arch = "wasm32", feature = "std"))]
+    pub fn reference(&self, block: u32) -> String {
+        match self {
+            CellVariant::Cell(cell) => cell.reference(block),
+            CellVariant::MCell(mcell) => mcell.reference(block),
+        }
+    }
+
+    pub fn data(&self) -> Vec<u8> {
+        match self {
+            CellVariant::Cell(cell) => cell.data().to_vec(),
+            CellVariant::MCell(mcell) => mcell.data(),
+        }
+    }
+
+    pub fn proof(&self) -> [u8; 48] {
+        match self {
+            CellVariant::Cell(cell) => cell.proof(),
+            CellVariant::MCell(mcell) => mcell.proof(),
+        }
     }
 }
 
