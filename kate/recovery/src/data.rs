@@ -47,7 +47,7 @@ impl Cell {
 pub struct MCell {
     /// Position of a multiproof cell
     pub position: Position,
-    /// Concatenated cell data 
+    /// Concatenated cell data
     pub content: Vec<u8>,
 }
 
@@ -68,8 +68,8 @@ impl MCell {
 
 #[derive(Debug, Clone)]
 pub enum CellVariant {
-	Cell(Cell),
-	MCell(MCell),
+    Cell(Cell),
+    MCell(MCell),
 }
 
 impl CellVariant {
@@ -85,6 +85,13 @@ impl CellVariant {
         match self {
             CellVariant::Cell(cell) => cell.data().to_vec(),
             CellVariant::MCell(mcell) => mcell.data(),
+        }
+    }
+
+    pub fn position(&self) -> Position {
+        match self {
+            CellVariant::Cell(cell) => cell.position,
+            CellVariant::MCell(mcell) => mcell.position,
         }
     }
 
