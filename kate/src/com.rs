@@ -1870,7 +1870,7 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 
 	#[test]
 	fn test_data_reconstruction() {
-		// use codec::Decode;
+		use codec::Decode;
 		use poly_multiproof::traits::AsBytes;
 		use std::num::NonZeroU16;
 
@@ -1911,26 +1911,27 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 			.collect();
 
 		// OPTION 1
-		// let rows = reconstruct_rows(grid.dims(), data_cells).unwrap();
-		// // flatten the rows into vec<u8>
-		// let padded_data: Vec<u8> = rows.concat();
-		// let reconstructed_data = {
-		// 	assert!(padded_data.len() % CHUNK_SIZE == 0, "corrupt data");
-		// 	let encoded_data = padded_data
-		// 		.chunks(CHUNK_SIZE)
-		// 		.flat_map(|chunk| &chunk[0..DATA_CHUNK_SIZE])
-		// 		.cloned()
-		// 		.collect::<Vec<u8>>();
-		// 	let mut encoded_slice = &encoded_data[..];
-		// 	let decoded = Vec::<u8>::decode(&mut encoded_slice).unwrap();
-		// 	decoded
-		// };
-		// assert_eq!(original_data, reconstructed_data);
+		let rows = reconstruct_rows(grid.dims(), data_cells.clone()).unwrap();
+		// flatten the rows into vec<u8>
+		let padded_data: Vec<u8> = rows.concat();
+		let reconstructed_data = {
+			assert!(padded_data.len() % CHUNK_SIZE == 0, "corrupt data");
+			let encoded_data = padded_data
+				.chunks(CHUNK_SIZE)
+				.flat_map(|chunk| &chunk[0..DATA_CHUNK_SIZE])
+				.cloned()
+				.collect::<Vec<u8>>();
+			let mut encoded_slice = &encoded_data[..];
+			let decoded = Vec::<u8>::decode(&mut encoded_slice).unwrap();
+			decoded
+		};
+		assert_eq!(original_data, reconstructed_data);
 
 		// OPTION 2
-		// let reconstruct = reconstruct_extrinsics_data(&lookup, grid.dims(), data_cells).unwrap();
-		// let (_app_id, reconstructed_data) = &reconstruct[0];
-		// assert_eq!(original_data, reconstructed_data.concat());
+		let reconstruct =
+			reconstruct_extrinsics_data(&lookup, grid.dims(), data_cells.clone()).unwrap();
+		let (_app_id, reconstructed_data) = &reconstruct[0];
+		assert_eq!(original_data, reconstructed_data.concat());
 
 		// OPTION 3
 		let reconstructed_data =
