@@ -1,6 +1,7 @@
 use core::convert::TryInto;
 use derive_more::Constructor;
 use sp_std::{collections::btree_map::BTreeMap, vec::Vec};
+use std::convert::TryFrom;
 
 use crate::matrix::{Dimensions, Position, RowIndex};
 
@@ -106,6 +107,17 @@ impl CellVariant {
 impl From<Cell> for CellVariant {
     fn from(cell: Cell) -> Self {
         CellVariant::Cell(cell)
+    }
+}
+
+impl TryFrom<CellVariant> for Cell {
+    type Error = &'static str;
+
+    fn try_from(value: CellVariant) -> Result<Self, Self::Error> {
+        match value {
+            CellVariant::Cell(cell) => Ok(cell),
+            CellVariant::MCell(_) => Err("Expected Cell, found MCell"),
+        }
     }
 }
 
