@@ -2156,6 +2156,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sp-arithmetic",
+ "sp-std",
  "static_assertions",
  "test-case",
  "thiserror-no-std",
