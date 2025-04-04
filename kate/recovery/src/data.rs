@@ -138,6 +138,24 @@ impl From<Cell> for DataCell {
     }
 }
 
+/// Position and data of a multiproof cell in extended matrix
+#[derive(Default, Debug, Clone, Constructor)]
+pub struct MDataCell {
+    /// Cell's position
+    pub position: Position,
+    /// Cell's data
+    pub data: Vec<u8>,
+}
+
+impl From<MCell> for MDataCell {
+    fn from(cell: MCell) -> Self {
+        MDataCell {
+            position: cell.position,
+            data: cell.data(),
+        }
+    }
+}
+
 impl From<MCell> for CellVariant {
     fn from(mcell: MCell) -> Self {
         CellVariant::MCell(mcell)
