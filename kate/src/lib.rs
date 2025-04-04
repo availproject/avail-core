@@ -6,7 +6,7 @@ use core::{
     convert::TryInto,
     num::{NonZeroU32, TryFromIntError},
 };
-#[cfg(feature = "std")]
+use sp_std::vec::Vec;
 pub use dusk_plonk::{commitment_scheme::kzg10::PublicParameters, prelude::BlsScalar};
 use kate_recovery::matrix::Dimensions;
 use poly_multiproof::ark_bls12_381::Fr;
@@ -20,7 +20,6 @@ pub type Seed = [u8; 32];
 
 #[cfg(feature = "std")]
 pub use dusk_bytes::Serializable;
-#[cfg(feature = "std")]
 pub use poly_multiproof as pmp;
 
 #[cfg(feature = "std")]
@@ -179,7 +178,6 @@ pub mod testnet {
 
 // TODO: load pp for both dusk & arkworks from same file
 // To be used for incentivised testnet
-#[cfg(feature = "std")]
 pub mod couscous {
     use super::*;
     use pmp::ark_bls12_381::{G1Projective as G1, G2Projective as G2};

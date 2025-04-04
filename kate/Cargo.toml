@@ -13,12 +13,13 @@ avail-core = { path = "../core", default-features = false }
 kate-recovery = { path = "recovery", default-features = false }
 
 # Crypto
-dusk-plonk = { workspace = true, optional = true }
+dusk-plonk = { workspace = true }
 poly-multiproof = { workspace = true, default-features = false, features = ["blst"] }
 
 # Parity & Substrate
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive"] }
 sp-arithmetic.workspace = true
+sp-std.workspace = true
 
 # 3rd-party
 derive_more.workspace = true
@@ -26,7 +27,7 @@ static_assertions.workspace = true
 thiserror-no-std.workspace = true
 
 dusk-bytes = { workspace = true, optional = true }
-hex = { workspace = true, optional = true }
+hex = { workspace = true }
 hex-literal.workspace = true
 log = { workspace = true, optional = true }
 nalgebra = { workspace = true, optional = true }
@@ -53,7 +54,6 @@ std = [
 	"codec/std",
 	"dusk-bytes",
 	"dusk-plonk/std",
-	"hex",
 	"kate-recovery/std",
 	"log",
 	"nalgebra/std",
