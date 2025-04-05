@@ -1,5 +1,7 @@
+use codec::{Decode, Encode};
 use core::convert::TryInto;
 use derive_more::Constructor;
+use serde::{Deserialize, Serialize};
 use sp_std::{collections::btree_map::BTreeMap, vec::Vec};
 use std::convert::TryFrom;
 
@@ -50,7 +52,7 @@ pub struct MCell {
     pub gcell_block: GCellBlock,
 }
 
-#[derive(Debug, Clone, Constructor)]
+#[derive(Encode, Decode, Debug, Clone, Serialize, Deserialize)]
 pub struct GCellBlock {
     pub start_x: u32,
     pub start_y: u32,
@@ -71,7 +73,7 @@ impl GCellBlock {
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, &'static str> {
-        if bytes.len() != 16 {
+        if bytes.len() != Self::GCELL_BLOCK_SIZE {
             return Err("GCellBlock must be exactly 16 bytes");
         }
 
