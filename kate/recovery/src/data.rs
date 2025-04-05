@@ -49,7 +49,6 @@ impl Cell {
 pub struct MCell {
     pub position: Position,
     pub content: Vec<u8>,
-    pub gcell_block: GCellBlock,
 }
 
 #[derive(Encode, Decode, Debug, Clone, Serialize, Deserialize)]
@@ -119,10 +118,6 @@ impl MCell {
     pub fn proof(&self) -> [u8; 48] {
         self.content[..48].try_into().expect("content is 80 bytes")
     }
-
-    pub fn gcell_block(&self) -> &GCellBlock {
-        &self.gcell_block
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -158,13 +153,6 @@ impl CellVariant {
         match self {
             CellVariant::Cell(cell) => cell.proof(),
             CellVariant::MCell(mcell) => mcell.proof(),
-        }
-    }
-
-    pub fn gcell_block(&self) -> Option<&GCellBlock> {
-        match self {
-            CellVariant::Cell(_) => None,
-            CellVariant::MCell(mcell) => Some(mcell.gcell_block()),
         }
     }
 }
