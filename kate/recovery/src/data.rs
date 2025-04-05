@@ -43,13 +43,19 @@ impl Cell {
     }
 }
 
-/// Position and content of a multiproof cell in extended matrix
 #[derive(Debug, Clone, Constructor)]
 pub struct MCell {
-    /// Position of a multiproof cell
     pub position: Position,
-    /// Concatenated cell data
     pub content: Vec<u8>,
+    pub gcell_block: GCellBlock,
+}
+
+#[derive(Debug, Clone, Constructor)]
+pub struct GCellBlock {
+	pub start_x: u32,
+	pub start_y: u32,
+	pub end_x: u32,
+	pub end_y: u32,
 }
 
 impl MCell {
@@ -64,6 +70,10 @@ impl MCell {
 
     pub fn proof(&self) -> [u8; 48] {
         self.content[..48].try_into().expect("content is 80 bytes")
+    }
+
+    pub fn gcell_block(&self) -> &GCellBlock {
+        &self.gcell_block
     }
 }
 
@@ -102,11 +112,24 @@ impl CellVariant {
             CellVariant::MCell(mcell) => mcell.proof(),
         }
     }
+
+    pub fn gcell_block(&self) -> Option<&GCellBlock> {
+        match self {
+            CellVariant::Cell(_) => None,
+            CellVariant::MCell(mcell) => Some(mcell.gcell_block()),
+        }
+    }
 }
 
 impl From<Cell> for CellVariant {
     fn from(cell: Cell) -> Self {
         CellVariant::Cell(cell)
+    }
+}
+
+impl From<MCell> for CellVariant {
+    fn from(mcell: MCell) -> Self {
+        CellVariant::MCell(mcell)
     }
 }
 
@@ -147,30 +170,6 @@ impl From<Cell> for DataCell {
             position: cell.position,
             data: cell.data(),
         }
-    }
-}
-
-/// Position and data of a multiproof cell in extended matrix
-#[derive(Default, Debug, Clone, Constructor)]
-pub struct MDataCell {
-    /// Cell's position
-    pub position: Position,
-    /// Cell's data
-    pub data: Vec<u8>,
-}
-
-impl From<MCell> for MDataCell {
-    fn from(cell: MCell) -> Self {
-        MDataCell {
-            position: cell.position,
-            data: cell.data(),
-        }
-    }
-}
-
-impl From<MCell> for CellVariant {
-    fn from(mcell: MCell) -> Self {
-        CellVariant::MCell(mcell)
     }
 }
 
