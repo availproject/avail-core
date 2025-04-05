@@ -58,6 +58,17 @@ pub struct GCellBlock {
 	pub end_y: u32,
 }
 
+impl GCellBlock {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut buf = Vec::with_capacity(16);
+        buf.extend(&self.start_x.to_le_bytes());
+        buf.extend(&self.start_y.to_le_bytes());
+        buf.extend(&self.end_x.to_le_bytes());
+        buf.extend(&self.end_y.to_le_bytes());
+        buf
+    }
+}
+
 impl MCell {
     #[cfg(any(target_arch = "wasm32", feature = "std"))]
     pub fn reference(&self, block: u32) -> String {
