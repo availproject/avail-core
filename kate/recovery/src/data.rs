@@ -52,13 +52,15 @@ pub struct MCell {
 
 #[derive(Debug, Clone, Constructor)]
 pub struct GCellBlock {
-	pub start_x: u32,
-	pub start_y: u32,
-	pub end_x: u32,
-	pub end_y: u32,
+    pub start_x: u32,
+    pub start_y: u32,
+    pub end_x: u32,
+    pub end_y: u32,
 }
 
 impl GCellBlock {
+    pub const GCELL_BLOCK_SIZE: usize = std::mem::size_of::<GCellBlock>();
+
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut buf = Vec::with_capacity(16);
         buf.extend(&self.start_x.to_le_bytes());
@@ -73,10 +75,22 @@ impl GCellBlock {
             return Err("GCellBlock must be exactly 16 bytes");
         }
 
-        let start_x = bytes.get(0..4).and_then(|b| b.try_into().ok()).map(u32::from_le_bytes);
-        let start_y = bytes.get(4..8).and_then(|b| b.try_into().ok()).map(u32::from_le_bytes);
-        let end_x   = bytes.get(8..12).and_then(|b| b.try_into().ok()).map(u32::from_le_bytes);
-        let end_y   = bytes.get(12..16).and_then(|b| b.try_into().ok()).map(u32::from_le_bytes);
+        let start_x = bytes
+            .get(0..4)
+            .and_then(|b| b.try_into().ok())
+            .map(u32::from_le_bytes);
+        let start_y = bytes
+            .get(4..8)
+            .and_then(|b| b.try_into().ok())
+            .map(u32::from_le_bytes);
+        let end_x = bytes
+            .get(8..12)
+            .and_then(|b| b.try_into().ok())
+            .map(u32::from_le_bytes);
+        let end_y = bytes
+            .get(12..16)
+            .and_then(|b| b.try_into().ok())
+            .map(u32::from_le_bytes);
 
         match (start_x, start_y, end_x, end_y) {
             (Some(start_x), Some(start_y), Some(end_x), Some(end_y)) => Ok(Self {
@@ -89,7 +103,6 @@ impl GCellBlock {
         }
     }
 }
-
 
 impl MCell {
     #[cfg(any(target_arch = "wasm32", feature = "std"))]

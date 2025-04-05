@@ -6,11 +6,11 @@ use core::{
     convert::TryInto,
     num::{NonZeroU32, TryFromIntError},
 };
-use sp_std::vec::Vec;
 pub use dusk_plonk::{commitment_scheme::kzg10::PublicParameters, prelude::BlsScalar};
 use kate_recovery::matrix::Dimensions;
 use poly_multiproof::ark_bls12_381::Fr;
 use sp_arithmetic::traits::SaturatedConversion;
+use sp_std::vec::Vec;
 use static_assertions::const_assert_ne;
 use thiserror_no_std::Error;
 pub const LOG_TARGET: &str = "kate";
