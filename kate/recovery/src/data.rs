@@ -48,7 +48,9 @@ impl Cell {
 #[derive(Debug, Clone, Constructor)]
 pub struct MCell {
     pub position: Position,
-    pub content: Vec<u8>,
+    pub scalars: Vec<[u64; 4]>,
+    pub proof: [u8; 48],
+    pub gcell_block: GCellBlock,
 }
 
 #[derive(Encode, Decode, Debug, Clone, Serialize, Deserialize)]
@@ -112,11 +114,23 @@ impl MCell {
     }
 
     pub fn data(&self) -> Vec<u8> {
-        self.content[48..].to_vec()
+        const LIMBS_PER_SCALAR: usize = 4;
+        const BYTES_PER_LIMB: usize = std::mem::size_of::<u64>();
+        const BYTES_PER_SCALAR: usize = LIMBS_PER_SCALAR * BYTES_PER_LIMB;
+
+        let mut bytes = Vec::with_capacity(self.scalars.len() * BYTES_PER_SCALAR);
+
+        for scalar in &self.scalars {
+            for &limb in scalar {
+                bytes.extend_from_slice(&limb.to_be_bytes());
+            }
+        }
+
+        bytes
     }
 
     pub fn proof(&self) -> [u8; 48] {
-        self.content[..48].try_into().expect("content is 80 bytes")
+        self.proof
     }
 }
 
