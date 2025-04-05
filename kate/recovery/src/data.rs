@@ -67,7 +67,29 @@ impl GCellBlock {
         buf.extend(&self.end_y.to_le_bytes());
         buf
     }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, &'static str> {
+        if bytes.len() != 16 {
+            return Err("GCellBlock must be exactly 16 bytes");
+        }
+
+        let start_x = bytes.get(0..4).and_then(|b| b.try_into().ok()).map(u32::from_le_bytes);
+        let start_y = bytes.get(4..8).and_then(|b| b.try_into().ok()).map(u32::from_le_bytes);
+        let end_x   = bytes.get(8..12).and_then(|b| b.try_into().ok()).map(u32::from_le_bytes);
+        let end_y   = bytes.get(12..16).and_then(|b| b.try_into().ok()).map(u32::from_le_bytes);
+
+        match (start_x, start_y, end_x, end_y) {
+            (Some(start_x), Some(start_y), Some(end_x), Some(end_y)) => Ok(Self {
+                start_x,
+                start_y,
+                end_x,
+                end_y,
+            }),
+            _ => Err("Failed to convert bytes to GCellBlock"),
+        }
+    }
 }
+
 
 impl MCell {
     #[cfg(any(target_arch = "wasm32", feature = "std"))]
