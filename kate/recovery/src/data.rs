@@ -242,6 +242,13 @@ impl CellVariant {
             CellVariant::MCell(mcell) => mcell.proof(),
         }
     }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        match self {
+            CellVariant::MCell(mcell) => mcell.to_bytes(),
+            CellVariant::Cell(cell) => cell.data().to_vec(),
+        }
+    }
 }
 
 impl From<Cell> for CellVariant {
