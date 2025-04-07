@@ -45,6 +45,12 @@ impl From<dusk_bytes::Error> for Error {
 }
 
 /// Verifies proof for given cell
+///
+/// # Deprecated
+/// This function is deprecated. Use [`verify_v2`] instead, which uses arkworks primitives.
+#[deprecated(
+	note = "This function is deprecated. Use `verify_v2` instead, which uses arkworks primitives."
+)]
 #[cfg(feature = "std")]
 pub fn verify(
 	public_parameters: &PublicParameters,
