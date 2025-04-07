@@ -208,75 +208,75 @@ impl MCell {
 }
 
 #[derive(Debug, Clone)]
-pub enum CellVariant {
+pub enum CellType {
     Cell(Cell),
     MCell(MCell),
 }
 
-impl CellVariant {
+impl CellType {
     #[cfg(any(target_arch = "wasm32", feature = "std"))]
     pub fn reference(&self, block: u32) -> String {
         match self {
-            CellVariant::Cell(cell) => cell.reference(block),
-            CellVariant::MCell(mcell) => mcell.reference(block),
+            CellType::Cell(cell) => cell.reference(block),
+            CellType::MCell(mcell) => mcell.reference(block),
         }
     }
 
     pub fn data(&self) -> Vec<u8> {
         match self {
-            CellVariant::Cell(cell) => cell.data().to_vec(),
-            CellVariant::MCell(mcell) => mcell.data(),
+            CellType::Cell(cell) => cell.data().to_vec(),
+            CellType::MCell(mcell) => mcell.data(),
         }
     }
 
     pub fn position(&self) -> Position {
         match self {
-            CellVariant::Cell(cell) => cell.position,
-            CellVariant::MCell(mcell) => mcell.position,
+            CellType::Cell(cell) => cell.position,
+            CellType::MCell(mcell) => mcell.position,
         }
     }
 
     pub fn proof(&self) -> [u8; 48] {
         match self {
-            CellVariant::Cell(cell) => cell.proof(),
-            CellVariant::MCell(mcell) => mcell.proof(),
+            CellType::Cell(cell) => cell.proof(),
+            CellType::MCell(mcell) => mcell.proof(),
         }
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
         match self {
-            CellVariant::MCell(mcell) => mcell.to_bytes(),
-            CellVariant::Cell(cell) => cell.data().to_vec(),
+            CellType::MCell(mcell) => mcell.to_bytes(),
+            CellType::Cell(cell) => cell.data().to_vec(),
         }
     }
 }
 
-impl From<Cell> for CellVariant {
+impl From<Cell> for CellType {
     fn from(cell: Cell) -> Self {
-        CellVariant::Cell(cell)
+        CellType::Cell(cell)
     }
 }
 
-impl From<MCell> for CellVariant {
+impl From<MCell> for CellType {
     fn from(mcell: MCell) -> Self {
-        CellVariant::MCell(mcell)
+        CellType::MCell(mcell)
     }
 }
 
-impl TryFrom<CellVariant> for Cell {
+impl TryFrom<CellType> for Cell {
     type Error = &'static str;
 
-    fn try_from(value: CellVariant) -> Result<Self, Self::Error> {
+    fn try_from(value: CellType) -> Result<Self, Self::Error> {
         match value {
-            CellVariant::Cell(cell) => Ok(cell),
-            CellVariant::MCell(_) => Err("Expected Cell, found MCell"),
+            CellType::Cell(cell) => Ok(cell),
+            CellType::MCell(_) => Err("Expected Cell, found MCell"),
         }
     }
 }
 
 /// Merges cells data per row.
 /// Cells are sorted before merge.
-pub fn rows(dimensions: Dimensions, cells: &[&CellVariant]) -> Vec<(RowIndex, Vec<u8>)> {
+pub fn rows(dimensions: Dimensions, cells: &[&CellType]) -> Vec<(RowIndex, Vec<u8>)> {
     let mut sorted_cells = cells.to_vec();
 
     sorted_cells.sort_by(|a, b| {
@@ -313,7 +313,7 @@ mod tests {
         matrix::{Dimensions, Position},
     };
 
-    use super::CellVariant;
+    use super::CellType;
 
     fn cell(position: Position, content: [u8; 80]) -> Cell {
         Cell { position, content }
@@ -338,7 +338,7 @@ mod tests {
             cell(position(0, 1), content([1; 32])).into(),
         ];
 
-        let cells: Vec<&CellVariant> = cell_variants.iter().collect();
+        let cells: Vec<&CellType> = cell_variants.iter().collect();
         let mut rows = rows(dimensions, &cells);
         rows.sort_by_key(|(key, _)| key.0);
 
@@ -364,7 +364,7 @@ mod tests {
             cell(position(0, 1), content([1; 32])).into(),
         ];
 
-        let cells: Vec<&CellVariant> = cell_variants.iter().collect();
+        let cells: Vec<&CellType> = cell_variants.iter().collect();
         let mut rows = rows(dimensions, &cells);
         rows.sort_by_key(|(key, _)| key.0);
 
