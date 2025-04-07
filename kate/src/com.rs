@@ -501,8 +501,8 @@ pub fn par_build_commitments<const CHUNK_SIZE: usize, M: Metrics>(
 	rng_seed: Seed,
 	metrics: &M,
 ) -> Result<(XtsLayout, Vec<u8>, BlockDimensions, DMatrix<BlsScalar>), Error> {
-	use avail_core::from_substrate;
 	use crate::couscous;
+	use avail_core::from_substrate;
 
 	let start = Instant::now();
 

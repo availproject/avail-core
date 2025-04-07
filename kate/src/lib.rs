@@ -63,7 +63,7 @@ pub mod testnet {
 	static SRS_DATA: Lazy<Mutex<HashMap<u32, PublicParameters>>> =
 		Lazy::new(|| Mutex::new(HashMap::new()));
 
-	/// constructs public parameters for a given degree  
+	/// constructs public parameters for a given degree
 	pub fn public_params(max_degree: BlockLengthColumns) -> PublicParameters {
 		let max_degree: u32 = max_degree.into();
 		let mut srs_data_locked = SRS_DATA.lock().unwrap();
