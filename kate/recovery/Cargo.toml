@@ -9,6 +9,7 @@ license = "Apache-2.0"
 # Internals
 avail-core = { path = "../../core", default-features = false }
 dusk-plonk = { workspace = true }
+poly-multiproof = { workspace = true, default-features = false, features = ["blst"] }
 
 # Parity
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive"] }

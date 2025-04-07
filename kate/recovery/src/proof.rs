@@ -12,6 +12,16 @@ use thiserror_no_std::Error;
 use crate::{data::Cell, matrix::Dimensions};
 use avail_core::constants::kate::COMMITMENT_SIZE;
 
+use poly_multiproof::{
+	ark_poly::{EvaluationDomain as ArkEvaluationDomain, GeneralEvaluationDomain},
+	m1_blst::{Bls12_381, Fr, M1NoPrecomp, Proof as ArkProof},
+	traits::KZGProof,
+};
+
+type ArkScalar = poly_multiproof::m1_blst::Fr;
+type ArkCommitment = poly_multiproof::Commitment<Bls12_381>;
+use poly_multiproof::traits::AsBytes;
+
 #[derive(Error, Debug)]
 pub enum Error {
 	#[error("Proof, data or commitment is not valid")]
@@ -62,4 +72,34 @@ pub fn verify(
 		.ok_or(Error::InvalidPositionInDomain)?;
 
 	Ok(public_parameters.opening_key().check(point, proof))
+}
+
+/// Verifies proof for a given cell using arkworks primitives.
+#[cfg(feature = "std")]
+pub fn verify_v2(
+	public_parameters: &M1NoPrecomp,
+	dimensions: Dimensions,
+	commitment: &[u8; COMMITMENT_SIZE],
+	cell: &Cell,
+) -> Result<bool, Error> {
+	// Deserialize commitment
+	let commitment = ArkCommitment::from_bytes(commitment).map_err(|_| Error::InvalidData)?;
+
+	// Deserialize evaluation (cell value)
+	let value = ArkScalar::from_bytes(&cell.data()).map_err(|_| Error::InvalidData)?;
+
+	// Get the domain point fromthe cell position
+	let domain_point = GeneralEvaluationDomain::<Fr>::new(dimensions.width())
+		.ok_or(Error::InvalidDomain)?
+		.elements()
+		.nth(cell.position.col.into())
+		.ok_or(Error::InvalidPositionInDomain)?;
+
+	// Deserialize proof
+	let proof = ArkProof::from_bytes(&cell.proof()).map_err(|_| Error::InvalidData)?;
+
+	// Verify the proof
+	public_parameters
+		.verify(&commitment, domain_point, value, &proof)
+		.map_err(|_| Error::InvalidData)
 }

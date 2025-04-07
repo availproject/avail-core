@@ -2173,6 +2173,7 @@ dependencies = [
  "hex",
  "once_cell",
  "parity-scale-codec",
+ "poly-multiproof",
  "rand",
  "rand_chacha",
  "serde",
