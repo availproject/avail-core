@@ -3,6 +3,7 @@ use core::convert::TryInto;
 use derive_more::Constructor;
 use serde::{Deserialize, Serialize};
 use sp_std::{collections::btree_map::BTreeMap, vec::Vec};
+use std::convert::TryFrom;
 
 use crate::matrix::{Dimensions, Position, RowIndex};
 
@@ -29,45 +30,18 @@ pub struct Cell {
     pub content: [u8; 80],
 }
 
-/// Common interface for all cells
-pub trait CellType {
-    fn position(&self) -> Position;
-    fn data(&self) -> Vec<u8>;
-    fn proof(&self) -> [u8; 48];
-
+impl Cell {
     #[cfg(any(target_arch = "wasm32", feature = "std"))]
-    fn reference(&self, block: u32) -> String;
-}
-
-pub trait CellCodec: CellType + Sized {
-    const PROOF_BYTE_LEN: usize = std::mem::size_of::<[u8; 48]>();
-    const SCALAR_COUNT_LEN: usize = std::mem::size_of::<u32>();
-    const SCALAR_BYTE_LEN: usize = std::mem::size_of::<[u8; 32]>();
-    const LIMBS_PER_SCALAR: usize = 4;
-    const BYTES_PER_LIMB: usize = std::mem::size_of::<u64>();
-    const BYTES_PER_SCALAR: usize = Self::LIMBS_PER_SCALAR * Self::BYTES_PER_LIMB;
-
-    fn from_bytes(position: Position, bytes: &[u8]) -> Result<Self, &'static str>;
-    fn to_bytes(&self) -> Vec<u8>;
-}
-
-impl CellType for Cell {
-    #[cfg(any(target_arch = "wasm32", feature = "std"))]
-    fn reference(&self, block: u32) -> String {
+    pub fn reference(&self, block: u32) -> String {
         self.position.reference(block)
     }
 
-    fn data(&self) -> Vec<u8> {
-        let data: [u8; 32] = self.content[48..].try_into().expect("content is 80 bytes");
-        data.to_vec()
+    pub fn data(&self) -> [u8; 32] {
+        self.content[48..].try_into().expect("content is 80 bytes")
     }
 
-    fn proof(&self) -> [u8; 48] {
+    pub fn proof(&self) -> [u8; 48] {
         self.content[..48].try_into().expect("content is 80 bytes")
-    }
-
-    fn position(&self) -> Position {
-        self.position
     }
 }
 
@@ -77,102 +51,6 @@ pub struct MCell {
     pub scalars: Vec<[u64; 4]>,
     pub proof: [u8; 48],
     pub gcell_block: GCellBlock,
-}
-
-impl CellType for MCell {
-    #[cfg(any(target_arch = "wasm32", feature = "std"))]
-    fn reference(&self, block: u32) -> String {
-        self.position.reference(block)
-    }
-
-    fn data(&self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(self.scalars.len() * Self::BYTES_PER_SCALAR);
-        for scalar in &self.scalars {
-            for &limb in scalar {
-                bytes.extend_from_slice(&limb.to_be_bytes());
-            }
-        }
-        bytes
-    }
-
-    fn proof(&self) -> [u8; 48] {
-        self.proof
-    }
-
-    fn position(&self) -> Position {
-        self.position
-    }
-}
-
-impl CellCodec for MCell {
-    fn from_bytes(position: Position, bytes: &[u8]) -> Result<Self, &'static str> {
-        let min_required_len =
-            Self::PROOF_BYTE_LEN + GCellBlock::GCELL_BLOCK_SIZE + Self::SCALAR_COUNT_LEN;
-
-        if bytes.len() < min_required_len {
-            return Err("Input too short to be a valid MCell");
-        }
-
-        let (proof_bytes, rest) = bytes.split_at(Self::PROOF_BYTE_LEN);
-        let proof: [u8; 48] = proof_bytes.try_into().map_err(|_| "Invalid proof bytes")?;
-
-        let (gcell_block_bytes, rest) = rest.split_at(GCellBlock::GCELL_BLOCK_SIZE);
-        let gcell_block = GCellBlock::from_bytes(gcell_block_bytes)?;
-
-        let (scalar_count_bytes, rest) = rest.split_at(Self::SCALAR_COUNT_LEN);
-        let scalar_count = scalar_count_bytes
-            .get(..4)
-            .and_then(|b| b.try_into().ok())
-            .map(u32::from_le_bytes)
-            .ok_or("Failed to read scalar count")? as usize;
-
-        let expected_scalar_len = scalar_count * Self::SCALAR_BYTE_LEN;
-        if rest.len() != expected_scalar_len {
-            return Err("Scalar data length mismatch");
-        }
-
-        let mut scalars = Vec::with_capacity(scalar_count);
-        for chunk in rest.chunks_exact(Self::SCALAR_BYTE_LEN) {
-            let mut scalar = [0u64; 4];
-            for (i, limb_bytes) in chunk.chunks_exact(Self::BYTES_PER_LIMB).enumerate() {
-                if i >= Self::LIMBS_PER_SCALAR {
-                    return Err("Too many limbs in scalar");
-                }
-                scalar[i] = limb_bytes
-                    .try_into()
-                    .ok()
-                    .map(u64::from_be_bytes)
-                    .ok_or("Failed to decode scalar limb")?;
-            }
-            scalars.push(scalar);
-        }
-
-        Ok(Self {
-            position,
-            proof,
-            gcell_block,
-            scalars,
-        })
-    }
-
-    fn to_bytes(&self) -> Vec<u8> {
-        let proof_bytes: Vec<u8> = self.proof.into();
-        let gcell_block_bytes = self.gcell_block.to_bytes();
-        let scalar_count = self.scalars.len();
-
-        let total_size = Self::PROOF_BYTE_LEN
-            + gcell_block_bytes.len()
-            + Self::SCALAR_COUNT_LEN
-            + scalar_count * Self::SCALAR_BYTE_LEN;
-
-        let mut content = Vec::with_capacity(total_size);
-        content.extend_from_slice(&proof_bytes);
-        content.extend_from_slice(&gcell_block_bytes);
-        content.extend_from_slice(&(scalar_count as u32).to_le_bytes());
-        content.extend_from_slice(&self.data());
-
-        content
-    }
 }
 
 #[derive(Encode, Decode, Debug, Clone, Serialize, Deserialize)]
@@ -229,9 +107,176 @@ impl GCellBlock {
     }
 }
 
+impl MCell {
+    pub const PROOF_BYTE_LEN: usize = std::mem::size_of::<[u8; 48]>();
+    pub const SCALAR_COUNT_LEN: usize = std::mem::size_of::<u32>();
+    pub const SCALAR_BYTE_LEN: usize = std::mem::size_of::<[u8; 32]>();
+    pub const LIMBS_PER_SCALAR: usize = 4;
+    pub const BYTES_PER_LIMB: usize = std::mem::size_of::<u64>();
+    pub const BYTES_PER_SCALAR: usize = Self::LIMBS_PER_SCALAR * Self::BYTES_PER_LIMB;
+
+    #[cfg(any(target_arch = "wasm32", feature = "std"))]
+    pub fn reference(&self, block: u32) -> String {
+        self.position.reference(block)
+    }
+
+    pub fn from_bytes(position: Position, bytes: &[u8]) -> Result<Self, &'static str> {
+        let min_required_len =
+            Self::PROOF_BYTE_LEN + GCellBlock::GCELL_BLOCK_SIZE + Self::SCALAR_COUNT_LEN;
+        if bytes.len() < min_required_len {
+            return Err("Input too short to be a valid MCell");
+        }
+
+        // 1. Parse fixed parts
+        let (proof_bytes, rest) = bytes.split_at(Self::PROOF_BYTE_LEN);
+        let proof: [u8; 48] = proof_bytes.try_into().map_err(|_| "Invalid proof bytes")?;
+
+        let (gcell_block_bytes, rest) = rest.split_at(GCellBlock::GCELL_BLOCK_SIZE);
+        let gcell_block = GCellBlock::from_bytes(gcell_block_bytes)?;
+
+        let (scalar_count_bytes, rest) = rest.split_at(Self::SCALAR_COUNT_LEN);
+        let scalar_count = scalar_count_bytes
+            .get(..4)
+            .and_then(|b| b.try_into().ok())
+            .map(u32::from_le_bytes)
+            .ok_or("Failed to read scalar count")? as usize;
+
+        let expected_scalar_len = scalar_count * Self::SCALAR_BYTE_LEN;
+        if rest.len() != expected_scalar_len {
+            return Err("Scalar data length mismatch");
+        }
+
+        // 2. Parse scalars
+        let mut scalars = Vec::with_capacity(scalar_count);
+        for chunk in rest.chunks_exact(Self::SCALAR_BYTE_LEN) {
+            let mut scalar = [0u64; 4];
+            for (i, limb_bytes) in chunk.chunks_exact(Self::BYTES_PER_LIMB).enumerate() {
+                if i >= Self::LIMBS_PER_SCALAR {
+                    return Err("Too many limbs in scalar");
+                }
+                scalar[i] = limb_bytes
+                    .try_into()
+                    .ok()
+                    .map(u64::from_be_bytes)
+                    .ok_or("Failed to decode scalar limb")?;
+            }
+            scalars.push(scalar);
+        }
+
+        Ok(Self {
+            position,
+            proof,
+            gcell_block,
+            scalars,
+        })
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let proof_bytes: Vec<u8> = self.proof.into();
+        let gcell_block_bytes = self.gcell_block.to_bytes();
+        let scalar_count = self.scalars.len();
+
+        let total_size = Self::PROOF_BYTE_LEN
+            + gcell_block_bytes.len()
+            + Self::SCALAR_COUNT_LEN
+            + scalar_count * Self::SCALAR_BYTE_LEN;
+
+        let mut content = Vec::with_capacity(total_size);
+        content.extend_from_slice(&proof_bytes);
+        content.extend_from_slice(&gcell_block_bytes);
+        content.extend_from_slice(&(scalar_count as u32).to_le_bytes());
+        content.extend_from_slice(&self.data());
+
+        content
+    }
+
+    pub fn data(&self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(self.scalars.len() * Self::BYTES_PER_SCALAR);
+
+        for scalar in &self.scalars {
+            for &limb in scalar {
+                bytes.extend_from_slice(&limb.to_be_bytes());
+            }
+        }
+
+        bytes
+    }
+
+    pub fn proof(&self) -> [u8; 48] {
+        self.proof
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum CellVariant {
+    Cell(Cell),
+    MCell(MCell),
+}
+
+impl CellVariant {
+    #[cfg(any(target_arch = "wasm32", feature = "std"))]
+    pub fn reference(&self, block: u32) -> String {
+        match self {
+            CellVariant::Cell(cell) => cell.reference(block),
+            CellVariant::MCell(mcell) => mcell.reference(block),
+        }
+    }
+
+    pub fn data(&self) -> Vec<u8> {
+        match self {
+            CellVariant::Cell(cell) => cell.data().to_vec(),
+            CellVariant::MCell(mcell) => mcell.data(),
+        }
+    }
+
+    pub fn position(&self) -> Position {
+        match self {
+            CellVariant::Cell(cell) => cell.position,
+            CellVariant::MCell(mcell) => mcell.position,
+        }
+    }
+
+    pub fn proof(&self) -> [u8; 48] {
+        match self {
+            CellVariant::Cell(cell) => cell.proof(),
+            CellVariant::MCell(mcell) => mcell.proof(),
+        }
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        match self {
+            CellVariant::MCell(mcell) => mcell.to_bytes(),
+            CellVariant::Cell(cell) => cell.data().to_vec(),
+        }
+    }
+}
+
+impl From<Cell> for CellVariant {
+    fn from(cell: Cell) -> Self {
+        CellVariant::Cell(cell)
+    }
+}
+
+impl From<MCell> for CellVariant {
+    fn from(mcell: MCell) -> Self {
+        CellVariant::MCell(mcell)
+    }
+}
+
+impl TryFrom<CellVariant> for Cell {
+    type Error = &'static str;
+
+    fn try_from(value: CellVariant) -> Result<Self, Self::Error> {
+        match value {
+            CellVariant::Cell(cell) => Ok(cell),
+            CellVariant::MCell(_) => Err("Expected Cell, found MCell"),
+        }
+    }
+}
+
 /// Merges cells data per row.
 /// Cells are sorted before merge.
-pub fn rows(dimensions: Dimensions, cells: &[&impl CellType]) -> Vec<(RowIndex, Vec<u8>)> {
+pub fn rows(dimensions: Dimensions, cells: &[&CellVariant]) -> Vec<(RowIndex, Vec<u8>)> {
     let mut sorted_cells = cells.to_vec();
 
     sorted_cells.sort_by(|a, b| {
@@ -253,7 +298,7 @@ impl From<Cell> for DataCell {
     fn from(cell: Cell) -> Self {
         DataCell {
             position: cell.position,
-            data: cell.data().try_into().expect("content is 80 bytes"),
+            data: cell.data(),
         }
     }
 }
@@ -267,6 +312,8 @@ mod tests {
         data::Cell,
         matrix::{Dimensions, Position},
     };
+
+    use super::CellVariant;
 
     fn cell(position: Position, content: [u8; 80]) -> Cell {
         Cell { position, content }
@@ -291,7 +338,7 @@ mod tests {
             cell(position(0, 1), content([1; 32])).into(),
         ];
 
-        let cells: Vec<&Cell> = cell_variants.iter().collect();
+        let cells: Vec<&CellVariant> = cell_variants.iter().collect();
         let mut rows = rows(dimensions, &cells);
         rows.sort_by_key(|(key, _)| key.0);
 
@@ -317,7 +364,7 @@ mod tests {
             cell(position(0, 1), content([1; 32])).into(),
         ];
 
-        let cells: Vec<&Cell> = cell_variants.iter().collect();
+        let cells: Vec<&CellVariant> = cell_variants.iter().collect();
         let mut rows = rows(dimensions, &cells);
         rows.sort_by_key(|(key, _)| key.0);
 
