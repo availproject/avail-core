@@ -7,9 +7,13 @@ use dusk_plonk::{
     fft::EvaluationDomain,
     prelude::BlsScalar,
 };
+use std::convert::TryInto;
 use thiserror_no_std::Error;
 
-use crate::{data::Cell, matrix::Dimensions};
+use crate::{
+    data::{Cell, CellType},
+    matrix::Dimensions,
+};
 use avail_core::constants::kate::COMMITMENT_SIZE;
 
 #[derive(Error, Debug)]
@@ -43,8 +47,11 @@ pub fn verify(
     cell: &Cell,
 ) -> Result<bool, Error> {
     let commitment_to_witness = G1Affine::from_bytes(&cell.proof()).map(Commitment::from)?;
-
-    let evaluated_point = BlsScalar::from_bytes(&cell.data())?;
+    let data: [u8; 32] = cell
+        .data()
+        .try_into()
+        .expect("Cell data should be of size 32 bytes");
+    let evaluated_point = BlsScalar::from_bytes(&data)?;
 
     let commitment_to_polynomial = G1Affine::from_bytes(commitment).map(Commitment::from)?;
 
