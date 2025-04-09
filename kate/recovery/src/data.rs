@@ -53,7 +53,7 @@ pub struct MCell {
     pub gcell_block: GCellBlock,
 }
 
-#[derive(Encode, Decode, Debug, Clone, Serialize, Deserialize)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GCellBlock {
     pub start_x: u32,
     pub start_y: u32,
@@ -308,8 +308,8 @@ mod tests {
     use std::convert::TryInto;
 
     use crate::{
-        data::rows,
         data::Cell,
+        data::{rows, GCellBlock, MCell},
         matrix::{Dimensions, Position},
     };
 
@@ -372,5 +372,64 @@ mod tests {
         let (row_index, row) = &rows[0];
         assert_eq!(row_index.0, 0);
         assert_eq!(*row, [[0u8; 32], [1u8; 32]].concat());
+    }
+
+    #[test]
+    fn mcell_to_from_bytes_roundtrip() {
+        let position = Position { row: 10, col: 5 };
+        let proof = [1u8; 48];
+        let gcell_block = GCellBlock {
+            start_x: 0,
+            start_y: 0,
+            end_x: 10,
+            end_y: 10,
+        };
+        let scalars = vec![[1u64, 2, 3, 4], [5, 6, 7, 8]];
+
+        let mcell = MCell {
+            position,
+            proof,
+            gcell_block,
+            scalars,
+        };
+
+        let bytes = mcell.to_bytes();
+        let deserialized =
+            MCell::from_bytes(position, &bytes).expect("Deserialization should succeed");
+
+        assert_eq!(deserialized.position, mcell.position);
+        assert_eq!(deserialized.proof, mcell.proof);
+        assert_eq!(deserialized.gcell_block, mcell.gcell_block);
+        assert_eq!(deserialized.scalars, mcell.scalars);
+    }
+
+    #[test]
+    fn celltype_to_from_bytes_roundtrip() {
+        let position = Position { row: 20, col: 7 };
+        let proof = [9u8; 48];
+        let gcell_block = GCellBlock {
+            start_x: 2,
+            start_y: 3,
+            end_x: 6,
+            end_y: 9,
+        };
+        let scalars = vec![[10u64, 11, 12, 13]];
+
+        let mcell = MCell {
+            position,
+            proof,
+            gcell_block,
+            scalars,
+        };
+
+        let cell_type = CellType::from(mcell.clone());
+        let bytes = cell_type.to_bytes();
+        let reconstructed =
+            MCell::from_bytes(position, &bytes).expect("Deserialization should succeed");
+
+        assert_eq!(reconstructed.position, mcell.position);
+        assert_eq!(reconstructed.proof, mcell.proof);
+        assert_eq!(reconstructed.gcell_block, mcell.gcell_block);
+        assert_eq!(reconstructed.scalars, mcell.scalars);
     }
 }
