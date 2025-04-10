@@ -1,10 +1,12 @@
-use avail_core::constants::kate::{CHUNK_SIZE, COMMITMENT_SIZE};
+use avail_core::constants::kate::COMMITMENT_SIZE;
 use core::{array::TryFromSliceError, convert::TryInto, num::TryFromIntError};
 use sp_std::prelude::*;
 use thiserror_no_std::Error;
 
 #[cfg(feature = "std")]
 use crate::{com, matrix};
+#[cfg(feature = "std")]
+use avail_core::constants::kate::CHUNK_SIZE;
 #[cfg(feature = "std")]
 use avail_core::{ensure, AppId, DataLookup};
 #[cfg(feature = "std")]
