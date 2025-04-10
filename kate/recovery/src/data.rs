@@ -1,9 +1,7 @@
 use codec::{Decode, Encode};
 use core::convert::TryInto;
 use derive_more::Constructor;
-use serde::{Deserialize, Serialize};
-use sp_std::{collections::btree_map::BTreeMap, vec::Vec};
-use std::convert::TryFrom;
+use sp_std::{collections::btree_map::BTreeMap, convert::TryFrom, mem, vec::Vec};
 
 use crate::matrix::{Dimensions, Position, RowIndex};
 
@@ -53,7 +51,7 @@ pub struct MCell {
     pub gcell_block: GCellBlock,
 }
 
-#[derive(Encode, Decode, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub struct GCellBlock {
     pub start_x: u32,
     pub start_y: u32,
@@ -62,7 +60,7 @@ pub struct GCellBlock {
 }
 
 impl GCellBlock {
-    pub const GCELL_BLOCK_SIZE: usize = std::mem::size_of::<GCellBlock>();
+    pub const GCELL_BLOCK_SIZE: usize = mem::size_of::<GCellBlock>();
 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut buf = Vec::with_capacity(16);
@@ -108,16 +106,18 @@ impl GCellBlock {
 }
 
 impl MCell {
-    pub const PROOF_BYTE_LEN: usize = std::mem::size_of::<[u8; 48]>();
-    pub const SCALAR_COUNT_LEN: usize = std::mem::size_of::<u32>();
-    pub const SCALAR_BYTE_LEN: usize = std::mem::size_of::<[u8; 32]>();
+    pub const PROOF_BYTE_LEN: usize = mem::size_of::<[u8; 48]>();
+    pub const SCALAR_COUNT_LEN: usize = mem::size_of::<u32>();
+    pub const SCALAR_BYTE_LEN: usize = mem::size_of::<[u8; 32]>();
     pub const LIMBS_PER_SCALAR: usize = 4;
-    pub const BYTES_PER_LIMB: usize = std::mem::size_of::<u64>();
+    pub const BYTES_PER_LIMB: usize = mem::size_of::<u64>();
     pub const BYTES_PER_SCALAR: usize = Self::LIMBS_PER_SCALAR * Self::BYTES_PER_LIMB;
 
     #[cfg(any(target_arch = "wasm32", feature = "std"))]
     pub fn reference(&self, block: u32) -> String {
-        format!("multiproof-{:?}", self.position.reference(block))
+        let mut s = String::from("multiproof-");
+        s.push_str(&self.position.reference(block));
+        s
     }
 
     pub fn from_bytes(position: Position, bytes: &[u8]) -> Result<Self, &'static str> {
