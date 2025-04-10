@@ -194,8 +194,10 @@ pub mod couscous {
 
     // Loads the pre-generated trusted g1 & g2 from the file
     fn load_trusted_g1_g2() -> (Vec<G1>, Vec<G2>) {
-        // for degree = 4096
-        let contents = include_str!("g1_g2_4096.txt");
+        // For degree 1024, we include 513 G2 points.
+        // The rationale is that in multiproof constructions, we never need more than half the degree in G2 points.
+        // Creating a multiproof grid with width equal to the original data grid doesn't make sense.
+        let contents = include_str!("g1_g2_1024.txt");
         let mut lines = contents.lines();
         let g1_len: usize = lines.next().unwrap().parse().unwrap();
         let g2_len: usize = lines.next().unwrap().parse().unwrap();
@@ -250,8 +252,8 @@ pub mod couscous {
         fn test_public_params() {
             let pmp = couscous::multiproof_params::<Bls12_381, BlstMSMEngine>();
 
-            let points = DensePolynomial::<Fr>::rand(4096, &mut thread_rng()).coeffs;
-            let pmp_ev = GeneralEvaluationDomain::<Fr>::new(4096).unwrap();
+            let points = DensePolynomial::<Fr>::rand(1024, &mut thread_rng()).coeffs;
+            let pmp_ev = GeneralEvaluationDomain::<Fr>::new(1024).unwrap();
             let pmp_poly = pmp_ev.ifft(&points);
             let pmp_domain_pts = pmp_ev.elements().collect::<Vec<_>>();
 
