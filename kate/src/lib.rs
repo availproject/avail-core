@@ -194,7 +194,9 @@ pub mod couscous {
 
     // Loads the pre-generated trusted g1 & g2 from the file
     fn load_trusted_g1_g2() -> (Vec<G1>, Vec<G2>) {
-        // for degree = 1024, with 513 G2 points
+        // For degree 1024, we include 513 G2 points.
+        // The rationale is that in multiproof constructions, we never need more than half the degree in G2 points.
+        // Creating a multiproof grid with width equal to the original data grid doesn't make sense.
         let contents = include_str!("g1_g2_1024.txt");
         let mut lines = contents.lines();
         let g1_len: usize = lines.next().unwrap().parse().unwrap();
