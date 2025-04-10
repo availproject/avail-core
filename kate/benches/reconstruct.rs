@@ -1,11 +1,8 @@
 use avail_core::{AppExtrinsic, AppId, BlockLengthColumns, BlockLengthRows, DataLookup};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use dusk_plonk::prelude::BlsScalar;
-use kate::{
-	com::{Cell, *},
-	metrics::IgnoreMetrics,
-	Seed, Serializable as _,
-};
+use kate::dusk_bytes::Serializable as _;
+use kate::{com::build_proof, com::par_build_commitments, com::Cell, metrics::IgnoreMetrics, Seed};
 use kate_recovery::{
 	com::reconstruct_extrinsics,
 	commitments,
