@@ -8,12 +8,8 @@ use avail_core::{
 	app_extrinsic::AppExtrinsic, constants::kate::DATA_CHUNK_SIZE, ensure, AppId, DataLookup,
 };
 use codec::Encode;
-use core::{
-	cmp::{max, min},
-	iter,
-	num::NonZeroU16,
-};
-use kate_recovery::matrix::Dimensions;
+use core::{cmp::max, iter, num::NonZeroU16};
+pub use kate_recovery::matrix::Dimensions;
 use nalgebra::base::DMatrix;
 use poly_multiproof::{
 	m1_blst::Proof,
@@ -576,17 +572,23 @@ pub fn multiproof_block(
 	})
 }
 
-/// Dimensions of the multiproof grid. These are guaranteed to cleanly divide `grid_dims`.
+/// Computes the dimensions of the multiproof grid.
 /// `target_dims` must cleanly divide `grid_dims`.
 #[allow(clippy::arithmetic_side_effects)]
 pub fn multiproof_dims(grid: Dimensions, target: Dimensions) -> Option<Dimensions> {
-	let cols = min(grid.cols(), target.cols());
-	let rows = min(grid.rows(), target.rows());
-	if grid.cols().get() % cols != 0 || grid.rows().get() % rows != 0 {
+	if target.cols() > grid.cols() || target.rows() > grid.rows() {
 		return None;
 	}
 
-	Dimensions::new(rows, cols)
+	if grid.cols().get() % target.cols().get() != 0 || grid.rows().get() % target.rows().get() != 0
+	{
+		return None;
+	}
+
+	Dimensions::new(
+		grid.rows().get() / target.rows().get(),
+		grid.cols().get() / target.cols().get(),
+	)
 }
 
 pub fn get_block_dims(
@@ -701,22 +703,22 @@ mod unit_tests {
 			end_y,
 		}
 	}
-	#[test_case(0, 0 => Some(cb(0, 0, 4, 16)))]
-	#[test_case(1, 0 => Some(cb(4, 0, 8, 16)))]
-	#[test_case(0, 1 => Some(cb(0, 16, 4, 32)))]
-	#[test_case(1, 1 => Some(cb(4, 16, 8, 32)))]
+	#[test_case(0, 0 => Some(cb(0, 0, 64, 16)))]
+	#[test_case(1, 0 => Some(cb(64, 0, 128, 16)))]
+	#[test_case(0, 1 => Some(cb(0, 16, 64, 32)))]
+	#[test_case(1, 1 => Some(cb(64, 16, 128, 32)))]
 	#[test_case(64, 0 => None)]
 	#[test_case(0, 16 => None)]
 	fn multiproof_max_grid_size(x: usize, y: usize) -> Option<CellBlock> {
 		multiproof_block(x, y, GRID, TARGET)
 	}
 
-	#[test_case(256, 256,  64,  16 => Some((64, 16)))]
-	#[test_case(256, 256,  32,  32 => Some((32, 32)))]
+	#[test_case(256, 256,  64,  16 => Some((4, 16)))]
+	#[test_case(256, 256,  32,  32 => Some((8, 8)))]
 	#[test_case(256, 256,   7,  32 => None)]
-	#[test_case(32 ,  32,  32,  32 => Some((32, 32)))]
-	#[test_case(256,   8,  32,  32 => Some((32, 8)))]
-	#[test_case(4  ,   1,  32,  32 => Some((4, 1)))]
+	#[test_case(32 ,  32,  32,  32 => Some((1, 1)))]
+	#[test_case(256,   8,  32,  32 => None)]
+	#[test_case(4  ,   1,  32,  32 => None)]
 	fn test_multiproof_dims(
 		grid_w: u16,
 		grid_h: u16,
