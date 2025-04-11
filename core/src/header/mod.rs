@@ -114,15 +114,14 @@ where
 	H::Output: TypeInfo,
 {
 	fn fmt(&self, f: &mut Formatter<'_>) -> sp_std::fmt::Result {
-		let parent_hash = self.parent_hash.as_ref();
-		let state_root = self.state_root.as_ref();
-		let extrinsics_root = self.extrinsics_root.as_ref();
-
 		f.debug_struct("Header")
-			.field("parent_hash", &HexDisplay(&parent_hash))
+			.field("parent_hash", &HexDisplay(self.parent_hash.as_ref()))
 			.field("number", &self.number)
-			.field("state_root", &HexDisplay(&state_root))
-			.field("extrinsics_root", &HexDisplay(&extrinsics_root))
+			.field("state_root", &HexDisplay(self.state_root.as_ref()))
+			.field(
+				"extrinsics_root",
+				&HexDisplay(self.extrinsics_root.as_ref()),
+			)
 			.field("digest", &self.digest)
 			.field("extension", &self.extension)
 			.finish()
