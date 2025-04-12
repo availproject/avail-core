@@ -9,8 +9,8 @@ use nalgebra::base::DMatrix;
 use poly_multiproof::traits::AsBytes;
 
 use crate::{
-    gridgen::{tests::sample_cells, ArkScalar, EvaluationGrid},
-    Seed,
+    gridgen::{core::EvaluationGrid, tests::sample_cells},
+    ArkScalar, Seed,
 };
 use core::num::NonZeroU16;
 
@@ -82,7 +82,7 @@ fn newapi_test_extend_data_matrix() {
     let scalars = (0..=247)
         .collect::<Vec<u8>>()
         .chunks_exact(DATA_CHUNK_SIZE)
-        .flat_map(crate::gridgen::pad_to_bls_scalar)
+        .flat_map(crate::gridgen::core::pad_to_bls_scalar)
         .collect::<Vec<_>>();
 
     let grid = EvaluationGrid {

@@ -8,9 +8,7 @@ use proptest::{collection, prelude::*, sample::size_range};
 use rand::{distributions::Uniform, prelude::Distribution, SeedableRng};
 use rand_chacha::ChaChaRng;
 
-use crate::{gridgen::ArkScalar, testnet};
-
-use super::EvaluationGrid;
+use crate::{gridgen::core::EvaluationGrid, testnet, ArkScalar};
 
 mod commitments;
 mod formatting;

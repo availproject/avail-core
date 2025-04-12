@@ -1,7 +1,7 @@
 use super::PMP;
 use crate::{
     com::Cell,
-    gridgen::{tests::sample_cells, EvaluationGrid},
+    gridgen::{core::EvaluationGrid, tests::sample_cells},
     Seed,
 };
 use avail_core::{AppExtrinsic, AppId, BlockLengthColumns, BlockLengthRows};

@@ -280,7 +280,6 @@ pub mod metrics;
 #[cfg(feature = "std")]
 pub mod com;
 
-#[cfg(feature = "std")]
 pub mod gridgen;
 
 /// Precalculate the g1_len of padding IEC 9797 1.
