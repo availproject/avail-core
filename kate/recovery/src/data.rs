@@ -1,6 +1,7 @@
 use codec::{Decode, Encode};
 use core::convert::TryInto;
 use derive_more::Constructor;
+use serde::{Deserialize, Serialize};
 use sp_std::{collections::btree_map::BTreeMap, convert::TryFrom, mem, vec::Vec};
 
 use crate::matrix::{Dimensions, Position, RowIndex};
@@ -51,7 +52,7 @@ pub struct MCell {
     pub gcell_block: GCellBlock,
 }
 
-#[derive(Encode, Decode, Debug, Clone, PartialEq)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GCellBlock {
     pub start_x: u32,
     pub start_y: u32,
