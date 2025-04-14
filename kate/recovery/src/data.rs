@@ -116,9 +116,7 @@ impl MCell {
 
     #[cfg(any(target_arch = "wasm32", feature = "std"))]
     pub fn reference(&self, block: u32) -> String {
-        let mut s = String::from("multiproof-");
-        s.push_str(&self.position.reference(block));
-        s
+        self.position.reference(block)
     }
 
     pub fn from_bytes(position: Position, bytes: &[u8]) -> Result<Self, &'static str> {
