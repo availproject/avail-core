@@ -24,7 +24,7 @@ dusk-bytes = { workspace = true, optional = true }
 once_cell = { workspace = true, optional = true }
 rand = { workspace = true, optional = true }
 rand_chacha = { workspace = true, optional = true }
-serde = { workspace = true,  features=["derive"] }
+serde = { workspace = true, optional = true }
 
 [dev-dependencies]
 hex.workspace = true
@@ -39,8 +39,9 @@ std = [
 	"once_cell",
 	"rand/std",
 	"rand_chacha/std",
+	"serde",
 	"sp-arithmetic/std",
 	"sp-std/std",
 ]
 
-
+serde = [ "dep:serde" ]

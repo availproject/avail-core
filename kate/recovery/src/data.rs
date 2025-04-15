@@ -1,10 +1,11 @@
 use codec::{Decode, Encode};
 use core::convert::TryInto;
 use derive_more::Constructor;
-use serde::{Deserialize, Serialize};
 use sp_std::{collections::btree_map::BTreeMap, convert::TryFrom, mem, vec::Vec};
-
 use crate::matrix::{Dimensions, Position, RowIndex};
+
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 #[cfg(target_arch = "wasm32")]
 extern crate alloc;
@@ -52,7 +53,8 @@ pub struct MCell {
     pub gcell_block: GCellBlock,
 }
 
-#[derive(Encode, Decode, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct GCellBlock {
     pub start_x: u32,
     pub start_y: u32,
