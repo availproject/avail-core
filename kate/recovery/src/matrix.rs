@@ -341,6 +341,23 @@ impl Dimensions {
         })
     }
 
+    /// Generates cell positions for given block partition
+    #[cfg(feature = "std")]
+    pub fn iter_mcell_partition_positions(
+        &self,
+        partition: &Partition,
+    ) -> impl Iterator<Item = Position> {
+        let size = self.size::<u32>() as f64 / partition.fraction as f64;
+        let start = (size * (partition.number - 1) as f64).floor() as u32;
+        let end = (size * (partition.number as f64)).ceil() as u32;
+        let cols: u32 = self.cols.get().into();
+
+        (start..end).map(move |cell| Position {
+            row: cell / cols,
+            col: (cell % cols) as u16,
+        })
+    }
+
     pub fn transpose(self) -> Self {
         Self {
             rows: self.cols,
