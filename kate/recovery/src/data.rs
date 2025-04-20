@@ -1,8 +1,8 @@
+use crate::matrix::{Dimensions, Position, RowIndex};
 use codec::{Decode, Encode};
 use core::convert::TryInto;
 use derive_more::Constructor;
 use sp_std::{collections::btree_map::BTreeMap, convert::TryFrom, mem, vec::Vec};
-use crate::matrix::{Dimensions, Position, RowIndex};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
