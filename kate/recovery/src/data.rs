@@ -24,9 +24,9 @@ pub struct DataCell {
 /// Position and content of a cell in extended matrix
 #[derive(Debug, Clone, Constructor)]
 pub struct SingleCell {
-    /// SingleCell's position
+    /// Cell's position
     pub position: Position,
-    /// SingleCell's data
+    /// Cell's data
     pub content: [u8; 80],
 }
 
