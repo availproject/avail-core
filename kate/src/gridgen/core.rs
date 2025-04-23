@@ -29,7 +29,7 @@ use std::collections::BTreeMap;
 use thiserror_no_std::Error;
 
 use crate::{
-    com::{Cell, Error},
+    com::{SingleCell, Error},
     ArkScalar, Seed,
 };
 
@@ -305,7 +305,7 @@ impl PolynomialGrid {
     pub fn proof<E: Pairing, M: MSMEngine<E = E>>(
         &self,
         srs: &M1NoPrecomp<E, M>,
-        cell: &Cell,
+        cell: &SingleCell,
     ) -> Result<Proof<E>, Error>
     where
         E::ScalarField: From<ArkScalar>,
@@ -326,7 +326,7 @@ impl PolynomialGrid {
     pub fn multiproof<E: Pairing, M: MSMEngine<E = E>>(
         &self,
         srs: &M1NoPrecomp<E, M>,
-        cell: &Cell,
+        cell: &SingleCell,
         eval_grid: &EvaluationGrid,
         target_dims: Dimensions,
     ) -> Result<Multiproof<E>, Error>

@@ -15,22 +15,22 @@ use alloc::string::String;
 /// Position and data of a cell in extended matrix
 #[derive(Default, Debug, Clone, Constructor)]
 pub struct DataCell {
-    /// Cell's position
+    /// SingleCell's position
     pub position: Position,
-    /// Cell's data
+    /// SingleCell's data
     pub data: [u8; 32],
 }
 
 /// Position and content of a cell in extended matrix
 #[derive(Debug, Clone, Constructor)]
-pub struct Cell {
-    /// Cell's position
+pub struct SingleCell {
+    /// SingleCell's position
     pub position: Position,
-    /// Cell's data
+    /// SingleCell's data
     pub content: [u8; 80],
 }
 
-impl Cell {
+impl SingleCell {
     #[cfg(any(target_arch = "wasm32", feature = "std"))]
     pub fn reference(&self, block: u32) -> String {
         self.position.reference(block)
@@ -46,7 +46,7 @@ impl Cell {
 }
 
 #[derive(Debug, Clone, Constructor)]
-pub struct MCell {
+pub struct MultiProofCell {
     pub position: Position,
     pub scalars: Vec<[u64; 4]>,
     pub proof: [u8; 48],
@@ -108,7 +108,7 @@ impl GCellBlock {
     }
 }
 
-impl MCell {
+impl MultiProofCell {
     pub const PROOF_BYTE_LEN: usize = mem::size_of::<[u8; 48]>();
     pub const SCALAR_COUNT_LEN: usize = mem::size_of::<u32>();
     pub const SCALAR_BYTE_LEN: usize = mem::size_of::<[u8; 32]>();
@@ -125,7 +125,7 @@ impl MCell {
         let min_required_len =
             Self::PROOF_BYTE_LEN + GCellBlock::GCELL_BLOCK_SIZE + Self::SCALAR_COUNT_LEN;
         if bytes.len() < min_required_len {
-            return Err("Input too short to be a valid MCell");
+            return Err("Input too short to be a valid MultiProofCell");
         }
 
         // 1. Parse fixed parts
@@ -210,67 +210,67 @@ impl MCell {
 
 #[derive(Debug, Clone)]
 pub enum CellType {
-    Cell(Cell),
-    MCell(MCell),
+    SingleCell(SingleCell),
+    MultiProofCell(MultiProofCell),
 }
 
 impl CellType {
     #[cfg(any(target_arch = "wasm32", feature = "std"))]
     pub fn reference(&self, block: u32) -> String {
         match self {
-            CellType::Cell(cell) => cell.reference(block),
-            CellType::MCell(mcell) => mcell.reference(block),
+            CellType::SingleCell(cell) => cell.reference(block),
+            CellType::MultiProofCell(mcell) => mcell.reference(block),
         }
     }
 
     pub fn data(&self) -> Vec<u8> {
         match self {
-            CellType::Cell(cell) => cell.data().to_vec(),
-            CellType::MCell(mcell) => mcell.data(),
+            CellType::SingleCell(cell) => cell.data().to_vec(),
+            CellType::MultiProofCell(mcell) => mcell.data(),
         }
     }
 
     pub fn position(&self) -> Position {
         match self {
-            CellType::Cell(cell) => cell.position,
-            CellType::MCell(mcell) => mcell.position,
+            CellType::SingleCell(cell) => cell.position,
+            CellType::MultiProofCell(mcell) => mcell.position,
         }
     }
 
     pub fn proof(&self) -> [u8; 48] {
         match self {
-            CellType::Cell(cell) => cell.proof(),
-            CellType::MCell(mcell) => mcell.proof(),
+            CellType::SingleCell(cell) => cell.proof(),
+            CellType::MultiProofCell(mcell) => mcell.proof(),
         }
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
         match self {
-            CellType::MCell(mcell) => mcell.to_bytes(),
-            CellType::Cell(cell) => cell.data().to_vec(),
+            CellType::MultiProofCell(mcell) => mcell.to_bytes(),
+            CellType::SingleCell(cell) => cell.data().to_vec(),
         }
     }
 }
 
-impl From<Cell> for CellType {
-    fn from(cell: Cell) -> Self {
-        CellType::Cell(cell)
+impl From<SingleCell> for CellType {
+    fn from(cell: SingleCell) -> Self {
+        CellType::SingleCell(cell)
     }
 }
 
-impl From<MCell> for CellType {
-    fn from(mcell: MCell) -> Self {
-        CellType::MCell(mcell)
+impl From<MultiProofCell> for CellType {
+    fn from(mcell: MultiProofCell) -> Self {
+        CellType::MultiProofCell(mcell)
     }
 }
 
-impl TryFrom<CellType> for Cell {
+impl TryFrom<CellType> for SingleCell {
     type Error = &'static str;
 
     fn try_from(value: CellType) -> Result<Self, Self::Error> {
         match value {
-            CellType::Cell(cell) => Ok(cell),
-            CellType::MCell(_) => Err("Expected Cell, found MCell"),
+            CellType::SingleCell(cell) => Ok(cell),
+            CellType::MultiProofCell(_) => Err("Expected SingleCell, found MultiProofCell"),
         }
     }
 }
@@ -295,8 +295,8 @@ pub fn rows(dimensions: Dimensions, cells: &[&CellType]) -> Vec<(RowIndex, Vec<u
     rows.into_iter().collect::<Vec<(_, _)>>()
 }
 
-impl From<Cell> for DataCell {
-    fn from(cell: Cell) -> Self {
+impl From<SingleCell> for DataCell {
+    fn from(cell: SingleCell) -> Self {
         DataCell {
             position: cell.position,
             data: cell.data(),
@@ -309,15 +309,15 @@ mod tests {
     use std::convert::TryInto;
 
     use crate::{
-        data::Cell,
-        data::{rows, GCellBlock, MCell},
+        data::SingleCell,
+        data::{rows, GCellBlock, MultiProofCell},
         matrix::{Dimensions, Position},
     };
 
     use super::CellType;
 
-    fn cell(position: Position, content: [u8; 80]) -> Cell {
-        Cell { position, content }
+    fn cell(position: Position, content: [u8; 80]) -> SingleCell {
+        SingleCell { position, content }
     }
 
     fn position(row: u32, col: u16) -> Position {
@@ -387,7 +387,7 @@ mod tests {
         };
         let scalars = vec![[1u64, 2, 3, 4], [5, 6, 7, 8]];
 
-        let mcell = MCell {
+        let mcell = MultiProofCell {
             position,
             proof,
             gcell_block,
@@ -396,7 +396,7 @@ mod tests {
 
         let bytes = mcell.to_bytes();
         let deserialized =
-            MCell::from_bytes(position, &bytes).expect("Deserialization should succeed");
+            MultiProofCell::from_bytes(position, &bytes).expect("Deserialization should succeed");
 
         assert_eq!(deserialized.position, mcell.position);
         assert_eq!(deserialized.proof, mcell.proof);
@@ -416,7 +416,7 @@ mod tests {
         };
         let scalars = vec![[10u64, 11, 12, 13]];
 
-        let mcell = MCell {
+        let mcell = MultiProofCell {
             position,
             proof,
             gcell_block,
@@ -426,7 +426,7 @@ mod tests {
         let cell_type = CellType::from(mcell.clone());
         let bytes = cell_type.to_bytes();
         let reconstructed =
-            MCell::from_bytes(position, &bytes).expect("Deserialization should succeed");
+            MultiProofCell::from_bytes(position, &bytes).expect("Deserialization should succeed");
 
         assert_eq!(reconstructed.position, mcell.position);
         assert_eq!(reconstructed.proof, mcell.proof);

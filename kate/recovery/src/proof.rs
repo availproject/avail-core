@@ -9,7 +9,7 @@ use dusk_plonk::{
 };
 use thiserror_no_std::Error;
 
-use crate::{data::Cell, matrix::Dimensions};
+use crate::{data::SingleCell, matrix::Dimensions};
 use avail_core::constants::kate::COMMITMENT_SIZE;
 
 #[derive(Error, Debug)]
@@ -40,7 +40,7 @@ pub fn verify(
     public_parameters: &PublicParameters,
     dimensions: Dimensions,
     commitment: &[u8; COMMITMENT_SIZE],
-    cell: &Cell,
+    cell: &SingleCell,
 ) -> Result<bool, Error> {
     let commitment_to_witness = G1Affine::from_bytes(&cell.proof()).map(Commitment::from)?;
 

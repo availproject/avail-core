@@ -51,12 +51,12 @@ use kate_recovery::{matrix::Dimensions, testnet};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Constructor, Clone, Copy, PartialEq, Eq, Debug)]
-pub struct Cell {
+pub struct SingleCell {
     pub row: BlockLengthRows,
     pub col: BlockLengthColumns,
 }
 
-impl Cell {
+impl SingleCell {
     // Returns usize versions of row and col.
     // If an error is returned it means that we weren't able to
     // convert an u32 value to usize.
@@ -388,7 +388,7 @@ pub fn build_proof<M: Metrics>(
     public_params: &kzg10::PublicParameters,
     block_dims: BlockDimensions,
     ext_data_matrix: &DMatrix<BlsScalar>,
-    cells: &[Cell],
+    cells: &[SingleCell],
     metrics: &M,
 ) -> Result<Vec<u8>, Error> {
     let dims = make_dims(block_dims)?;
@@ -420,7 +420,7 @@ pub fn build_proof<M: Metrics>(
 
     let locked_errors = Mutex::new(Vec::<Error>::new());
 
-    let get_cell_row = |cell: &Cell| -> Result<(Vec<BlsScalar>, usize, usize), Error> {
+    let get_cell_row = |cell: &SingleCell| -> Result<(Vec<BlsScalar>, usize, usize), Error> {
         let r_index = usize::try_from(cell.row.0)?;
         if r_index >= ext_rows || cell.col >= block_dims.cols {
             return Err(Error::IndexOutOfRange);
@@ -863,7 +863,7 @@ mod tests {
         max_cols: BlockLengthColumns,
         max_rows: BlockLengthRows,
         percents: Percent,
-    ) -> Vec<Cell> {
+    ) -> Vec<SingleCell> {
         let max_cols = max_cols.into();
         let max_rows = max_rows.into();
 
@@ -875,7 +875,7 @@ mod tests {
         (0..max_cols)
             .flat_map(move |col| {
                 (0..max_rows)
-                    .map(move |row| Cell::new(BlockLengthRows(row), BlockLengthColumns(col)))
+                    .map(move |row| SingleCell::new(BlockLengthRows(row), BlockLengthColumns(col)))
             })
             .choose_multiple(rng, amount)
     }
@@ -907,7 +907,7 @@ mod tests {
 
             let col: u16 = cell.col.0.try_into().expect("`random_cells` function generates a valid `u16` for columns");
             let position = Position { row: cell.row.0, col};
-            let cell = data::Cell { position,  content: proof.try_into().unwrap() };
+            let cell = data::SingleCell { position,  content: proof.try_into().unwrap() };
 
             let extended_dims = dims.try_into().unwrap();
             let commitment = commitments::from_slice(&commitments).unwrap()[row];
@@ -1257,7 +1257,7 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 
         for col in 0..rows {
             // Randomly chosen cell to prove, probably should test all of them
-            let cell = Cell {
+            let cell = SingleCell {
                 col: BlockLengthColumns(col.into()),
                 row: BlockLengthRows(0),
             };
@@ -1274,7 +1274,7 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
             assert_eq!(proof.len(), 80);
 
             let dims = Dimensions::new(1, 4).unwrap();
-            let cell = data::Cell {
+            let cell = data::SingleCell {
                 position: Position { row: 0, col },
                 content: proof.try_into().unwrap(),
             };
@@ -1284,10 +1284,10 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
         }
     }
 
-    #[test_case( r#"{ "row": 42, "col": 99 }"# => Cell::new(BlockLengthRows(42), BlockLengthColumns(99)) ; "Simple" )]
-    #[test_case( r#"{ "row": 4294967295, "col": 99 }"# => Cell::new(BlockLengthRows(4_294_967_295),BlockLengthColumns(99)) ; "Max row" )]
+    #[test_case( r#"{ "row": 42, "col": 99 }"# => SingleCell::new(BlockLengthRows(42), BlockLengthColumns(99)) ; "Simple" )]
+    #[test_case( r#"{ "row": 4294967295, "col": 99 }"# => SingleCell::new(BlockLengthRows(4_294_967_295),BlockLengthColumns(99)) ; "Max row" )]
     // newapi ignore
-    fn serde_block_length_types_untagged(data: &str) -> Cell {
+    fn serde_block_length_types_untagged(data: &str) -> SingleCell {
         serde_json::from_str(data).unwrap()
     }
 
@@ -1295,7 +1295,7 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
     fn cell_get_dimensions_returns_the_correct_values() {
         let row = 20;
         let col = 25;
-        let cell = Cell {
+        let cell = SingleCell {
             row: BlockLengthRows::new(row),
             col: BlockLengthColumns::new(col),
         };

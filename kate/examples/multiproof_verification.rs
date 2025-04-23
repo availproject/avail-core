@@ -3,7 +3,7 @@ use core::num::NonZeroU16;
 use hex_literal::hex;
 use kate::{
     couscous::multiproof_params,
-    gridgen::EvaluationGrid,
+    gridgen::core::EvaluationGrid,
     pmp::{merlin::Transcript, traits::PolyMultiProofNoPrecomp},
     Seed,
 };
@@ -32,7 +32,7 @@ fn multiproof_verification() -> Result<bool, AppError> {
     type M = BlstMSMEngine;
     let target_dims = Dimensions::new_from(16, 64).unwrap();
     let pp: M1NoPrecomp<E, M> = multiproof_params();
-    let points = kate::gridgen::domain_points(256)?;
+    let points = kate::gridgen::utils::domain_points(256).unwrap_or(Vec::new());
     let exts_data = vec![
         hex!("CAFEBABE00000000000000000000000000000000000000").to_vec(),
         hex!("DEADBEEF1111111111111111111111111111111111").to_vec(),
@@ -61,7 +61,7 @@ fn multiproof_verification() -> Result<bool, AppError> {
         let multiproof = polys
             .multiproof(
                 &pp,
-                &kate::com::Cell::new(BlockLengthRows(0), BlockLengthColumns(0)),
+                &kate::com::SingleCell::new(BlockLengthRows(0), BlockLengthColumns(0)),
                 &grid,
                 target_dims,
             )
@@ -76,7 +76,7 @@ fn multiproof_verification() -> Result<bool, AppError> {
         (proof_bytes, evals_bytes, commitments, grid.dims())
     };
 
-    let mp_block = kate::gridgen::multiproof_block(0, 0, dims, target_dims).unwrap();
+    let mp_block = kate::gridgen::core::multiproof_block(0, 0, dims, target_dims).unwrap();
     let commits = commitments
         .chunks_exact(48)
         .skip(mp_block.start_y)

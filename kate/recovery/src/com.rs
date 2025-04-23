@@ -218,7 +218,7 @@ pub fn reconstruct_extrinsics(
 #[cfg(feature = "std")]
 pub fn reconstruct_columns(
     dimensions: matrix::Dimensions,
-    cells: &[data::Cell],
+    cells: &[data::SingleCell],
 ) -> Result<HashMap<u16, Vec<[u8; CHUNK_SIZE]>>, ReconstructionError> {
     let cells: Vec<data::DataCell> = cells.iter().cloned().map(Into::into).collect::<Vec<_>>();
     let columns = map_cells(dimensions, cells)?;

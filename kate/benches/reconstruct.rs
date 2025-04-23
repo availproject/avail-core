@@ -2,7 +2,7 @@ use avail_core::{AppExtrinsic, AppId, BlockLengthColumns, BlockLengthRows, DataL
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use dusk_plonk::prelude::BlsScalar;
 use kate::{
-    com::{Cell, *},
+    com::{SingleCell, *},
     metrics::IgnoreMetrics,
     Seed, Serializable as _,
 };
@@ -85,7 +85,7 @@ fn random_cells(
     max_cols: BlockLengthColumns,
     max_rows: BlockLengthRows,
     percents: Percent,
-) -> Vec<Cell> {
+) -> Vec<SingleCell> {
     let max_cols = max_cols.into();
     let max_rows = max_rows.into();
 
@@ -96,7 +96,7 @@ fn random_cells(
 
     (0..max_cols)
         .flat_map(move |col| {
-            (0..max_rows).map(move |row| Cell::new(BlockLengthRows(row), BlockLengthColumns(col)))
+            (0..max_rows).map(move |row| SingleCell::new(BlockLengthRows(row), BlockLengthColumns(col)))
         })
         .choose_multiple(rng, amount)
 }
@@ -159,7 +159,7 @@ fn reconstruct(xts: &[AppExtrinsic]) {
             .try_into()
             .expect("`random_cells` function generates a valid `u16` for columns");
         let position = Position { row, col };
-        let cell = data::Cell {
+        let cell = data::SingleCell {
             position,
             content: proof.try_into().unwrap(),
         };
