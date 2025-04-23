@@ -209,75 +209,75 @@ impl MultiProofCell {
 }
 
 #[derive(Debug, Clone)]
-pub enum CellType {
+pub enum Cell {
     SingleCell(SingleCell),
     MultiProofCell(MultiProofCell),
 }
 
-impl CellType {
+impl Cell {
     #[cfg(any(target_arch = "wasm32", feature = "std"))]
     pub fn reference(&self, block: u32) -> String {
         match self {
-            CellType::SingleCell(cell) => cell.reference(block),
-            CellType::MultiProofCell(mcell) => mcell.reference(block),
+            Cell::SingleCell(cell) => cell.reference(block),
+            Cell::MultiProofCell(mcell) => mcell.reference(block),
         }
     }
 
     pub fn data(&self) -> Vec<u8> {
         match self {
-            CellType::SingleCell(cell) => cell.data().to_vec(),
-            CellType::MultiProofCell(mcell) => mcell.data(),
+            Cell::SingleCell(cell) => cell.data().to_vec(),
+            Cell::MultiProofCell(mcell) => mcell.data(),
         }
     }
 
     pub fn position(&self) -> Position {
         match self {
-            CellType::SingleCell(cell) => cell.position,
-            CellType::MultiProofCell(mcell) => mcell.position,
+            Cell::SingleCell(cell) => cell.position,
+            Cell::MultiProofCell(mcell) => mcell.position,
         }
     }
 
     pub fn proof(&self) -> [u8; 48] {
         match self {
-            CellType::SingleCell(cell) => cell.proof(),
-            CellType::MultiProofCell(mcell) => mcell.proof(),
+            Cell::SingleCell(cell) => cell.proof(),
+            Cell::MultiProofCell(mcell) => mcell.proof(),
         }
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
         match self {
-            CellType::MultiProofCell(mcell) => mcell.to_bytes(),
-            CellType::SingleCell(cell) => cell.data().to_vec(),
+            Cell::MultiProofCell(mcell) => mcell.to_bytes(),
+            Cell::SingleCell(cell) => cell.data().to_vec(),
         }
     }
 }
 
-impl From<SingleCell> for CellType {
+impl From<SingleCell> for Cell {
     fn from(cell: SingleCell) -> Self {
-        CellType::SingleCell(cell)
+        Cell::SingleCell(cell)
     }
 }
 
-impl From<MultiProofCell> for CellType {
+impl From<MultiProofCell> for Cell {
     fn from(mcell: MultiProofCell) -> Self {
-        CellType::MultiProofCell(mcell)
+        Cell::MultiProofCell(mcell)
     }
 }
 
-impl TryFrom<CellType> for SingleCell {
+impl TryFrom<Cell> for SingleCell {
     type Error = &'static str;
 
-    fn try_from(value: CellType) -> Result<Self, Self::Error> {
+    fn try_from(value: Cell) -> Result<Self, Self::Error> {
         match value {
-            CellType::SingleCell(cell) => Ok(cell),
-            CellType::MultiProofCell(_) => Err("Expected SingleCell, found MultiProofCell"),
+            Cell::SingleCell(cell) => Ok(cell),
+            Cell::MultiProofCell(_) => Err("Expected SingleCell, found MultiProofCell"),
         }
     }
 }
 
 /// Merges cells data per row.
 /// Cells are sorted before merge.
-pub fn rows(dimensions: Dimensions, cells: &[&CellType]) -> Vec<(RowIndex, Vec<u8>)> {
+pub fn rows(dimensions: Dimensions, cells: &[&Cell]) -> Vec<(RowIndex, Vec<u8>)> {
     let mut sorted_cells = cells.to_vec();
 
     sorted_cells.sort_by(|a, b| {
@@ -314,7 +314,7 @@ mod tests {
         matrix::{Dimensions, Position},
     };
 
-    use super::CellType;
+    use super::Cell;
 
     fn cell(position: Position, content: [u8; 80]) -> SingleCell {
         SingleCell { position, content }
@@ -339,7 +339,7 @@ mod tests {
             cell(position(0, 1), content([1; 32])).into(),
         ];
 
-        let cells: Vec<&CellType> = cell_variants.iter().collect();
+        let cells: Vec<&Cell> = cell_variants.iter().collect();
         let mut rows = rows(dimensions, &cells);
         rows.sort_by_key(|(key, _)| key.0);
 
@@ -365,7 +365,7 @@ mod tests {
             cell(position(0, 1), content([1; 32])).into(),
         ];
 
-        let cells: Vec<&CellType> = cell_variants.iter().collect();
+        let cells: Vec<&Cell> = cell_variants.iter().collect();
         let mut rows = rows(dimensions, &cells);
         rows.sort_by_key(|(key, _)| key.0);
 
@@ -423,7 +423,7 @@ mod tests {
             scalars,
         };
 
-        let cell_type = CellType::from(mcell.clone());
+        let cell_type = Cell::from(mcell.clone());
         let bytes = cell_type.to_bytes();
         let reconstructed =
             MultiProofCell::from_bytes(position, &bytes).expect("Deserialization should succeed");
