@@ -29,7 +29,7 @@ use std::collections::BTreeMap;
 use thiserror_no_std::Error;
 
 use crate::{
-    com::{SingleCell, Error},
+    com::{Error, SingleCell},
     ArkScalar, Seed,
 };
 
