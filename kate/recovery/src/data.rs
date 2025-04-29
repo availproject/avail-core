@@ -118,9 +118,7 @@ impl MultiProofCell {
 
     #[cfg(any(target_arch = "wasm32", feature = "std"))]
     pub fn reference(&self, block: u32) -> String {
-        let mut result = String::from("0");
-        result.push_str(&self.position.reference(block));
-        result
+        self.position.reference(block)
     }
 
     pub fn from_bytes(position: Position, bytes: &[u8]) -> Result<Self, &'static str> {
