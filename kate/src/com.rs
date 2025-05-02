@@ -47,7 +47,7 @@ use crate::{
     padded_len_of_pad_iec_9797_1, BlockDimensions, Seed, TryFromBlockDimensionsError, LOG_TARGET,
 };
 #[cfg(feature = "std")]
-use kate_recovery::{matrix::Dimensions, testnet};
+use kate_recovery::matrix::Dimensions;
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Constructor, Clone, Copy, PartialEq, Eq, Debug)]

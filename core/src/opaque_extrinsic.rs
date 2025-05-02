@@ -1,8 +1,11 @@
-use crate::from_substrate::HexDisplay;
 use codec::{Decode, Encode};
-use scale_info::prelude::format;
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
+
+#[cfg(feature = "std")]
+use crate::from_substrate::HexDisplay;
+#[cfg(feature = "serde")]
+use scale_info::prelude::format;
 
 /// Simple blob to hold an extrinsic without committing to its format and ensure it is serialized
 /// correctly.
