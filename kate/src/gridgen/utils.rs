@@ -7,10 +7,10 @@ use sp_std::{result::Result, vec::Vec};
 pub use poly_multiproof::traits::AsBytes;
 
 pub enum Errors {
-    DomainSizeInvalid,
+	DomainSizeInvalid,
 }
 
 pub fn domain_points(n: usize) -> Result<Vec<ArkScalar>, Errors> {
-    let domain = GeneralEvaluationDomain::<ArkScalar>::new(n).ok_or(Errors::DomainSizeInvalid)?;
-    Ok(domain.elements().collect())
+	let domain = GeneralEvaluationDomain::<ArkScalar>::new(n).ok_or(Errors::DomainSizeInvalid)?;
+	Ok(domain.elements().collect())
 }

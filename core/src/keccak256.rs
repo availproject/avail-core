@@ -13,40 +13,40 @@ use sp_debug_derive::RuntimeDebug;
 pub struct Keccak256 {}
 
 impl Hasher for Keccak256 {
-    type Out = primitive_types::H256;
-    type StdHasher = hash256_std_hasher::Hash256StdHasher;
-    const LENGTH: usize = 32;
+	type Out = primitive_types::H256;
+	type StdHasher = hash256_std_hasher::Hash256StdHasher;
+	const LENGTH: usize = 32;
 
-    fn hash(s: &[u8]) -> Self::Out {
-        let keccak_out = crate::from_substrate::keccak_256(s);
-        keccak_out.into()
-    }
+	fn hash(s: &[u8]) -> Self::Out {
+		let keccak_out = crate::from_substrate::keccak_256(s);
+		keccak_out.into()
+	}
 }
 
 #[cfg(feature = "runtime")]
 pub mod hash {
-    use super::*;
-    use sp_std::vec::Vec;
-    use sp_storage::StateVersion;
-    use sp_trie::{LayoutV0, LayoutV1, TrieConfiguration as _};
+	use super::*;
+	use sp_std::vec::Vec;
+	use sp_storage::StateVersion;
+	use sp_trie::{LayoutV0, LayoutV1, TrieConfiguration as _};
 
-    impl sp_runtime::traits::Hash for Keccak256 {
-        type Output = primitive_types::H256;
+	impl sp_runtime::traits::Hash for Keccak256 {
+		type Output = primitive_types::H256;
 
-        fn trie_root(input: Vec<(Vec<u8>, Vec<u8>)>, version: StateVersion) -> Self::Output {
-            match version {
-                StateVersion::V0 => LayoutV0::<Keccak256>::trie_root(input),
-                StateVersion::V1 => LayoutV1::<Keccak256>::trie_root(input),
-            }
-        }
+		fn trie_root(input: Vec<(Vec<u8>, Vec<u8>)>, version: StateVersion) -> Self::Output {
+			match version {
+				StateVersion::V0 => LayoutV0::<Keccak256>::trie_root(input),
+				StateVersion::V1 => LayoutV1::<Keccak256>::trie_root(input),
+			}
+		}
 
-        fn ordered_trie_root(input: Vec<Vec<u8>>, version: StateVersion) -> Self::Output {
-            match version {
-                StateVersion::V0 => LayoutV0::<Keccak256>::ordered_trie_root(input),
-                StateVersion::V1 => LayoutV1::<Keccak256>::ordered_trie_root(input),
-            }
-        }
-    }
+		fn ordered_trie_root(input: Vec<Vec<u8>>, version: StateVersion) -> Self::Output {
+			match version {
+				StateVersion::V0 => LayoutV0::<Keccak256>::ordered_trie_root(input),
+				StateVersion::V1 => LayoutV1::<Keccak256>::ordered_trie_root(input),
+			}
+		}
+	}
 }
 
 #[cfg(feature = "runtime")]

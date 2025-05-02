@@ -67,33 +67,33 @@ pub mod bench_randomness;
 
 #[repr(u8)]
 pub enum InvalidTransactionCustomId {
-    /// The AppId is not registered.
-    InvalidAppId = 137,
-    /// Extrinsic is not allowed for the given `AppId`.
-    ForbiddenAppId = 138,
-    /// Max recursion was reached for a call with AppId != 0.
-    MaxRecursionExceeded = 139,
-    /// DA::submit_data calls are forbidden to be in Batch calls
-    UnexpectedSubmitDataCall = 140,
-    /// Vector::send_message calls are forbidden to be in Batch calls
-    UnexpectedSendMessageCall = 141,
+	/// The AppId is not registered.
+	InvalidAppId = 137,
+	/// Extrinsic is not allowed for the given `AppId`.
+	ForbiddenAppId = 138,
+	/// Max recursion was reached for a call with AppId != 0.
+	MaxRecursionExceeded = 139,
+	/// DA::submit_data calls are forbidden to be in Batch calls
+	UnexpectedSubmitDataCall = 140,
+	/// Vector::send_message calls are forbidden to be in Batch calls
+	UnexpectedSendMessageCall = 141,
 }
 
 #[derive(
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Add,
-    Deref,
-    TypeInfo,
-    Encode,
-    Decode,
-    Default,
-    Into,
-    MaxEncodedLen,
+	Clone,
+	Copy,
+	PartialEq,
+	Eq,
+	PartialOrd,
+	Ord,
+	Add,
+	Deref,
+	TypeInfo,
+	Encode,
+	Decode,
+	Default,
+	Into,
+	MaxEncodedLen,
 )]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
@@ -101,39 +101,39 @@ pub enum InvalidTransactionCustomId {
 pub struct AppId(#[codec(compact)] pub u32);
 
 impl core::fmt::Display for AppId {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", self.0)
-    }
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		write!(f, "{}", self.0)
+	}
 }
 
 impl Zero for AppId {
-    fn zero() -> Self {
-        AppId(Zero::zero())
-    }
+	fn zero() -> Self {
+		AppId(Zero::zero())
+	}
 
-    fn is_zero(&self) -> bool {
-        self.0.is_zero()
-    }
+	fn is_zero(&self) -> bool {
+		self.0.is_zero()
+	}
 }
 
 /// Strong type for `BlockLength::cols`
 #[derive(
-    Clone,
-    Copy,
-    Add,
-    Mul,
-    PartialEq,
-    Eq,
-    Encode,
-    Decode,
-    TypeInfo,
-    PartialOrd,
-    Ord,
-    Into,
-    Constructor,
-    MaxEncodedLen,
-    Default,
-    Debug,
+	Clone,
+	Copy,
+	Add,
+	Mul,
+	PartialEq,
+	Eq,
+	Encode,
+	Decode,
+	TypeInfo,
+	PartialOrd,
+	Ord,
+	Into,
+	Constructor,
+	MaxEncodedLen,
+	Default,
+	Debug,
 )]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[mul(forward)]
@@ -141,22 +141,22 @@ pub struct BlockLengthColumns(#[codec(compact)] pub u32);
 
 /// Strong type for `BlockLength::rows`
 #[derive(
-    Encode,
-    Decode,
-    TypeInfo,
-    MaxEncodedLen,
-    Clone,
-    Copy,
-    Add,
-    Mul,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Into,
-    Constructor,
-    Default,
-    Debug,
+	Encode,
+	Decode,
+	TypeInfo,
+	MaxEncodedLen,
+	Clone,
+	Copy,
+	Add,
+	Mul,
+	PartialEq,
+	Eq,
+	PartialOrd,
+	Ord,
+	Into,
+	Constructor,
+	Default,
+	Debug,
 )]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[mul(forward)]
@@ -167,9 +167,9 @@ pub struct BlockLengthRows(#[codec(compact)] pub u32);
 /// Used as `fail!(expression)`.
 #[macro_export]
 macro_rules! fail {
-    ( $y:expr ) => {{
-        return Err($y.into());
-    }};
+	( $y:expr ) => {{
+		return Err($y.into());
+	}};
 }
 
 /// Evaluate `$x:expr` and if not true return `Err($y:expr)`.
@@ -177,11 +177,11 @@ macro_rules! fail {
 /// Used as `ensure!(expression_to_ensure, expression_to_return_on_false)`.
 #[macro_export]
 macro_rules! ensure {
-    ( $x:expr, $y:expr $(,)? ) => {{
-        if !$x {
-            $crate::fail!($y);
-        }
-    }};
+	( $x:expr, $y:expr $(,)? ) => {{
+		if !$x {
+			$crate::fail!($y);
+		}
+	}};
 }
 
 /// Variadic macro used by `keccak256_concat` internally.
