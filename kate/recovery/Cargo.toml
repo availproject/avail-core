@@ -8,7 +8,7 @@ license = "Apache-2.0"
 [dependencies]
 # Internals
 avail-core = { path = "../../core", default-features = false }
-dusk-plonk = { workspace = true }
+# dusk-plonk = { workspace = true }
 poly-multiproof = { workspace = true, default-features = false, features = ["blst"] }
 
 # Parity
@@ -21,7 +21,8 @@ derive_more.workspace = true
 static_assertions.workspace = true
 thiserror-no-std.workspace = true
 
-dusk-bytes = { workspace = true, optional = true }
+hex-literal.workspace = true
+# dusk-bytes = { workspace = true, optional = true }
 once_cell = { workspace = true, optional = true }
 rand = { workspace = true, optional = true }
 rand_chacha = { workspace = true, optional = true }
@@ -35,8 +36,8 @@ test-case.workspace = true
 default = [ "std" ]
 std = [
 	"avail-core/std",
-	"dusk-bytes",
-	"dusk-plonk/std",
+	# "dusk-bytes",
+	# "dusk-plonk/std",
 	"once_cell",
 	"rand/std",
 	"rand_chacha/std",

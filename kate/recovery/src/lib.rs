@@ -8,7 +8,9 @@ pub mod proof;
 #[cfg(feature = "std")]
 pub mod sparse_slice_read;
 
-#[cfg(feature = "std")]
 pub mod testnet;
 
-pub mod couscous;
+pub mod commons {
+	pub type ArkScalar = poly_multiproof::m1_blst::Fr;
+	pub type ArkEvaluationDomain = poly_multiproof::ark_poly::GeneralEvaluationDomain<ArkScalar>;
+}

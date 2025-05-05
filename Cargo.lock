@@ -2168,9 +2168,8 @@ version = "0.10.0"
 dependencies = [
  "avail-core",
  "derive_more",
- "dusk-bytes",
- "dusk-plonk",
  "hex",
+ "hex-literal",
  "once_cell",
  "parity-scale-codec",
  "poly-multiproof",
