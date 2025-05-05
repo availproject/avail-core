@@ -49,7 +49,7 @@ use crate::{
 	BlockDimensions,
 	Seed,
 	TryFromBlockDimensionsError,
-	LOG_TARGET,
+	// LOG_TARGET,
 };
 use kate_recovery::commons::{ArkEvaluationDomain, ArkScalar};
 #[cfg(feature = "std")]

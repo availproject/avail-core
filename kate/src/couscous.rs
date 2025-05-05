@@ -71,10 +71,7 @@ mod tests {
 		},
 		traits::KZGProof,
 	};
-	use poly_multiproof::{
-		m1_blst::Fr,
-		traits::Committer,
-	};
+	use poly_multiproof::{m1_blst::Fr, traits::Committer};
 	use rand::thread_rng;
 
 	#[test]

@@ -173,8 +173,12 @@ fn test_zero_deg_poly_commit(row_values: Vec<u8>) {
 			},
 			content: content.try_into().unwrap(),
 		};
-		let verification =
-			kate_recovery::proof::verify_v2(&couscous::multiproof_params(), dims, &commitment, &cell);
+		let verification = kate_recovery::proof::verify_v2(
+			&couscous::multiproof_params(),
+			dims,
+			&commitment,
+			&cell,
+		);
 		assert!(verification.is_ok());
 		assert!(verification.unwrap())
 	}

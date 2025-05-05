@@ -20,9 +20,9 @@ use core::convert::TryFrom;
 // };
 use super::commons::{ArkEvaluationDomain, ArkScalar};
 use poly_multiproof::{
-    ark_poly::EvaluationDomain,
-    m1_blst::M1NoPrecomp,
-    traits::{AsBytes, Committer},
+	ark_poly::EvaluationDomain,
+	m1_blst::M1NoPrecomp,
+	traits::{AsBytes, Committer},
 };
 
 #[derive(Error, Debug)]
