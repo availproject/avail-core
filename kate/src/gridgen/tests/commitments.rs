@@ -83,7 +83,7 @@ proptest! {
 			.map(|c| c.to_bytes().unwrap())
 			.collect::<Vec<_>>();
 
-		let public_params = testnet::public_params( BlockLengthColumns(g_cols.into()));
+		let public_params = testnet::multiproof_params(g_cols.into(), g_cols.into());
 
 		for xt in exts.iter() {
 			let rows = grid.app_rows(xt.app_id, Some(orig_dims)).unwrap().unwrap();
@@ -110,7 +110,7 @@ proptest! {
 			.map(|c| c.to_bytes().unwrap())
 			.collect::<Vec<_>>();
 
-		let public_params = testnet::public_params( BlockLengthColumns(g_cols.into()));
+		let public_params = testnet::multiproof_params(g_cols.into(), g_cols.into());
 
 		for xt in xts {
 			let rows = grid.app_rows(xt.app_id, Some(orig_dims)).unwrap().unwrap();
@@ -174,7 +174,7 @@ fn test_zero_deg_poly_commit(row_values: Vec<u8>) {
 			content: content.try_into().unwrap(),
 		};
 		let verification =
-			kate_recovery::proof::verify(&couscous::public_params(), dims, &commitment, &cell);
+			kate_recovery::proof::verify_v2(&couscous::multiproof_params(), dims, &commitment, &cell);
 		assert!(verification.is_ok());
 		assert!(verification.unwrap())
 	}

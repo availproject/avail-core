@@ -16,13 +16,14 @@ use avail_core::{
 };
 use codec::Encode;
 use derive_more::Constructor;
-use dusk_bytes::Serializable;
-use dusk_plonk::{
-	commitment_scheme::kzg10,
-	error::Error as PlonkError,
-	fft::{EvaluationDomain, Evaluations},
-	prelude::{BlsScalar, CommitKey},
-};
+// use dusk_bytes::Serializable;
+// use dusk_plonk::{
+// 	commitment_scheme::kzg10,
+// 	error::Error as PlonkError,
+// 	fft::{EvaluationDomain, Evaluations},
+// 	prelude::{BlsScalar, CommitKey},
+// };
+
 use nalgebra::base::DMatrix;
 use rand::Rng;
 use rand_chacha::{
@@ -38,16 +39,31 @@ use static_assertions::const_assert_eq;
 use thiserror_no_std::Error;
 
 use crate::{
-	com::kzg10::commitment::Commitment,
+	// com::kzg10::commitment::Commitment,
 	config::{
 		COL_EXTENSION, MAXIMUM_BLOCK_SIZE, MINIMUM_BLOCK_SIZE, PROOF_SIZE, ROW_EXTENSION,
 		SCALAR_SIZE,
 	},
 	metrics::Metrics,
-	padded_len_of_pad_iec_9797_1, BlockDimensions, Seed, TryFromBlockDimensionsError, LOG_TARGET,
+	padded_len_of_pad_iec_9797_1,
+	BlockDimensions,
+	Seed,
+	TryFromBlockDimensionsError,
+	LOG_TARGET,
 };
+use kate_recovery::commons::{ArkEvaluationDomain, ArkScalar};
 #[cfg(feature = "std")]
 use kate_recovery::matrix::Dimensions;
+#[cfg(feature = "std")]
+use poly_multiproof::m1_blst::Bls12_381;
+#[cfg(feature = "std")]
+use poly_multiproof::traits::Committer;
+#[cfg(feature = "std")]
+type ArkCommitment = poly_multiproof::Commitment<Bls12_381>;
+use poly_multiproof::m1_blst::M1NoPrecomp;
+use poly_multiproof::traits::KZGProof;
+use poly_multiproof::{ark_poly::EvaluationDomain, traits::AsBytes};
+use sp_arithmetic::traits::Zero;
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Constructor, Clone, Copy, PartialEq, Eq, Debug)]
@@ -75,8 +91,9 @@ impl Cell {
 
 #[derive(Error, Debug)]
 pub enum Error {
-	PlonkError(#[from] PlonkError),
-	DuskBytesError(#[from] dusk_bytes::Error),
+	// TODO: Enable this back to not break compatibility
+	// PlonkError(#[from] PlonkError),
+	// DuskBytesError(#[from] dusk_bytes::Error),
 	MultiproofError(#[from] poly_multiproof::Error),
 	CellLengthExceeded,
 	BadHeaderHash,
@@ -302,20 +319,20 @@ fn pad_iec_9797_1(mut data: Vec<u8>) -> Vec<DataChunk> {
 		.expect("Const assertion ensures this transformation to `DataChunk`. qed")
 }
 
-fn extend_column_with_zeros(column: &[BlsScalar], height: usize) -> Vec<BlsScalar> {
+fn extend_column_with_zeros(column: &[ArkScalar], height: usize) -> Vec<ArkScalar> {
 	let mut extended = Vec::with_capacity(height);
 	let copied = core::cmp::min(height, column.len());
 
 	extended.extend_from_slice(&column[..copied]);
-	extended.resize(height, BlsScalar::zero());
+	extended.resize(height, ArkScalar::zero());
 
 	extended
 }
 
-pub fn to_bls_scalar(chunk: &[u8]) -> Result<BlsScalar, Error> {
+pub fn to_bls_scalar(chunk: &[u8]) -> Result<ArkScalar, Error> {
 	let scalar_size_chunk =
 		<[u8; SCALAR_SIZE]>::try_from(chunk).map_err(|_| Error::InvalidChunkLength)?;
-	BlsScalar::from_bytes(&scalar_size_chunk).map_err(|_| Error::CellLengthExceeded)
+	ArkScalar::from_bytes(&scalar_size_chunk).map_err(|_| Error::CellLengthExceeded)
 }
 
 fn make_dims(bd: BlockDimensions) -> Result<Dimensions, Error> {
@@ -335,7 +352,7 @@ pub fn par_extend_data_matrix<M: Metrics>(
 	block_dims: BlockDimensions,
 	block: &[u8],
 	metrics: &M,
-) -> Result<DMatrix<BlsScalar>, Error> {
+) -> Result<DMatrix<ArkScalar>, Error> {
 	let start = Instant::now();
 	let dims = make_dims(block_dims)?;
 	let (ext_rows, _): (usize, usize) = dims
@@ -354,10 +371,11 @@ pub fn par_extend_data_matrix<M: Metrics>(
 	let scalars = chunks
 		.into_par_iter()
 		.map(to_bls_scalar)
-		.collect::<Result<Vec<BlsScalar>, Error>>()?;
+		.collect::<Result<Vec<ArkScalar>, Error>>()?;
 
-	let extended_column_eval_domain = EvaluationDomain::new(ext_rows)?;
-	let column_eval_domain = EvaluationDomain::new(rows)?; // rows_num = column_length
+	let extended_column_eval_domain =
+		ArkEvaluationDomain::new(ext_rows).ok_or(Error::InvalidDimensionExtension)?;
+	let column_eval_domain = ArkEvaluationDomain::new(rows).ok_or(Error::DomainSizeInvalid)?; // rows_num = column_length
 
 	// The data is currently row-major, so we need to put it into column-major
 	let col_wise_scalars = DMatrix::from_row_iterator(rows, cols, scalars);
@@ -369,8 +387,8 @@ pub fn par_extend_data_matrix<M: Metrics>(
 			debug_assert_eq!(col_view.len(), rows);
 			let mut ext_col = extend_column_with_zeros(col_view, ext_rows);
 			// (i)fft functions input parameter slice size has to be a power of 2, otherwise it panics
-			column_eval_domain.ifft_slice(&mut ext_col[0..rows]);
-			extended_column_eval_domain.fft_slice(ext_col.as_mut_slice());
+			column_eval_domain.ifft(&mut ext_col[0..rows]);
+			extended_column_eval_domain.fft(ext_col.as_mut_slice());
 			debug_assert_eq!(ext_col.len(), ext_rows);
 			ext_col
 		})
@@ -385,9 +403,9 @@ pub fn par_extend_data_matrix<M: Metrics>(
 }
 
 pub fn build_proof<M: Metrics>(
-	public_params: &kzg10::PublicParameters,
+	public_params: &M1NoPrecomp,
 	block_dims: BlockDimensions,
-	ext_data_matrix: &DMatrix<BlsScalar>,
+	ext_data_matrix: &DMatrix<ArkScalar>,
 	cells: &[Cell],
 	metrics: &M,
 ) -> Result<Vec<u8>, Error> {
@@ -400,17 +418,11 @@ pub fn build_proof<M: Metrics>(
 
 	const SPROOF_SIZE: usize = PROOF_SIZE + SCALAR_SIZE;
 
-	let (prover_key, _) = public_params.trim(cols).map_err(Error::from)?;
-
-	// Generate all the x-axis points of the domain on which all the row polynomials reside
-	let row_eval_domain = EvaluationDomain::new(cols)?;
+	let row_eval_domain = ArkEvaluationDomain::new(cols).ok_or(Error::DomainSizeInvalid)?;
 	let row_dom_x_pts = row_eval_domain.elements().collect::<Vec<_>>();
 
 	let mut result_bytes: Vec<u8> = vec![0u8; SPROOF_SIZE.saturating_mul(cells.len())];
-
-	let prover_key = &prover_key;
 	let row_dom_x_pts = &row_dom_x_pts;
-
 	let total_start = Instant::now();
 
 	// attempt to parallelly compute proof for all requested cells
@@ -420,7 +432,7 @@ pub fn build_proof<M: Metrics>(
 
 	let locked_errors = Mutex::new(Vec::<Error>::new());
 
-	let get_cell_row = |cell: &Cell| -> Result<(Vec<BlsScalar>, usize, usize), Error> {
+	let get_cell_row = |cell: &Cell| -> Result<(Vec<ArkScalar>, usize, usize), Error> {
 		let r_index = usize::try_from(cell.row.0)?;
 		if r_index >= ext_rows || cell.col >= block_dims.cols {
 			return Err(Error::IndexOutOfRange);
@@ -432,7 +444,7 @@ pub fn build_proof<M: Metrics>(
 
 		// construct polynomial per extended matrix row
 		#[cfg(feature = "parallel")]
-		let row: Vec<BlsScalar> = {
+		let row: Vec<ArkScalar> = {
 			let mut row = Vec::with_capacity(ext_cols.checked_add(1).ok_or(Error::BlockTooBig)?);
 			(0..ext_cols)
 				.into_par_iter()
@@ -443,7 +455,7 @@ pub fn build_proof<M: Metrics>(
 		#[cfg(not(feature = "parallel"))]
 		let row = (0..ext_cols)
 			.map(get_ext_data_matrix)
-			.collect::<Vec<BlsScalar>>();
+			.collect::<Vec<ArkScalar>>();
 
 		Ok((row, r_index, c_index))
 	};
@@ -463,23 +475,49 @@ pub fn build_proof<M: Metrics>(
 		// # SAFETY: `interpolate` function panics if the following debug assertion is not met,
 		// so it would simplify the location of that error.
 		debug_assert_eq!(row.len(), cols.next_power_of_two());
-		let poly = Evaluations::from_vec_and_domain(row, row_eval_domain).interpolate();
-		let witness = prover_key.compute_single_witness(&poly, &row_dom_x_pts[c_index]);
 
-		match prover_key.commit(&witness) {
-			Ok(commitment_to_witness) => {
-				let evaluated_point =
-					ext_data_matrix[r_index.saturating_add(c_index.saturating_mul(ext_rows))];
+		let poly = row_eval_domain.ifft(&row);
 
-				res[0..PROOF_SIZE].copy_from_slice(&commitment_to_witness.to_bytes());
-				res[PROOF_SIZE..].copy_from_slice(&evaluated_point.to_bytes());
+		let witness = match public_params.compute_witness_polynomial(poly, row_dom_x_pts[c_index]) {
+			Ok(w) => w,
+			Err(e) => {
+				if let Ok(mut errors) = locked_errors.lock() {
+					errors.push(Error::MultiproofError(e));
+				}
+				return;
+			},
+		};
+
+		let commitment_bytes = match public_params.open(witness) {
+			Ok(commitment_to_witness) => match commitment_to_witness.to_bytes() {
+				Ok(bytes) => bytes,
+				Err(e) => {
+					if let Ok(mut errors) = locked_errors.lock() {
+						errors.push(Error::MultiproofError(e));
+					}
+					return;
+				},
 			},
 			Err(e) => {
 				if let Ok(mut errors) = locked_errors.lock() {
-					errors.push(Error::PlonkError(e))
+					errors.push(Error::MultiproofError(e));
 				}
+				return;
 			},
 		};
+
+		let point_bytes = match ext_data_matrix[r_index + c_index * ext_rows].to_bytes() {
+			Ok(bytes) => bytes,
+			Err(e) => {
+				if let Ok(mut errors) = locked_errors.lock() {
+					errors.push(Error::MultiproofError(e));
+				}
+				return;
+			},
+		};
+
+		res[0..PROOF_SIZE].copy_from_slice(&commitment_bytes);
+		res[PROOF_SIZE..].copy_from_slice(&point_bytes);
 	});
 
 	metrics.proof_build_time(total_start.elapsed(), cells.len().saturated_into());
@@ -500,9 +538,9 @@ pub fn par_build_commitments<const CHUNK_SIZE: usize, M: Metrics>(
 	extrinsics_by_key: &[AppExtrinsic],
 	rng_seed: Seed,
 	metrics: &M,
-) -> Result<(XtsLayout, Vec<u8>, BlockDimensions, DMatrix<BlsScalar>), Error> {
+) -> Result<(XtsLayout, Vec<u8>, BlockDimensions, DMatrix<ArkScalar>), Error> {
 	use crate::couscous;
-	use avail_core::from_substrate;
+	// use avail_core::from_substrate;
 
 	let start = Instant::now();
 
@@ -523,21 +561,23 @@ pub fn par_build_commitments<const CHUNK_SIZE: usize, M: Metrics>(
 	metrics.preparation_block_time(start.elapsed());
 
 	// let public_params = testnet::public_params(block_dims_cols);
-	let public_params = couscous::public_params();
-	if log::log_enabled!(target: LOG_TARGET, log::Level::Debug) {
-		let raw_pp = public_params.to_raw_var_bytes();
-		let hash_pp = hex::encode(from_substrate::blake2_128(&raw_pp));
-		let hex_pp = hex::encode(raw_pp);
-		log::debug!(
-			target: LOG_TARGET,
-			"Public params (len={}): hash: {}",
-			hex_pp.len(),
-			hash_pp,
-		);
-	}
+	let public_params = couscous::multiproof_params();
+	// let public_params = testnet::multiproof_params(block_dims_cols, block_dims_cols);
+	// if log::log_enabled!(target: LOG_TARGET, log::Level::Debug) {
+	// 	let raw_pp = public_params.to_raw_var_bytes();
+	// 	let hash_pp = hex::encode(from_substrate::blake2_128(&raw_pp));
+	// 	let hex_pp = hex::encode(raw_pp);
+	// 	log::debug!(
+	// 		target: LOG_TARGET,
+	// 		"Public params (len={}): hash: {}",
+	// 		hex_pp.len(),
+	// 		hash_pp,
+	// 	);
+	// }
 
-	let (prover_key, _) = public_params.trim(block_dims_cols)?;
-	let row_eval_domain = EvaluationDomain::new(block_dims_cols)?;
+	// let (prover_key, _) = public_params.trim(block_dims_cols)?;
+	let row_eval_domain =
+		ArkEvaluationDomain::new(block_dims_cols).ok_or(Error::DomainSizeInvalid)?;
 
 	let start = Instant::now();
 	let mut commitments =
@@ -546,34 +586,36 @@ pub fn par_build_commitments<const CHUNK_SIZE: usize, M: Metrics>(
 		.into_par_iter()
 		.map(|row_idx| {
 			let ext_row = get_row(&ext_matrix, row_idx);
-			commit(&prover_key, row_eval_domain, ext_row)
+			commit(&public_params, row_eval_domain, ext_row)
 		})
 		.collect_into_vec(&mut commitments);
 
 	let commitments = commitments.into_iter().collect::<Result<Vec<_>, _>>()?;
 	let commitments_bytes = commitments
 		.into_par_iter()
-		.flat_map(|c| c.to_bytes())
-		.collect();
-
+		.map(|c| c.to_bytes().map(|b| b.to_vec()))
+		.collect::<Result<Vec<_>, _>>()? // propagate the first error
+		.into_iter()
+		.flatten()
+		.collect::<Vec<u8>>();
 	metrics.commitment_build_time(start.elapsed());
 
 	Ok((tx_layout, commitments_bytes, block_dims, ext_matrix))
 }
 
 #[cfg(feature = "std")]
-fn get_row(m: &DMatrix<BlsScalar>, row_idx: usize) -> Vec<BlsScalar> {
+fn get_row(m: &DMatrix<ArkScalar>, row_idx: usize) -> Vec<ArkScalar> {
 	m.row(row_idx).iter().cloned().collect()
 }
 
 #[cfg(feature = "std")]
 // Generate a commitment
 fn commit(
-	prover_key: &CommitKey,
-	domain: EvaluationDomain,
-	row: Vec<BlsScalar>,
-) -> Result<Commitment, Error> {
-	let poly = Evaluations::from_vec_and_domain(row, domain).interpolate();
+	prover_key: &M1NoPrecomp,
+	domain: ArkEvaluationDomain,
+	row: Vec<ArkScalar>,
+) -> Result<ArkCommitment, Error> {
+	let poly = domain.ifft(&row);
 	prover_key.commit(&poly).map_err(Error::from)
 }
 
@@ -582,29 +624,40 @@ pub fn scalars_to_app_rows(
 	id: AppId,
 	lookup: &DataLookup,
 	dimensions: Dimensions,
-	matrix: &DMatrix<BlsScalar>,
+	matrix: &DMatrix<ArkScalar>,
 ) -> Vec<Option<Vec<u8>>> {
 	let app_rows = kate_recovery::com::app_specific_rows(lookup, dimensions, id);
 	dimensions
 		.iter_extended_rows()
 		.map(|i| {
-			app_rows.iter().find(|&&row| row == i).map(|_| {
+			if app_rows.iter().any(|&row| row == i) {
 				let row = get_row(matrix, i as usize);
-				row.iter()
-					.flat_map(BlsScalar::to_bytes)
-					.collect::<Vec<u8>>()
-			})
+				let maybe_bytes: Result<Vec<u8>, _> = row
+					.iter()
+					.map(ArkScalar::to_bytes)
+					.collect::<Result<Vec<[u8; SCALAR_SIZE]>, _>>()
+					.map(|chunks| chunks.into_iter().flatten().collect());
+				match maybe_bytes {
+					Ok(bytes) => Some(bytes),
+					Err(e) => {
+						log::error!("Failed to convert scalar at row {} to bytes: {:?}", i, e);
+						None
+					},
+				}
+			} else {
+				None
+			}
 		})
 		.collect()
 }
 
 #[cfg(feature = "std")]
 fn row(
-	data: &DMatrix<BlsScalar>,
+	data: &DMatrix<ArkScalar>,
 	i: usize,
 	cols: BlockLengthColumns,
 	extended_rows: BlockLengthRows,
-) -> Vec<BlsScalar> {
+) -> Vec<ArkScalar> {
 	let mut row = Vec::with_capacity(cols.0 as usize);
 	(0..(cols.0 as usize).saturating_mul(extended_rows.0 as usize))
 		.step_by(extended_rows.0 as usize)
@@ -617,21 +670,32 @@ fn row(
 pub fn scalars_to_rows(
 	rows: &[u32],
 	dimensions: &Dimensions,
-	data: &DMatrix<BlsScalar>,
+	data: &DMatrix<ArkScalar>,
 ) -> Vec<Option<Vec<u8>>> {
 	let extended_rows = BlockLengthRows(dimensions.extended_rows());
 	let cols = BlockLengthColumns(dimensions.cols().get() as u32);
 	dimensions
 		.iter_extended_rows()
 		.map(|i| {
-			rows.contains(&i).then(|| {
-				row(data, i as usize, cols, extended_rows)
+			if rows.contains(&i) {
+				let scalars = row(data, i as usize, cols, extended_rows);
+				let maybe_bytes: Result<Vec<u8>, _> = scalars
 					.iter()
-					.flat_map(BlsScalar::to_bytes)
-					.collect::<Vec<u8>>()
-			})
+					.map(ArkScalar::to_bytes)
+					.collect::<Result<Vec<[u8; SCALAR_SIZE]>, _>>()
+					.map(|chunks| chunks.into_iter().flatten().collect());
+				match maybe_bytes {
+					Ok(bytes) => Some(bytes),
+					Err(e) => {
+						log::error!("Failed to convert scalars at row {} to bytes: {:?}", i, e);
+						None
+					},
+				}
+			} else {
+				None
+			}
 		})
-		.collect::<Vec<Option<Vec<u8>>>>()
+		.collect()
 }
 
 #[cfg(test)]
@@ -640,8 +704,8 @@ mod tests {
 		constants::kate::{CHUNK_SIZE, COMMITMENT_SIZE, DATA_CHUNK_SIZE},
 		DataLookup,
 	};
-	use dusk_bytes::Serializable;
-	use dusk_plonk::bls12_381::BlsScalar;
+	// use dusk_bytes::Serializable;
+	// use dusk_plonk::bls12_381::BlsScalar;
 	use hex_literal::hex;
 	use kate_recovery::{
 		com::*,
@@ -717,7 +781,7 @@ mod tests {
 			hex!("1ebf725495e11b806dc58d261ac918a4f85260cb45618241614c432a2153ae16"),
 		]
 		.iter()
-		.map(BlsScalar::from_bytes)
+		.map(ArkScalar::from_bytes)
 		.collect::<Result<Vec<_>, _>>()
 		.expect("Invalid Expected result");
 		let expected = DMatrix::from_iterator(4, 4, expected);
@@ -798,7 +862,7 @@ mod tests {
 	}
 
 	fn sample_cells_from_matrix(
-		matrix: &DMatrix<BlsScalar>,
+		matrix: &DMatrix<ArkScalar>,
 		columns: Option<&[u16]>,
 	) -> Vec<DataCell> {
 		fn random_indexes(length: usize, seed: Seed) -> Vec<usize> {
@@ -835,7 +899,7 @@ mod tests {
 						let position = Position::new(row_pos, col_idx);
 						debug_assert!(*row_idx < col_view.len());
 						let data = col_view[*row_idx].to_bytes();
-						DataCell::new(position, data)
+						DataCell::new(position, data.unwrap())
 					})
 					.collect::<Vec<_>>()
 			})
@@ -901,8 +965,7 @@ mod tests {
 
 		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
 		// let public_params = testnet::public_params(dims_cols);
-		let public_params = couscous::public_params();
-		let pmp_pp = couscous::multiproof_params();
+		let public_params = couscous::multiproof_params();
 		for cell in random_cells(dims.cols, dims.rows, Percent::one() ) {
 			let row = usize::try_from(cell.row.0).unwrap();
 
@@ -916,7 +979,7 @@ mod tests {
 			let extended_dims = dims.try_into().unwrap();
 			let commitment = commitments::from_slice(&commitments).unwrap()[row];
 			// let verification =  proof::verify(&public_params, extended_dims, &commitment,  &cell);
-			let verification =  proof::verify_v2(&pmp_pp, extended_dims, &commitment,  &cell);
+			let verification =  proof::verify_v2(&public_params, extended_dims, &commitment,  &cell);
 			prop_assert!(verification.is_ok());
 			prop_assert!(verification.unwrap());
 		}
@@ -932,7 +995,7 @@ mod tests {
 
 		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
 		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
-		let public_params = couscous::public_params();
+		let public_params = couscous::multiproof_params();
 		let extended_dims = dims.try_into().unwrap();
 		let commitments = commitments::from_slice(&commitments).unwrap();
 		for xt in xts {
@@ -952,7 +1015,7 @@ mod tests {
 
 		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
 		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
-		let public_params = couscous::public_params();
+		let public_params = couscous::multiproof_params();
 		let extended_dims =  dims.try_into().unwrap();
 		let commitments = commitments::from_slice(&commitments).unwrap();
 		for xt in xts {
@@ -1061,8 +1124,8 @@ get erasure coded to ensure redundancy."#;
 				.map(|position| {
 					let col: usize = position.col.into();
 					let row = usize::try_from(position.row).unwrap();
-					let data = matrix.get((row, col)).map(BlsScalar::to_bytes).unwrap();
-					DataCell::new(position, data)
+					let data = matrix.get((row, col)).map(ArkScalar::to_bytes).unwrap();
+					DataCell::new(position, data.unwrap())
 				})
 				.collect::<Vec<_>>();
 			let data = &decode_app_extrinsics(&index, dimensions, cells, xt.app_id).unwrap()[0];
@@ -1233,10 +1296,10 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 		// The other is for all-zero data. They differ, as the former yields a polynomial with one coefficient, and latter generates zero coefficients.
 		let len = row_values.len();
 		// let public_params = testnet::public_params(len);
-		let public_params = couscous::public_params();
+		// let public_params = couscous::public_params();
 		let pmp_pp = couscous::multiproof_params();
-		let (prover_key, _) = public_params.trim(len).map_err(Error::from).unwrap();
-		let row_eval_domain = EvaluationDomain::new(len).map_err(Error::from).unwrap();
+		// let (prover_key, _) = public_params.trim(len).map_err(Error::from).unwrap();
+		let row_eval_domain = ArkEvaluationDomain::new(len).unwrap();
 
 		let row = row_values
 			.iter()
@@ -1244,14 +1307,14 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 				let mut value = [0u8; 32];
 				let v = value.last_mut().unwrap();
 				*v = *val;
-				BlsScalar::from_bytes(&value).unwrap()
+				ArkScalar::from_bytes(&value).unwrap()
 			})
 			.collect::<Vec<_>>();
 
 		assert_eq!(row.len(), len);
 		println!("Row: {:?}", row);
-		let commitment: [u8; COMMITMENT_SIZE] = commit(&prover_key, row_eval_domain, row.clone())
-			.map(|com| com.to_bytes())
+		let commitment: [u8; COMMITMENT_SIZE] = commit(&pmp_pp, row_eval_domain, row.clone())
+			.map(|com| com.to_bytes().unwrap())
 			.unwrap();
 		println!("Commitment: {commitment:?}");
 
@@ -1269,7 +1332,7 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 				row: BlockLengthRows(0),
 			};
 			let proof = build_proof(
-				&public_params,
+				&pmp_pp,
 				BlockDimensions::new(BlockLengthRows(1), BlockLengthColumns(4), TCHUNK).unwrap(),
 				&ext_m,
 				&[cell],

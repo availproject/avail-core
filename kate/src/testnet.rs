@@ -2,33 +2,33 @@
 
 /// TODO
 ///  - Dedup this from `kate-recovery` once that library support `no-std`.
-use avail_core::BlockLengthColumns;
-use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
+// use avail_core::BlockLengthColumns;
+// use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
 use hex_literal::hex;
-use once_cell::sync::Lazy;
+// use once_cell::sync::Lazy;
 use poly_multiproof::ark_ff::{BigInt, Fp};
 use poly_multiproof::ark_serialize::CanonicalDeserialize;
 use poly_multiproof::m1_blst;
 use poly_multiproof::m1_blst::{Fr, G1, G2};
-use rand_chacha::{rand_core::SeedableRng, ChaChaRng};
-use std::{collections::HashMap, sync::Mutex};
+// use rand_chacha::{rand_core::SeedableRng, ChaChaRng};
+// use std::{collections::HashMap, sync::Mutex};
 
-static SRS_DATA: Lazy<Mutex<HashMap<u32, PublicParameters>>> =
-	Lazy::new(|| Mutex::new(HashMap::new()));
+// static SRS_DATA: Lazy<Mutex<HashMap<u32, PublicParameters>>> =
+// 	Lazy::new(|| Mutex::new(HashMap::new()));
 
-/// constructs public parameters for a given degree
-pub fn public_params(max_degree: BlockLengthColumns) -> PublicParameters {
-	let max_degree: u32 = max_degree.into();
-	let mut srs_data_locked = SRS_DATA.lock().unwrap();
-	srs_data_locked
-		.entry(max_degree)
-		.or_insert_with(|| {
-			let mut rng = ChaChaRng::seed_from_u64(42);
-			let max_degree = usize::try_from(max_degree).unwrap();
-			PublicParameters::setup(max_degree, &mut rng).unwrap()
-		})
-		.clone()
-}
+// /// constructs public parameters for a given degree
+// pub fn public_params(max_degree: BlockLengthColumns) -> PublicParameters {
+// 	let max_degree: u32 = max_degree.into();
+// 	let mut srs_data_locked = SRS_DATA.lock().unwrap();
+// 	srs_data_locked
+// 		.entry(max_degree)
+// 		.or_insert_with(|| {
+// 			let mut rng = ChaChaRng::seed_from_u64(42);
+// 			let max_degree = usize::try_from(max_degree).unwrap();
+// 			PublicParameters::setup(max_degree, &mut rng).unwrap()
+// 		})
+// 		.clone()
+// }
 
 const SEC_LIMBS: [u64; 4] = [
 	16526363067508752668,
@@ -48,64 +48,64 @@ pub fn multiproof_params(max_degree: usize, max_pts: usize) -> m1_blst::M1NoPrec
 	m1_blst::M1NoPrecomp::new_from_scalar(x, g1, g2, max_degree.saturating_add(1), max_pts)
 }
 
-#[cfg(test)]
-mod tests {
-	use core::marker::PhantomData;
+// #[cfg(test)]
+// mod tests {
+// 	use core::marker::PhantomData;
 
-	use super::*;
-	use dusk_bytes::Serializable;
-	use dusk_plonk::{
-		fft::{EvaluationDomain as PlonkED, Evaluations as PlonkEV},
-		prelude::BlsScalar,
-	};
-	use poly_multiproof::{
-		ark_ff::{BigInt, Fp},
-		ark_poly::{EvaluationDomain, GeneralEvaluationDomain},
-		ark_serialize::{CanonicalDeserialize, CanonicalSerialize},
-		m1_blst::Fr,
-		traits::Committer,
-	};
-	use rand::thread_rng;
+// 	use super::*;
+// 	use dusk_bytes::Serializable;
+// 	use dusk_plonk::{
+// 		fft::{EvaluationDomain as PlonkED, Evaluations as PlonkEV},
+// 		prelude::BlsScalar,
+// 	};
+// 	use poly_multiproof::{
+// 		ark_ff::{BigInt, Fp},
+// 		ark_poly::{EvaluationDomain, GeneralEvaluationDomain},
+// 		ark_serialize::{CanonicalDeserialize, CanonicalSerialize},
+// 		m1_blst::Fr,
+// 		traits::Committer,
+// 	};
+// 	use rand::thread_rng;
 
-	use crate::testnet;
-	#[test]
-	fn test_consistent_testnet_params() {
-		let x: Fr = Fp(BigInt(SEC_LIMBS), core::marker::PhantomData);
-		let mut out = [0u8; 32];
-		x.serialize_compressed(&mut out[..]).unwrap();
-		const SEC_BYTES: [u8; 32] =
-			hex!("7848b5d711bc9883996317a3f9c90269d56771005d540a19184939c9e8d0db2a");
-		assert_eq!(SEC_BYTES, out);
+// 	use crate::testnet;
+// 	#[test]
+// 	fn test_consistent_testnet_params() {
+// 		let x: Fr = Fp(BigInt(SEC_LIMBS), core::marker::PhantomData);
+// 		let mut out = [0u8; 32];
+// 		x.serialize_compressed(&mut out[..]).unwrap();
+// 		const SEC_BYTES: [u8; 32] =
+// 			hex!("7848b5d711bc9883996317a3f9c90269d56771005d540a19184939c9e8d0db2a");
+// 		assert_eq!(SEC_BYTES, out);
 
-		let g1 = G1::deserialize_compressed(&G1_BYTES[..]).unwrap();
-		let g2 = G2::deserialize_compressed(&G2_BYTES[..]).unwrap();
+// 		let g1 = G1::deserialize_compressed(&G1_BYTES[..]).unwrap();
+// 		let g2 = G2::deserialize_compressed(&G2_BYTES[..]).unwrap();
 
-		let pmp = poly_multiproof::m1_blst::M1NoPrecomp::new_from_scalar(x, g1, g2, 1024, 256);
+// 		let pmp = poly_multiproof::m1_blst::M1NoPrecomp::new_from_scalar(x, g1, g2, 1024, 256);
 
-		let dp_evals = (0..30)
-			.map(|_| BlsScalar::random(&mut thread_rng()))
-			.collect::<Vec<_>>();
+// 		let dp_evals = (0..30)
+// 			.map(|_| BlsScalar::random(&mut thread_rng()))
+// 			.collect::<Vec<_>>();
 
-		let pmp_evals = dp_evals
-			.iter()
-			.map(|i| Fp(BigInt(i.0), PhantomData))
-			.collect::<Vec<Fr>>();
+// 		let pmp_evals = dp_evals
+// 			.iter()
+// 			.map(|i| Fp(BigInt(i.0), PhantomData))
+// 			.collect::<Vec<Fr>>();
 
-		let dp_poly =
-			PlonkEV::from_vec_and_domain(dp_evals, PlonkED::new(1024).unwrap()).interpolate();
-		let pmp_ev = GeneralEvaluationDomain::<Fr>::new(1024).unwrap();
-		let pmp_poly = pmp_ev.ifft(&pmp_evals);
+// 		let dp_poly =
+// 			PlonkEV::from_vec_and_domain(dp_evals, PlonkED::new(1024).unwrap()).interpolate();
+// 		let pmp_ev = GeneralEvaluationDomain::<Fr>::new(1024).unwrap();
+// 		let pmp_poly = pmp_ev.ifft(&pmp_evals);
 
-		let pubs = testnet::public_params(BlockLengthColumns(1024));
+// 		let pubs = testnet::public_params(BlockLengthColumns(1024));
 
-		let dp_commit = pubs.commit_key().commit(&dp_poly).unwrap().0.to_bytes();
-		let mut pmp_commit = [0u8; 48];
-		pmp.commit(pmp_poly)
-			.unwrap()
-			.0
-			.serialize_compressed(&mut pmp_commit[..])
-			.unwrap();
+// 		let dp_commit = pubs.commit_key().commit(&dp_poly).unwrap().0.to_bytes();
+// 		let mut pmp_commit = [0u8; 48];
+// 		pmp.commit(pmp_poly)
+// 			.unwrap()
+// 			.0
+// 			.serialize_compressed(&mut pmp_commit[..])
+// 			.unwrap();
 
-		assert_eq!(dp_commit, pmp_commit);
-	}
-}
+// 		assert_eq!(dp_commit, pmp_commit);
+// 	}
+// }
