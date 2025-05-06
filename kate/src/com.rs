@@ -385,12 +385,11 @@ pub fn par_extend_data_matrix<M: Metrics>(
 		.flat_map(|col| {
 			let col_view = col_wise_scalars.column(col).data.into_slice();
 			debug_assert_eq!(col_view.len(), rows);
-			let mut ext_col = extend_column_with_zeros(col_view, ext_rows);
-			// (i)fft functions input parameter slice size has to be a power of 2, otherwise it panics
-			column_eval_domain.ifft(&mut ext_col[0..rows]);
-			extended_column_eval_domain.fft(ext_col.as_mut_slice());
-			debug_assert_eq!(ext_col.len(), ext_rows);
-			ext_col
+
+			let coeffs = column_eval_domain.ifft(col_view);
+			let extended_col = extended_column_eval_domain.fft(&coeffs);
+			debug_assert_eq!(extended_col.len(), ext_rows);
+			extended_col
 		})
 		.collect::<Vec<_>>();
 	debug_assert_eq!(Some(ext_columns_wise.len()), cols.checked_mul(ext_rows));
