@@ -4,8 +4,6 @@ use thiserror_no_std::Error;
 use crate::{data::Cell, matrix::Dimensions};
 #[cfg(feature = "std")]
 use avail_core::constants::kate::COMMITMENT_SIZE;
-// #[cfg(feature = "std")]
-// use dusk_bytes::Serializable;
 
 #[cfg(feature = "std")]
 use poly_multiproof::traits::AsBytes;

@@ -16,14 +16,6 @@ use avail_core::{
 };
 use codec::Encode;
 use derive_more::Constructor;
-// use dusk_bytes::Serializable;
-// use dusk_plonk::{
-// 	commitment_scheme::kzg10,
-// 	error::Error as PlonkError,
-// 	fft::{EvaluationDomain, Evaluations},
-// 	prelude::{BlsScalar, CommitKey},
-// };
-
 use nalgebra::base::DMatrix;
 use rand::Rng;
 use rand_chacha::{
@@ -39,7 +31,6 @@ use static_assertions::const_assert_eq;
 use thiserror_no_std::Error;
 
 use crate::{
-	// com::kzg10::commitment::Commitment,
 	config::{
 		COL_EXTENSION, MAXIMUM_BLOCK_SIZE, MINIMUM_BLOCK_SIZE, PROOF_SIZE, ROW_EXTENSION,
 		SCALAR_SIZE,
@@ -63,7 +54,6 @@ type ArkCommitment = poly_multiproof::Commitment<Bls12_381>;
 use poly_multiproof::m1_blst::M1NoPrecomp;
 use poly_multiproof::traits::KZGProof;
 use poly_multiproof::{ark_poly::EvaluationDomain, traits::AsBytes};
-use sp_arithmetic::traits::Zero;
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Constructor, Clone, Copy, PartialEq, Eq, Debug)]
@@ -317,16 +307,6 @@ fn pad_iec_9797_1(mut data: Vec<u8>) -> Vec<DataChunk> {
 		.map(|e| e.try_into())
 		.collect::<Result<Vec<DataChunk>, _>>()
 		.expect("Const assertion ensures this transformation to `DataChunk`. qed")
-}
-
-fn extend_column_with_zeros(column: &[ArkScalar], height: usize) -> Vec<ArkScalar> {
-	let mut extended = Vec::with_capacity(height);
-	let copied = core::cmp::min(height, column.len());
-
-	extended.extend_from_slice(&column[..copied]);
-	extended.resize(height, ArkScalar::zero());
-
-	extended
 }
 
 pub fn to_bls_scalar(chunk: &[u8]) -> Result<ArkScalar, Error> {

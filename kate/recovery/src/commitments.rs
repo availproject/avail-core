@@ -4,6 +4,8 @@ use sp_std::prelude::*;
 use thiserror_no_std::Error;
 
 #[cfg(feature = "std")]
+use super::commons::{ArkEvaluationDomain, ArkScalar};
+#[cfg(feature = "std")]
 use crate::{com, matrix};
 #[cfg(feature = "std")]
 use avail_core::constants::kate::CHUNK_SIZE;
@@ -11,15 +13,6 @@ use avail_core::constants::kate::CHUNK_SIZE;
 use avail_core::{ensure, AppId, DataLookup};
 #[cfg(feature = "std")]
 use core::convert::TryFrom;
-// #[cfg(feature = "std")]
-// use dusk_bytes::Serializable;
-// #[cfg(feature = "std")]
-// use dusk_plonk::{
-// 	fft::{EvaluationDomain, Evaluations},
-// 	prelude::{BlsScalar, CommitKey, PublicParameters},
-// };
-#[cfg(feature = "std")]
-use super::commons::{ArkEvaluationDomain, ArkScalar};
 #[cfg(feature = "std")]
 use poly_multiproof::{
 	ark_poly::EvaluationDomain,
@@ -61,17 +54,6 @@ impl std::error::Error for Error {
 		}
 	}
 }
-
-// #[cfg(feature = "std")]
-// impl From<dusk_bytes::Error> for Error {
-// 	fn from(e: dusk_bytes::Error) -> Self {
-// 		match e {
-// 			dusk_bytes::Error::InvalidData => Self::ScalarDataError,
-// 			dusk_bytes::Error::BadLength { .. } => Self::BadScalarDataLen,
-// 			dusk_bytes::Error::InvalidChar { .. } => Self::BadScalarData,
-// 		}
-// 	}
-// }
 
 #[cfg(feature = "std")]
 impl From<poly_multiproof::Error> for Error {

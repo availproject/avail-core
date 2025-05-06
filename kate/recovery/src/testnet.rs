@@ -1,10 +1,11 @@
 #![deny(clippy::arithmetic_side_effects)]
 
 use hex_literal::hex;
-use poly_multiproof::ark_ff::{BigInt, Fp};
-use poly_multiproof::ark_serialize::CanonicalDeserialize;
-use poly_multiproof::m1_blst;
-use poly_multiproof::m1_blst::{Fr, G1, G2};
+use poly_multiproof::{
+	ark_ff::{BigInt, Fp},
+	ark_serialize::CanonicalDeserialize,
+	m1_blst::{self, Fr, G1, G2},
+};
 
 const SEC_LIMBS: [u64; 4] = [
 	16526363067508752668,

@@ -11,9 +11,6 @@ pub mod testnet;
 pub mod couscous;
 pub mod metrics;
 
-// #[cfg(feature = "std")]
-// pub use dusk_bytes;
-// pub use dusk_plonk::{self, commitment_scheme::kzg10::PublicParameters, prelude::BlsScalar};
 // Exporting poly_multiproof as pmp
 pub use poly_multiproof as pmp;
 

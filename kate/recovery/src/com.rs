@@ -14,13 +14,9 @@ use sp_std::prelude::*;
 use thiserror_no_std::Error;
 
 #[cfg(feature = "std")]
-use codec::{Decode, IoReader};
-// #[cfg(feature = "std")]
-// use dusk_bytes::Serializable as _;
-// #[cfg(feature = "std")]
-// use dusk_plonk::{fft::EvaluationDomain, prelude::BlsScalar};
-#[cfg(feature = "std")]
 use super::commons::{ArkEvaluationDomain, ArkScalar};
+#[cfg(feature = "std")]
+use codec::{Decode, IoReader};
 #[cfg(feature = "std")]
 use poly_multiproof::{ark_ff::Field, ark_poly::EvaluationDomain, traits::AsBytes};
 #[cfg(feature = "std")]
