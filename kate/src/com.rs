@@ -36,11 +36,7 @@ use crate::{
 		SCALAR_SIZE,
 	},
 	metrics::Metrics,
-	padded_len_of_pad_iec_9797_1,
-	BlockDimensions,
-	Seed,
-	TryFromBlockDimensionsError,
-	// LOG_TARGET,
+	padded_len_of_pad_iec_9797_1, BlockDimensions, Seed, TryFromBlockDimensionsError,
 };
 use kate_recovery::commons::{ArkEvaluationDomain, ArkScalar};
 #[cfg(feature = "std")]
@@ -519,7 +515,6 @@ pub fn par_build_commitments<const CHUNK_SIZE: usize, M: Metrics>(
 	metrics: &M,
 ) -> Result<(XtsLayout, Vec<u8>, BlockDimensions, DMatrix<ArkScalar>), Error> {
 	use crate::couscous;
-	// use avail_core::from_substrate;
 
 	let start = Instant::now();
 
@@ -539,22 +534,7 @@ pub fn par_build_commitments<const CHUNK_SIZE: usize, M: Metrics>(
 
 	metrics.preparation_block_time(start.elapsed());
 
-	// let public_params = testnet::public_params(block_dims_cols);
 	let public_params = couscous::multiproof_params();
-	// let public_params = testnet::multiproof_params(block_dims_cols, block_dims_cols);
-	// if log::log_enabled!(target: LOG_TARGET, log::Level::Debug) {
-	// 	let raw_pp = public_params.to_raw_var_bytes();
-	// 	let hash_pp = hex::encode(from_substrate::blake2_128(&raw_pp));
-	// 	let hex_pp = hex::encode(raw_pp);
-	// 	log::debug!(
-	// 		target: LOG_TARGET,
-	// 		"Public params (len={}): hash: {}",
-	// 		hex_pp.len(),
-	// 		hash_pp,
-	// 	);
-	// }
-
-	// let (prover_key, _) = public_params.trim(block_dims_cols)?;
 	let row_eval_domain =
 		ArkEvaluationDomain::new(block_dims_cols).ok_or(Error::DomainSizeInvalid)?;
 
@@ -683,8 +663,6 @@ mod tests {
 		constants::kate::{CHUNK_SIZE, COMMITMENT_SIZE, DATA_CHUNK_SIZE},
 		DataLookup,
 	};
-	// use dusk_bytes::Serializable;
-	// use dusk_plonk::bls12_381::BlsScalar;
 	use hex_literal::hex;
 	use kate_recovery::{
 		com::*,

@@ -108,7 +108,6 @@ pub fn verify_equality(
 	}
 
 	let dim_cols = dimensions.width();
-	// let (prover_key, _) = public_params.trim(dim_cols)?;
 	let domain = ArkEvaluationDomain::new(dim_cols).ok_or(Error::ArkworksError)?;
 
 	// This is a single-threaded implementation.
@@ -141,7 +140,6 @@ fn row_index_commitment_verification(
 	if let Some(row) = maybe_row.as_ref() {
 		let scalars = try_into_scalars(row)?;
 		let polynomial = domain.ifft(&scalars);
-		// let polynomial = Evaluations::from_vec_and_domain(scalars, domain).interpolate();
 		let result = prover_key.commit(&polynomial)?;
 
 		let result_bytes = result.to_bytes().map_err(|_| Error::ArkworksError)?;
@@ -163,18 +161,13 @@ pub fn from_slice(source: &[u8]) -> Result<Vec<[u8; COMMITMENT_SIZE]>, TryFromSl
 #[cfg(test)]
 mod tests {
 	use super::verify_equality;
-	use avail_core::{AppId, DataLookup};
-	// use dusk_plonk::prelude::PublicParameters;
 	use crate::testnet;
+	use avail_core::{AppId, DataLookup};
 	use once_cell::sync::Lazy;
 	use poly_multiproof::m1_blst::M1NoPrecomp;
-	// use rand::SeedableRng;
-	// use rand_chacha::ChaChaRng;
 
 	use crate::{commitments, matrix};
 
-	// static PUBLIC_PARAMETERS: Lazy<PublicParameters> =
-	// 	Lazy::new(|| PublicParameters::setup(256, &mut ChaChaRng::seed_from_u64(42)).unwrap());
 	static PUBLIC_PARAMETERS: Lazy<M1NoPrecomp> =
 		Lazy::new(|| testnet::multiproof_params(256, 256));
 
