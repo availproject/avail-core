@@ -77,9 +77,9 @@ impl Cell {
 
 #[derive(Error, Debug)]
 pub enum Error {
-	// TODO: Enable this back to not break compatibility
-	// PlonkError(#[from] PlonkError),
-	// DuskBytesError(#[from] dusk_bytes::Error),
+	// Keeping the removed errors placeholder for backwards compatibility
+	PlonkErrorPlaceholder,
+	DuskBytesErrorPlaceholder,
 	MultiproofError(#[from] poly_multiproof::Error),
 	CellLengthExceeded,
 	BadHeaderHash,
