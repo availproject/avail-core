@@ -18,7 +18,9 @@ use core::convert::TryFrom;
 // 	fft::{EvaluationDomain, Evaluations},
 // 	prelude::{BlsScalar, CommitKey, PublicParameters},
 // };
+#[cfg(feature = "std")]
 use super::commons::{ArkEvaluationDomain, ArkScalar};
+#[cfg(feature = "std")]
 use poly_multiproof::{
 	ark_poly::EvaluationDomain,
 	m1_blst::M1NoPrecomp,

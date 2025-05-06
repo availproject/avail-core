@@ -68,9 +68,9 @@ sp-crypto-ec-utils = { git = "https://github.com/availproject/polkadot-sdk", tag
 [profile.dev.package]
 nalgebra = { opt-level = 3 }
 blst = { opt-level = 3 }
-dusk-bls12_381 = { opt-level = 3 }
+# dusk-bls12_381 = { opt-level = 3 }
 # dusk-plonk = { opt-level = 3 }
-dusk-jubjub = { opt-level = 3 }
+# dusk-jubjub = { opt-level = 3 }
 # dusk-bytes = { opt-level = 3 }
 rayon = { opt-level = 3 }
 rayon-core = { opt-level = 3 }

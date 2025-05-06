@@ -19,11 +19,15 @@ use codec::{Decode, IoReader};
 // use dusk_bytes::Serializable as _;
 // #[cfg(feature = "std")]
 // use dusk_plonk::{fft::EvaluationDomain, prelude::BlsScalar};
-use super::commons::{ArkEvaluationDomain, ArkScalar};
-use poly_multiproof::{ark_ff::Field, ark_poly::EvaluationDomain, traits::AsBytes};
-use sp_arithmetic::traits::{One, Zero};
 #[cfg(feature = "std")]
-pub use sp_arithmetic::{traits::SaturatedConversion as _, Percent};
+use super::commons::{ArkEvaluationDomain, ArkScalar};
+#[cfg(feature = "std")]
+use poly_multiproof::{ark_ff::Field, ark_poly::EvaluationDomain, traits::AsBytes};
+#[cfg(feature = "std")]
+pub use sp_arithmetic::{
+	traits::{One, SaturatedConversion as _, Zero},
+	Percent,
+};
 #[cfg(feature = "std")]
 use static_assertions::{const_assert, const_assert_ne};
 #[cfg(feature = "std")]
@@ -559,7 +563,7 @@ pub fn reconstruct_column(
 			.iter()
 			.find(|cell| cell.position.row == idx)
 			.and_then(|cell| {
-				<[u8; 32]>::try_from(&cell.data[..])
+				<[u8; CHUNK_SIZE]>::try_from(&cell.data[..])
 					.map(|data| ArkScalar::from_bytes(&data).ok())
 					.ok()
 					.flatten()

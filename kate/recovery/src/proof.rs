@@ -16,6 +16,7 @@ use poly_multiproof::{
 	traits::KZGProof,
 };
 
+#[cfg(feature = "std")]
 use crate::commons::ArkScalar;
 #[cfg(feature = "std")]
 type ArkCommitment = poly_multiproof::Commitment<Bls12_381>;
