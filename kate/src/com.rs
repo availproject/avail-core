@@ -481,7 +481,10 @@ pub fn build_proof<M: Metrics>(
 			},
 		};
 
-		let point_bytes = match ext_data_matrix[r_index + c_index * ext_rows].to_bytes() {
+		let point_bytes = match ext_data_matrix
+			[r_index.saturating_add(c_index.saturating_mul(ext_rows))]
+		.to_bytes()
+		{
 			Ok(bytes) => bytes,
 			Err(e) => {
 				if let Ok(mut errors) = locked_errors.lock() {
@@ -575,7 +578,7 @@ fn commit(
 	row: Vec<ArkScalar>,
 ) -> Result<ArkCommitment, Error> {
 	let poly = domain.ifft(&row);
-	prover_key.commit(&poly).map_err(Error::from)
+	prover_key.commit(poly).map_err(Error::from)
 }
 
 #[cfg(feature = "std")]

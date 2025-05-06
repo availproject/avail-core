@@ -286,7 +286,7 @@ fn reconstruct_available(
 			.and_then(|col| col.get(row))
 			.map(Option::as_ref)
 			.unwrap_or(None)
-			.map(|scalar| ArkScalar::to_bytes(scalar))
+			.map(ArkScalar::to_bytes)
 			.transpose()
 			.map_err(|_| ReconstructionError::InvalidColumn(col as u16))?
 			.unwrap_or([0; CHUNK_SIZE]);

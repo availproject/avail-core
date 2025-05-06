@@ -5,8 +5,6 @@
 pub mod com;
 #[cfg(feature = "std")]
 pub mod gridgen;
-#[cfg(feature = "std")]
-pub mod testnet;
 
 pub mod couscous;
 pub mod metrics;

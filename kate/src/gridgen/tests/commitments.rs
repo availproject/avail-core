@@ -1,10 +1,11 @@
 use super::*;
-use crate::{couscous, gridgen::*, testnet, Seed};
+use crate::{couscous, gridgen::*, Seed};
 use avail_core::{AppExtrinsic, BlockLengthColumns, BlockLengthRows};
 use hex_literal::hex;
 use kate_recovery::{
 	commitments::verify_equality,
 	matrix::{Dimensions, Position},
+	testnet,
 };
 use test_case::test_case;
 
@@ -17,7 +18,7 @@ fn test_build_commitments_simple_commitment_check() {
 		76, 41, 174, 145, 187, 12, 97, 32, 75, 111, 149, 209, 243, 195, 165, 10, 166, 172, 47, 41,
 		218, 24, 212, 66, 62, 5, 187, 191, 129, 5, 105, 3,
 	];
-	let pmp_pp = crate::testnet::multiproof_params(256, 256);
+	let pmp_pp = testnet::multiproof_params(256, 256);
 
 	let evals = EvaluationGrid::from_extrinsics(
 		vec![AppExtrinsic::from(original_data)],

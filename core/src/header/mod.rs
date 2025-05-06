@@ -119,10 +119,10 @@ where
 		let extrinsics_root = self.extrinsics_root.as_ref();
 
 		f.debug_struct("Header")
-			.field("parent_hash", &HexDisplay(&parent_hash))
+			.field("parent_hash", &HexDisplay(parent_hash))
 			.field("number", &self.number)
-			.field("state_root", &HexDisplay(&state_root))
-			.field("extrinsics_root", &HexDisplay(&extrinsics_root))
+			.field("state_root", &HexDisplay(state_root))
+			.field("extrinsics_root", &HexDisplay(extrinsics_root))
 			.field("digest", &self.digest)
 			.field("extension", &self.extension)
 			.finish()

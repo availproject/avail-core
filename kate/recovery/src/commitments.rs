@@ -119,7 +119,7 @@ pub fn verify_equality(
 		.zip(0u32..)
 		.filter(|(.., index)| app_rows.contains(index))
 		.filter_map(|((commitment, maybe_row), index)| {
-			row_index_commitment_verification(&public_params, domain, commitment, maybe_row, index)
+			row_index_commitment_verification(public_params, domain, commitment, maybe_row, index)
 				.transpose()
 		})
 		.collect::<Result<Vec<u32>, Error>>()?;
@@ -140,7 +140,7 @@ fn row_index_commitment_verification(
 	if let Some(row) = maybe_row.as_ref() {
 		let scalars = try_into_scalars(row)?;
 		let polynomial = domain.ifft(&scalars);
-		let result = prover_key.commit(&polynomial)?;
+		let result = prover_key.commit(polynomial)?;
 
 		let result_bytes = result.to_bytes().map_err(|_| Error::ArkworksError)?;
 		if result_bytes.as_ref() == commitment {
