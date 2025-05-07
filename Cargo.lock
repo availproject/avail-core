@@ -2083,6 +2083,7 @@ dependencies = [
  "derive_more",
  "hex",
  "hex-literal",
+ "log",
  "once_cell",
  "parity-scale-codec",
  "poly-multiproof",

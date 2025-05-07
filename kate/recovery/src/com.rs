@@ -441,7 +441,9 @@ fn reconstruct_poly(
 	let mut eval_shifted_poly_with_zero = eval_domain.fft(&poly_with_zero[..]);
 	let eval_shifted_zero_poly = eval_domain.fft(&zero_poly[..]);
 	for i in 0..eval_shifted_poly_with_zero.len() {
-		eval_shifted_poly_with_zero[i] *= eval_shifted_zero_poly[i].inverse().unwrap();
+		eval_shifted_poly_with_zero[i] *= eval_shifted_zero_poly[i]
+			.inverse()
+			.ok_or(ReconstructionError::BadZeroPoly)?;
 	}
 
 	let mut shifted_reconstructed_poly = eval_domain.ifft(&eval_shifted_poly_with_zero[..]);

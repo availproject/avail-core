@@ -57,7 +57,8 @@ impl std::error::Error for Error {
 
 #[cfg(feature = "std")]
 impl From<poly_multiproof::Error> for Error {
-	fn from(_: poly_multiproof::Error) -> Self {
+	fn from(e: poly_multiproof::Error) -> Self {
+		log::debug!("arkworks error: {:?}", e);
 		Self::ArkworksError
 	}
 }

@@ -48,12 +48,10 @@ pub fn verify_v2(
 	// Deserialize evaluation (cell value)
 	let value = ArkScalar::from_bytes(&cell.data()).map_err(|_| Error::InvalidData)?;
 
-	// Get the domain point fromthe cell position
+	// Get the domain point from the cell position
 	let domain_point = GeneralEvaluationDomain::<Fr>::new(dimensions.width())
 		.ok_or(Error::InvalidDomain)?
-		.elements()
-		.nth(cell.position.col.into())
-		.ok_or(Error::InvalidPositionInDomain)?;
+		.element(cell.position.col.into());
 
 	// Deserialize proof
 	let proof = ArkProof::from_bytes(&cell.proof()).map_err(|_| Error::InvalidData)?;
