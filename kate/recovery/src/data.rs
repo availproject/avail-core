@@ -277,16 +277,15 @@ impl TryFrom<Cell> for SingleCell {
 
 /// Merges cells data per row.
 /// Cells are sorted before merge.
-pub fn rows(dimensions: Dimensions, cells: &[&Cell]) -> Vec<(RowIndex, Vec<u8>)> {
+pub fn rows(dimensions: Dimensions, cells: &[&SingleCell]) -> Vec<(RowIndex, Vec<u8>)> {
 	let mut sorted_cells = cells.to_vec();
 
-	sorted_cells.sort_by(|a, b| {
-		(a.position().row, a.position().col).cmp(&(b.position().row, b.position().col))
-	});
+	sorted_cells
+		.sort_by(|a, b| (a.position.row, a.position.col).cmp(&(b.position.row, b.position.col)));
 
 	let mut rows = BTreeMap::new();
 	for cell in sorted_cells {
-		rows.entry(RowIndex(cell.position().row))
+		rows.entry(RowIndex(cell.position.row))
 			.or_insert_with(Vec::default)
 			.extend(cell.data());
 	}
@@ -339,7 +338,7 @@ mod tests {
 			cell(position(0, 1), content([1; 32])).into(),
 		];
 
-		let cells: Vec<&Cell> = cell_variants.iter().collect();
+		let cells: Vec<&SingleCell> = cell_variants.iter().collect();
 		let mut rows = rows(dimensions, &cells);
 		rows.sort_by_key(|(key, _)| key.0);
 
@@ -365,7 +364,7 @@ mod tests {
 			cell(position(0, 1), content([1; 32])).into(),
 		];
 
-		let cells: Vec<&Cell> = cell_variants.iter().collect();
+		let cells: Vec<&SingleCell> = cell_variants.iter().collect();
 		let mut rows = rows(dimensions, &cells);
 		rows.sort_by_key(|(key, _)| key.0);
 
