@@ -3,7 +3,7 @@
 
 #[cfg(feature = "std")]
 pub mod com;
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "serde"))]
 pub mod gridgen;
 #[cfg(feature = "std")]
 pub mod testnet;
