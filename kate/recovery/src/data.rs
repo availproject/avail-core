@@ -294,25 +294,6 @@ pub fn rows(dimensions: Dimensions, cells: &[&SingleCell]) -> Vec<(RowIndex, Vec
 	rows.into_iter().collect::<Vec<(_, _)>>()
 }
 
-/// Merges multiproof cells data per row.
-/// Cells are sorted before merge.
-pub fn mrows(dimensions: Dimensions, multiproof_cells: &[&MultiProofCell]) -> Vec<(RowIndex, Vec<u8>)> {
-	let mut sorted_cells = multiproof_cells.to_vec();
-
-	sorted_cells
-		.sort_by(|a, b| (a.position.row, a.position.col).cmp(&(b.position.row, b.position.col)));
-
-	let mut rows = BTreeMap::new();
-	for cell in sorted_cells {
-		rows.entry(RowIndex(cell.position.row))
-			.or_insert_with(Vec::default)
-			.extend(cell.data());
-	}
-
-	rows.retain(|_, row| row.len() == dimensions.row_byte_size());
-	rows.into_iter().collect::<Vec<(_, _)>>()
-}
-
 impl From<SingleCell> for DataCell {
 	fn from(cell: SingleCell) -> Self {
 		DataCell {
