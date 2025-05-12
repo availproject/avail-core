@@ -63,12 +63,9 @@ pub struct AddressedMessage {
 	pub message: Message,
 	pub from: H256,
 	pub to: H256,
-	#[codec(compact)]
-	pub origin_domain: u32,
-	#[codec(compact)]
-	pub destination_domain: u32,
+	pub origin_app_address: H256,
+	pub destination_app_address: H256,
 	/// Unique identifier for the message
-	#[codec(compact)]
 	pub id: u64,
 }
 
@@ -92,8 +89,8 @@ impl AddressedMessage {
 			Token::FixedBytes(self.message.selector_abi_encode()),
 			Token::FixedBytes(self.from.to_fixed_bytes().to_vec()),
 			Token::FixedBytes(self.to.to_fixed_bytes().to_vec()),
-			Token::Uint(U256::from(self.origin_domain)),
-			Token::Uint(U256::from(self.destination_domain)),
+			Token::FixedBytes(self.origin_app_address.to_fixed_bytes().to_vec()),
+			Token::FixedBytes(self.destination_app_address.to_fixed_bytes().to_vec()),
 			Token::Bytes(data),
 			Token::Uint(U256::from(self.id)),
 		])])
