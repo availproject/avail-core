@@ -1,6 +1,6 @@
 use super::PMP;
 use crate::{
-	com::SingleCell,
+	com::Cell,
 	gridgen::{core::EvaluationGrid, tests::sample_cells},
 	Seed,
 };
@@ -69,7 +69,7 @@ fn test_build_and_reconstruct(exts in super::app_extrinsics_strategy())  {
 	for (x, y) in sampled {
 		let row = BlockLengthRows(u32::try_from(y).unwrap());
 		let col = BlockLengthColumns(u32::try_from(x).unwrap());
-		let cell = SingleCell::new( row, col);
+		let cell = Cell::new( row, col);
 		let proof = polys.proof(pp, &cell).unwrap();
 		let mut content = [0u8; 80];
 		content[..48].copy_from_slice(&proof.to_bytes().unwrap()[..]);

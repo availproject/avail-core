@@ -61,7 +61,7 @@ fn multiproof_verification() -> Result<bool, AppError> {
 		let multiproof = polys
 			.multiproof(
 				&pp,
-				&kate::com::SingleCell::new(BlockLengthRows(0), BlockLengthColumns(0)),
+				&kate::com::Cell::new(BlockLengthRows(0), BlockLengthColumns(0)),
 				&grid,
 				target_dims,
 			)

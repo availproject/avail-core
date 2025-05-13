@@ -1,5 +1,5 @@
 use super::*;
-use crate::com::SingleCell;
+use crate::com::Cell;
 use crate::{couscous, gridgen::core::*, testnet, Seed};
 use avail_core::{AppExtrinsic, BlockLengthColumns, BlockLengthRows};
 use core::num::NonZeroU16;
@@ -157,7 +157,7 @@ fn test_zero_deg_poly_commit(row_values: Vec<u8>) {
 
 	for x in 0..len {
 		// Randomly chosen cell to prove, probably should test all of them
-		let cell = SingleCell {
+		let cell = Cell {
 			col: BlockLengthColumns(x.try_into().unwrap()),
 			row: BlockLengthRows(0),
 		};
