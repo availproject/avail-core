@@ -96,8 +96,7 @@ fn random_cells(
 
 	(0..max_cols)
 		.flat_map(move |col| {
-			(0..max_rows)
-				.map(move |row| Cell::new(BlockLengthRows(row), BlockLengthColumns(col)))
+			(0..max_rows).map(move |row| Cell::new(BlockLengthRows(row), BlockLengthColumns(col)))
 		})
 		.choose_multiple(rng, amount)
 }
