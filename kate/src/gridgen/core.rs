@@ -1,4 +1,3 @@
-use crate::gridgen::utils::{AsBytes, Commitment};
 use crate::pmp::{
 	ark_bls12_381::Bls12_381,
 	ark_poly::{EvaluationDomain, GeneralEvaluationDomain},
@@ -47,6 +46,8 @@ macro_rules! cfg_iter {
 }
 
 pub const SCALAR_SIZE: usize = 32;
+pub type Commitment = crate::pmp::Commitment<Bls12_381>;
+pub use poly_multiproof::traits::AsBytes;
 
 pub struct EvaluationGrid {
 	pub(crate) lookup: DataLookup,
