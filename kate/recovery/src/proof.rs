@@ -1,4 +1,6 @@
+#[cfg(feature = "std")]
 use std::convert::TryInto;
+
 use thiserror_no_std::Error;
 
 #[cfg(feature = "std")]
@@ -27,7 +29,6 @@ type ArkScalar = poly_multiproof::ark_bls12_381::Fr;
 #[cfg(feature = "std")]
 type ArkCommitment = poly_multiproof::Commitment<Bls12_381>;
 
-use crate::data::GCellBlock;
 #[cfg(feature = "std")]
 use crate::data::SingleCell;
 #[cfg(feature = "std")]
@@ -130,6 +131,7 @@ pub fn verify_v2(
 		.map_err(|_| Error::InvalidData)
 }
 
+#[cfg(feature = "std")]
 pub fn domain_points(n: usize) -> Result<Vec<ArkScalar>, Error> {
 	let domain = GeneralEvaluationDomain::<ArkScalar>::new(n).ok_or(Error::InvalidDomain)?;
 	Ok(domain.elements().collect())
