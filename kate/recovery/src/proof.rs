@@ -21,14 +21,15 @@ use poly_multiproof::{
 	merlin::Transcript,
 	method1::{M1NoPrecomp, Proof as ArkProof},
 	msm::blst::BlstMSMEngine,
-	traits::{AsBytes, KZGProof},
+	traits::{AsBytes, KZGProof, PolyMultiProofNoPrecomp},
 };
 // #[cfg(feature = "std")]
 #[cfg(feature = "std")]
 type ArkScalar = poly_multiproof::ark_bls12_381::Fr;
 #[cfg(feature = "std")]
 type ArkCommitment = poly_multiproof::Commitment<Bls12_381>;
-
+#[cfg(feature = "std")]
+use crate::data::GCellBlock;
 #[cfg(feature = "std")]
 use crate::data::SingleCell;
 #[cfg(feature = "std")]
@@ -144,8 +145,6 @@ pub async fn verify_multi_proof(
 	commitments: &Vec<u8>,
 	cols: usize, // Number of columns in the original grid
 ) -> Result<bool, Error> {
-	use poly_multiproof::traits::PolyMultiProofNoPrecomp;
-
 	let points = domain_points(cols)?;
 	for ((eval, proof), cellblock) in proof.iter() {
 		let evals_flat = eval
