@@ -139,24 +139,25 @@ pub fn domain_points(n: usize) -> Result<Vec<ArkScalar>, Error> {
 }
 
 #[cfg(feature = "std")]
+#[allow(clippy::type_complexity)]
 pub async fn verify_multi_proof(
 	pmp: &M1NoPrecomp<Bls12_381, BlstMSMEngine>,
-	proof: &Vec<((Vec<[u8; 32]>, [u8; 48]), GCellBlock)>,
-	commitments: &Vec<u8>,
+	proof: &[((Vec<[u8; 32]>, [u8; 48]), GCellBlock)],
+	commitments: &[u8],
 	cols: usize, // Number of columns in the original grid
 ) -> Result<bool, Error> {
 	let points = domain_points(cols)?;
 	for ((eval, proof), cellblock) in proof.iter() {
 		let evals_flat = eval
-			.into_iter()
-			.map(|e| ArkScalar::from_bytes(e))
+			.iter()
+			.map(ArkScalar::from_bytes)
 			.collect::<Result<Vec<_>, _>>()
 			.map_err(|_| Error::FailedToConvertEvalsToArkScalar)?;
 		let evals_grid = evals_flat
 			.chunks_exact((cellblock.end_x - cellblock.start_x) as usize)
 			.collect::<Vec<_>>();
 
-		let proofs = ArkProof::from_bytes(&proof).map_err(|_| Error::FailedToParseProof)?;
+		let proofs = ArkProof::from_bytes(proof).map_err(|_| Error::FailedToParseProof)?;
 
 		let commits = commitments
 			.chunks_exact(48)
