@@ -1,6 +1,6 @@
 use ark_bls12_381::Bls12_381;
 use avail_core::{AppExtrinsic, AppId};
-use kate_recovery::{data::DataCell, matrix::Position};
+use kate_recovery::{data::DataCell, matrix::Position, testnet};
 use once_cell::sync::Lazy;
 use poly_multiproof::{ark_bls12_381, msm::blst::BlstMSMEngine};
 use poly_multiproof::{method1::M1NoPrecomp, traits::AsBytes};
@@ -8,14 +8,14 @@ use proptest::{collection, prelude::*, sample::size_range};
 use rand::{distributions::Uniform, prelude::Distribution, SeedableRng};
 use rand_chacha::ChaChaRng;
 
-use crate::{gridgen::core::EvaluationGrid, testnet, ArkScalar};
+use crate::{gridgen::core::EvaluationGrid, ArkScalar};
 
 mod commitments;
 mod formatting;
 mod reconstruction;
 
 pub static PMP: Lazy<M1NoPrecomp<Bls12_381, BlstMSMEngine>> =
-	Lazy::new(|| testnet::multiproof_params::<Bls12_381, BlstMSMEngine>(256, 256));
+	Lazy::new(|| testnet::multiproof_params(256, 256));
 
 fn app_extrinsic_strategy() -> impl Strategy<Value = AppExtrinsic> {
 	(

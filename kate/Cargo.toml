@@ -13,7 +13,6 @@ avail-core = { path = "../core", default-features = false }
 kate-recovery = { path = "recovery", default-features = false }
 
 # Crypto
-dusk-plonk = { workspace = true }
 poly-multiproof = { workspace = true, default-features = false, features = ["blst"] }
 
 # Parity & Substrate
@@ -26,7 +25,6 @@ derive_more.workspace = true
 static_assertions.workspace = true
 thiserror-no-std.workspace = true
 
-dusk-bytes = { workspace = true, optional = true }
 hex = { workspace = true }
 hex-literal.workspace = true
 log = { workspace = true, optional = true }
@@ -47,14 +45,12 @@ test-case.workspace = true
 
 [features]
 default = [ "std" ]
-alloc = [ "dusk-plonk/alloc", "nalgebra/alloc" ]
+alloc = [ "nalgebra/alloc" ]
 parallel = [ "criterion/rayon", "rayon" ]
 
 std = [
 	"avail-core/std",
 	"codec/std",
-	"dusk-bytes",
-	"dusk-plonk/std",
 	"kate-recovery/std",
 	"log",
 	"nalgebra/std",

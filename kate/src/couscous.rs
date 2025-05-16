@@ -1,21 +1,12 @@
 #![deny(clippy::arithmetic_side_effects)]
 
-use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
-
-// TODO: load pp for both dusk & arkworks from same file
-// To be used for incentivised testnet
-use super::*;
-use pmp::ark_bls12_381::{G1Projective as G1, G2Projective as G2};
-use pmp::ark_serialize::CanonicalDeserialize;
-use pmp::method1::M1NoPrecomp;
-use pmp::traits::MSMEngine;
-use pmp::Pairing;
-/// Constructs public parameters from pre-generated points for degree upto 1024
-pub fn public_params() -> PublicParameters {
-	// We can also use the raw data to make deserilization faster at the cost of size of the data
-	let pp_bytes = include_bytes!("pp_1024.data");
-	PublicParameters::from_slice(pp_bytes).expect("Deserialization should work")
-}
+use core::convert::TryInto;
+use kate_recovery::commons::ArkPublicParams;
+use poly_multiproof::{
+	ark_bls12_381::{G1Projective as G1, G2Projective as G2},
+	ark_serialize::CanonicalDeserialize,
+};
+use sp_std::vec::Vec;
 
 // Loads the pre-generated trusted g1 & g2 from the file
 fn load_trusted_g1_g2() -> (Vec<G1>, Vec<G2>) {
@@ -52,16 +43,15 @@ fn load_trusted_g1_g2() -> (Vec<G1>, Vec<G2>) {
 }
 
 ///  Construct public parameters from pre-generated points for degree upto 1024
-pub fn multiproof_params<E: Pairing<G1 = G1, G2 = G2>, M: MSMEngine<E = E>>() -> M1NoPrecomp<E, M> {
+pub fn multiproof_params() -> ArkPublicParams {
 	let (g1, g2) = load_trusted_g1_g2();
-	<M1NoPrecomp<_, _>>::new_from_powers(&g1, &g2)
+	ArkPublicParams::new_from_powers(&g1, &g2)
 }
 
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::pmp::msm::blst::BlstMSMEngine;
-	use ark_bls12_381::{Bls12_381, Fr};
+	use crate::*;
 	use pmp::{
 		ark_poly::{
 			univariate::DensePolynomial, DenseUVPolynomial, EvaluationDomain,
@@ -69,14 +59,14 @@ mod tests {
 		},
 		traits::KZGProof,
 	};
-	use poly_multiproof::{ark_bls12_381, traits::Committer};
+	use poly_multiproof::{ark_bls12_381::Fr, msm::blst::BlstMSMEngine, traits::Committer};
 	use rand::thread_rng;
 
 	#[test]
-	fn test_public_params() {
-		let pmp = couscous::multiproof_params::<Bls12_381, BlstMSMEngine>();
+	fn test_testnet_params() {
+		let pmp = multiproof_params();
 
-		let points = DensePolynomial::<Fr>::rand(1024, &mut thread_rng()).coeffs;
+		let points = DensePolynomial::<Fr>::rand(1023, &mut thread_rng()).coeffs;
 		let pmp_ev = GeneralEvaluationDomain::<Fr>::new(1024).unwrap();
 		let pmp_poly = pmp_ev.ifft(&points);
 		let pmp_domain_pts = pmp_ev.elements().collect::<Vec<_>>();
@@ -90,10 +80,10 @@ mod tests {
 			)
 			.unwrap();
 
-		let verify = pmp
+		let verify1 = pmp
 			.verify::<BlstMSMEngine>(&pmp_commit, pmp_domain_pts[1], points[1], &proof)
 			.unwrap();
 
-		assert!(verify);
+		assert!(verify1);
 	}
 }

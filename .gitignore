@@ -1,3 +1,4 @@
 target
-kate/.DS_Store
+.gdb_history
 .DS_Store
+.vscode

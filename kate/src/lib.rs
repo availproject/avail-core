@@ -5,16 +5,11 @@
 pub mod com;
 #[cfg(feature = "std")]
 pub mod gridgen;
-#[cfg(feature = "std")]
-pub mod testnet;
 
 pub mod couscous;
 pub mod metrics;
 
-// Exporting Dust Plonk, Dusk Bytes and poly_multiproof as pmp
-#[cfg(feature = "std")]
-pub use dusk_bytes;
-pub use dusk_plonk::{self, commitment_scheme::kzg10::PublicParameters, prelude::BlsScalar};
+// Exporting poly_multiproof as pmp
 pub use poly_multiproof as pmp;
 
 use avail_core::{constants::kate::DATA_CHUNK_SIZE, BlockLengthColumns, BlockLengthRows};
@@ -25,15 +20,11 @@ use core::{
 use kate_recovery::matrix::Dimensions;
 use poly_multiproof::ark_bls12_381::Fr;
 use sp_arithmetic::traits::SaturatedConversion;
-use sp_std::vec::Vec;
 use static_assertions::const_assert_ne;
 use thiserror_no_std::Error;
 pub const LOG_TARGET: &str = "kate";
 pub const U32_USIZE_ERR: &str = "`u32` cast to `usize` overflows, unsupported platform";
 pub type Seed = [u8; 32];
-
-#[cfg(feature = "std")]
-pub use dusk_bytes::Serializable;
 
 #[cfg(feature = "std")]
 pub type M1NoPrecomp =

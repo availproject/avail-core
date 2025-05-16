@@ -37,7 +37,6 @@ criterion = { version = "0.4", default-features = false }
 serde = { version = "1.0.196", default-features = false, features = ["derive", "alloc"] }
 hex = { version = "0.4", default-features = false, features = ["alloc", "serde"] }
 serde_json = { version = "1", default-features = false }
-dusk-bytes = { version = "0.1.6", default-features = false }
 impl-serde = { version = "0.5.0", default-features = false }
 
 # Crypto
@@ -49,10 +48,7 @@ blake2b_simd = { version = "1.0.2", default-features = false }
 sha2 = { version = "0.10.7", default-features = false }
 sha3 = { version = "0.10.0", default-features = false }
 
-poly-multiproof = { git = "https://github.com/availproject/poly-multiproof", ref="494468b86ac8e16dca21d465d921990c578eaad3", default-features = false, features = ['ark-bls12-381', "blst"]}
-
-dusk-plonk = { git = "https://github.com/availproject/plonk.git", default-features = false, features = ["alloc"], tag = "v0.12.0-polygon-2" }
-
+poly-multiproof = { git = "https://github.com/availproject/poly-multiproof", ref="494468b86ac8e16dca21d465d921990c578eaad3", default-features = false, features = ["ark-bls12-381", "blst"]}
 hash-db = { version = "0.16.0",  default-features = false }
 
 # Others
@@ -69,10 +65,6 @@ sp-crypto-ec-utils = { git = "https://github.com/availproject/polkadot-sdk", tag
 [profile.dev.package]
 nalgebra = { opt-level = 3 }
 blst = { opt-level = 3 }
-dusk-bls12_381 = { opt-level = 3 }
-dusk-plonk = { opt-level = 3 }
-dusk-jubjub = { opt-level = 3 }
-dusk-bytes = { opt-level = 3 }
 rayon = { opt-level = 3 }
 rayon-core = { opt-level = 3 }
 poly-multiproof = { opt-level = 3 }

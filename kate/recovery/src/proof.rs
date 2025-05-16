@@ -5,15 +5,7 @@ use thiserror_no_std::Error;
 
 #[cfg(feature = "std")]
 use avail_core::constants::kate::COMMITMENT_SIZE;
-#[cfg(feature = "std")]
-use dusk_bytes::Serializable;
-#[cfg(feature = "std")]
-use dusk_plonk::{
-	bls12_381::G1Affine,
-	commitment_scheme::kzg10::{commitment::Commitment, proof::Proof, PublicParameters},
-	fft::EvaluationDomain,
-	prelude::BlsScalar,
-};
+
 #[cfg(feature = "std")]
 use poly_multiproof::{
 	ark_bls12_381::{Bls12_381, Fr},
@@ -23,9 +15,9 @@ use poly_multiproof::{
 	msm::blst::BlstMSMEngine,
 	traits::{AsBytes, KZGProof, PolyMultiProofNoPrecomp},
 };
-// #[cfg(feature = "std")]
+
 #[cfg(feature = "std")]
-type ArkScalar = poly_multiproof::ark_bls12_381::Fr;
+use crate::commons::ArkScalar;
 #[cfg(feature = "std")]
 type ArkCommitment = poly_multiproof::Commitment<Bls12_381>;
 #[cfg(feature = "std")]
@@ -60,49 +52,6 @@ pub enum Error {
 #[cfg(feature = "std")]
 impl std::error::Error for Error {}
 
-#[cfg(feature = "std")]
-impl From<dusk_bytes::Error> for Error {
-	fn from(_: dusk_bytes::Error) -> Self {
-		Error::InvalidData
-	}
-}
-
-/// Verifies proof for given cell
-///
-/// # Deprecated
-/// This function is deprecated. Use [`verify_v2`] instead, which uses arkworks primitives.
-#[deprecated(
-	note = "This function is deprecated. Use `verify_v2` instead, which uses arkworks primitives."
-)]
-#[cfg(feature = "std")]
-pub fn verify(
-	public_parameters: &PublicParameters,
-	dimensions: Dimensions,
-	commitment: &[u8; COMMITMENT_SIZE],
-	cell: &SingleCell,
-) -> Result<bool, Error> {
-	let commitment_to_witness = G1Affine::from_bytes(&cell.proof()).map(Commitment::from)?;
-
-	let evaluated_point = BlsScalar::from_bytes(&cell.data())?;
-
-	let commitment_to_polynomial = G1Affine::from_bytes(commitment).map(Commitment::from)?;
-
-	let proof = Proof {
-		commitment_to_witness,
-		evaluated_point,
-		commitment_to_polynomial,
-	};
-
-	let cols: usize = dimensions.width();
-	let point = EvaluationDomain::new(cols)
-		.map_err(|_| Error::InvalidDomain)?
-		.elements()
-		.nth(cell.position.col.into())
-		.ok_or(Error::InvalidPositionInDomain)?;
-
-	Ok(public_parameters.opening_key().check(point, proof))
-}
-
 /// Verifies proof for a given cell using arkworks primitives.
 #[cfg(feature = "std")]
 pub fn verify_v2(
@@ -117,12 +66,10 @@ pub fn verify_v2(
 	// Deserialize evaluation (cell value)
 	let value = ArkScalar::from_bytes(&cell.data()).map_err(|_| Error::InvalidData)?;
 
-	// Get the domain point fromthe cell position
+	// Get the domain point from the cell position
 	let domain_point = GeneralEvaluationDomain::<Fr>::new(dimensions.width())
 		.ok_or(Error::InvalidDomain)?
-		.elements()
-		.nth(cell.position.col.into())
-		.ok_or(Error::InvalidPositionInDomain)?;
+		.element(cell.position.col.into());
 
 	// Deserialize proof
 	let proof = ArkProof::from_bytes(&cell.proof()).map_err(|_| Error::InvalidData)?;
