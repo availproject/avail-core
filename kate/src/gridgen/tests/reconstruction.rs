@@ -1,14 +1,14 @@
 use super::PMP;
 use crate::{
 	com::Cell,
-	gridgen::{tests::sample_cells, EvaluationGrid},
+	gridgen::{core::EvaluationGrid, tests::sample_cells},
 	Seed,
 };
 use avail_core::{AppExtrinsic, AppId, BlockLengthColumns, BlockLengthRows};
 use core::num::NonZeroU16;
 use kate_recovery::{
 	com::{reconstruct_app_extrinsics, reconstruct_extrinsics},
-	data::Cell as DCell,
+	data::SingleCell as DCell,
 	matrix::{Dimensions, Position},
 };
 use poly_multiproof::traits::AsBytes;

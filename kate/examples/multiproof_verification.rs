@@ -3,11 +3,14 @@ use core::num::NonZeroU16;
 use hex_literal::hex;
 use kate::{
 	couscous::multiproof_params,
-	gridgen::EvaluationGrid,
+	gridgen::core::EvaluationGrid,
 	pmp::{merlin::Transcript, traits::PolyMultiProofNoPrecomp},
 	Seed,
 };
 use kate_recovery::matrix::Dimensions;
+use poly_multiproof::ark_bls12_381::Bls12_381;
+use poly_multiproof::method1::M1NoPrecomp;
+use poly_multiproof::msm::blst::BlstMSMEngine;
 use poly_multiproof::traits::AsBytes;
 use thiserror_no_std::Error;
 
@@ -25,9 +28,11 @@ fn main() -> Result<(), AppError> {
 }
 
 fn multiproof_verification() -> Result<bool, AppError> {
+	type E = Bls12_381;
+	type M = BlstMSMEngine;
 	let target_dims = Dimensions::new_from(16, 64).unwrap();
-	let pp = multiproof_params();
-	let points = kate::gridgen::domain_points(256)?;
+	let pp: M1NoPrecomp<E, M> = multiproof_params();
+	let points = kate_recovery::proof::domain_points(256).unwrap_or(Vec::new());
 	let exts_data = vec![
 		hex!("CAFEBABE00000000000000000000000000000000000000").to_vec(),
 		hex!("DEADBEEF1111111111111111111111111111111111").to_vec(),
@@ -71,7 +76,7 @@ fn multiproof_verification() -> Result<bool, AppError> {
 		(proof_bytes, evals_bytes, commitments, grid.dims())
 	};
 
-	let mp_block = kate::gridgen::multiproof_block(0, 0, dims, target_dims).unwrap();
+	let mp_block = kate::gridgen::core::multiproof_block(0, 0, dims, target_dims).unwrap();
 	let commits = commitments
 		.chunks_exact(48)
 		.skip(mp_block.start_y)
@@ -83,14 +88,14 @@ fn multiproof_verification() -> Result<bool, AppError> {
 	let block_commits = &commits[mp_block.start_x..mp_block.end_x];
 	let evals_flat = evals
 		.chunks_exact(32)
-		.map(|e| kate::gridgen::ArkScalar::from_bytes(e.try_into().unwrap()))
+		.map(|e| kate::ArkScalar::from_bytes(e.try_into().unwrap()))
 		.collect::<Result<Vec<_>, _>>()
 		.unwrap();
 	let evals_grid = evals_flat
 		.chunks_exact(mp_block.end_x - mp_block.start_x)
 		.collect::<Vec<_>>();
 
-	let proof = kate::pmp::m1_blst::Proof::from_bytes(&proof)?;
+	let proof = kate::pmp::method1::Proof::from_bytes(&proof)?;
 
 	let verified = pp.verify(
 		&mut Transcript::new(b"avail-mp"),

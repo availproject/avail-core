@@ -1,6 +1,8 @@
 use super::*;
-use crate::{couscous, gridgen::*, testnet, Seed};
+use crate::com::Cell;
+use crate::{couscous, gridgen::core::*, testnet, Seed};
 use avail_core::{AppExtrinsic, BlockLengthColumns, BlockLengthRows};
+use core::num::NonZeroU16;
 use hex_literal::hex;
 use kate_recovery::{
 	commitments::verify_equality,
@@ -17,7 +19,7 @@ fn test_build_commitments_simple_commitment_check() {
 		76, 41, 174, 145, 187, 12, 97, 32, 75, 111, 149, 209, 243, 195, 165, 10, 166, 172, 47, 41,
 		218, 24, 212, 66, 62, 5, 187, 191, 129, 5, 105, 3,
 	];
-	let pmp_pp = crate::testnet::multiproof_params(256, 256);
+	let pmp_pp = crate::testnet::multiproof_params::<Bls12_381, BlstMSMEngine>(256, 256);
 
 	let evals = EvaluationGrid::from_extrinsics(
 		vec![AppExtrinsic::from(original_data)],
@@ -143,13 +145,13 @@ fn test_zero_deg_poly_commit(row_values: Vec<u8>) {
 	//let ae = AppExtrinsic { 0.into(), vec![}
 	let ev = EvaluationGrid {
 		lookup: Default::default(), // Shouldn't need to care about this
-		evals: DMatrix::from_row_iterator(len, 1, row).transpose(),
+		evals: nalgebra::DMatrix::from_row_iterator(len, 1, row).transpose(),
 	};
 
 	println!("Row: {:?}", ev.evals);
 
 	let pg = ev.make_polynomial_grid().unwrap();
-	let pmp = couscous::multiproof_params();
+	let pmp = couscous::multiproof_params::<Bls12_381, BlstMSMEngine>();
 	println!("Poly: {:?}", pg.inner[0]);
 	let commitment = pg.commitment(&pmp, 0).unwrap().to_bytes().unwrap();
 
@@ -166,7 +168,7 @@ fn test_zero_deg_poly_commit(row_values: Vec<u8>) {
 		let cell_bytes = ev.get(0usize, x).unwrap().to_bytes().unwrap();
 		let content = [&proof_bytes[..], &cell_bytes[..]].concat();
 		let dims = Dimensions::new(1, 4).unwrap();
-		let cell = kate_recovery::data::Cell {
+		let cell = kate_recovery::data::SingleCell {
 			position: Position {
 				row: 0,
 				col: x as u16,

@@ -7,6 +7,7 @@ use std::{
 	sync::Mutex,
 	time::Instant,
 };
+use thiserror_no_std::Error;
 
 use avail_core::{
 	const_generic_asserts::{USizeGreaterOrEq, USizeSafeCastToU32, UsizeEven, UsizeNonZero},
@@ -30,13 +31,18 @@ use rand_chacha::{
 	ChaChaRng,
 };
 
+#[cfg(feature = "std")]
+use avail_core::from_substrate;
+#[cfg(feature = "std")]
+use kate_recovery::matrix::Dimensions;
 use rayon::prelude::*;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::SaturatedConversion;
 use static_assertions::const_assert_eq;
-use thiserror_no_std::Error;
 
+#[cfg(feature = "std")]
+use crate::testnet;
 use crate::{
 	com::kzg10::commitment::Commitment,
 	config::{
@@ -46,8 +52,6 @@ use crate::{
 	metrics::Metrics,
 	padded_len_of_pad_iec_9797_1, BlockDimensions, Seed, TryFromBlockDimensionsError, LOG_TARGET,
 };
-#[cfg(feature = "std")]
-use kate_recovery::matrix::Dimensions;
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Constructor, Clone, Copy, PartialEq, Eq, Debug)]
@@ -501,9 +505,6 @@ pub fn par_build_commitments<const CHUNK_SIZE: usize, M: Metrics>(
 	rng_seed: Seed,
 	metrics: &M,
 ) -> Result<(XtsLayout, Vec<u8>, BlockDimensions, DMatrix<BlsScalar>), Error> {
-	use crate::couscous;
-	use avail_core::from_substrate;
-
 	let start = Instant::now();
 
 	// generate data matrix first
@@ -522,8 +523,8 @@ pub fn par_build_commitments<const CHUNK_SIZE: usize, M: Metrics>(
 
 	metrics.preparation_block_time(start.elapsed());
 
-	// let public_params = testnet::public_params(block_dims_cols);
-	let public_params = couscous::public_params();
+	let public_params = testnet::public_params(BlockLengthColumns(block_dims_cols as u32));
+
 	if log::log_enabled!(target: LOG_TARGET, log::Level::Debug) {
 		let raw_pp = public_params.to_raw_var_bytes();
 		let hash_pp = hex::encode(from_substrate::blake2_128(&raw_pp));
@@ -648,7 +649,7 @@ mod tests {
 		commitments,
 		data::{self, DataCell},
 		matrix::{Dimensions, Position},
-		proof,
+		proof, testnet,
 	};
 	use proptest::{
 		collection::{self, size_range},
@@ -662,7 +663,6 @@ mod tests {
 	use super::*;
 	use crate::{
 		com::{pad_iec_9797_1, par_extend_data_matrix, BlockDimensions},
-		couscous,
 		metrics::IgnoreMetrics,
 		padded_len,
 	};
@@ -899,10 +899,8 @@ mod tests {
 			prop_assert_eq!(data[0].as_slice(), &xt.data);
 		}
 
-		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
-		// let public_params = testnet::public_params(dims_cols);
-		let public_params = couscous::public_params();
-		let pmp_pp = couscous::multiproof_params();
+		let dims_cols = usize::try_from(dims.cols.0).unwrap();
+		let public_params = testnet::public_params(dims_cols);
 		for cell in random_cells(dims.cols, dims.rows, Percent::one() ) {
 			let row = usize::try_from(cell.row.0).unwrap();
 
@@ -911,12 +909,11 @@ mod tests {
 
 			let col: u16 = cell.col.0.try_into().expect("`random_cells` function generates a valid `u16` for columns");
 			let position = Position { row: cell.row.0, col};
-			let cell = data::Cell { position,  content: proof.try_into().unwrap() };
+			let cell = data::SingleCell { position,  content: proof.try_into().unwrap() };
 
 			let extended_dims = dims.try_into().unwrap();
 			let commitment = commitments::from_slice(&commitments).unwrap()[row];
-			// let verification =  proof::verify(&public_params, extended_dims, &commitment,  &cell);
-			let verification =  proof::verify_v2(&pmp_pp, extended_dims, &commitment,  &cell);
+			let verification =  proof::verify(&public_params, extended_dims, &commitment,  &cell);
 			prop_assert!(verification.is_ok());
 			prop_assert!(verification.unwrap());
 		}
@@ -931,8 +928,8 @@ mod tests {
 		let (layout, commitments, dims, matrix) = par_build_commitments::<TCHUNK_SIZE,_>(BlockLengthRows(64), BlockLengthColumns(16), xts, Seed::default(), &IgnoreMetrics{}).unwrap();
 
 		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
-		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
-		let public_params = couscous::public_params();
+		let dims_cols = usize::try_from(dims.cols.0).unwrap();
+		let public_params = testnet::public_params(dims_cols);
 		let extended_dims = dims.try_into().unwrap();
 		let commitments = commitments::from_slice(&commitments).unwrap();
 		for xt in xts {
@@ -951,8 +948,8 @@ mod tests {
 		let (layout, commitments, dims, matrix) = par_build_commitments::<TCHUNK_SIZE,_>(BlockLengthRows(64), BlockLengthColumns(16), xts, Seed::default(), &IgnoreMetrics{}).unwrap();
 
 		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
-		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
-		let public_params = couscous::public_params();
+		let dims_cols = usize::try_from(dims.cols.0).unwrap();
+		let public_params = testnet::public_params(dims_cols);
 		let extended_dims =  dims.try_into().unwrap();
 		let commitments = commitments::from_slice(&commitments).unwrap();
 		for xt in xts {
@@ -986,14 +983,14 @@ mod tests {
 			dimensions,
 			BlockDimensions::new(BlockLengthRows(1), BlockLengthColumns(4), TCHUNK).unwrap(),
 		);
-		let expected_commitments = hex!("a065fed16fecd58caa55232c60f91efe5e6ad351a3c9707ee279b35936abe74bcb992aaaf8b8b316649d6fe2f0a68802a065fed16fecd58caa55232c60f91efe5e6ad351a3c9707ee279b35936abe74bcb992aaaf8b8b316649d6fe2f0a68802");
+		let expected_commitments = hex!("911bc20a0709b046847fcc53eaa981d84738dd6a76beaf2495ec9efcb2da498dfed29a15b5724343ee54382a9a3102a3911bc20a0709b046847fcc53eaa981d84738dd6a76beaf2495ec9efcb2da498dfed29a15b5724343ee54382a9a3102a3");
 		assert_eq!(commitments, expected_commitments);
 	}
 
 	#[test]
 	// newapi wip
 	fn test_reconstruct_app_extrinsics_with_app_id() -> Result<(), Error> {
-		let app_id_1_data = br#""This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns
+		let app_id_1_data = br#""This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns 
 get erasure coded to ensure redundancy."#;
 
 		let app_id_2_data = br#""Let's see how this gets encoded and then reconstructed by sampling only some data."#;
@@ -1031,7 +1028,7 @@ get erasure coded to ensure redundancy."#;
 	#[test]
 	// newapi done
 	fn test_decode_app_extrinsics() -> Result<(), Error> {
-		let app_id_1_data = br#""This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns
+		let app_id_1_data = br#""This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns 
 get erasure coded to ensure redundancy."#;
 
 		let app_id_2_data = br#""Let's see how this gets encoded and then reconstructed by sampling only some data."#;
@@ -1079,7 +1076,7 @@ get erasure coded to ensure redundancy."#;
 	#[test]
 	// newapi done
 	fn test_extend_mock_data() -> Result<(), Error> {
-		let orig_data = br#"This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns
+		let orig_data = br#"This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns 
 get erasure coded to ensure redundancy.
 Let's see how this gets encoded and then reconstructed by sampling only some data."#;
 
@@ -1232,9 +1229,7 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 		// There are two main cases that generate a zero degree polynomial. One is for data that is non-zero, but the same.
 		// The other is for all-zero data. They differ, as the former yields a polynomial with one coefficient, and latter generates zero coefficients.
 		let len = row_values.len();
-		// let public_params = testnet::public_params(len);
-		let public_params = couscous::public_params();
-		let pmp_pp = couscous::multiproof_params();
+		let public_params = testnet::public_params(len);
 		let (prover_key, _) = public_params.trim(len).map_err(Error::from).unwrap();
 		let row_eval_domain = EvaluationDomain::new(len).map_err(Error::from).unwrap();
 
@@ -1281,12 +1276,11 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 			assert_eq!(proof.len(), 80);
 
 			let dims = Dimensions::new(1, 4).unwrap();
-			let cell = data::Cell {
+			let cell = data::SingleCell {
 				position: Position { row: 0, col },
 				content: proof.try_into().unwrap(),
 			};
-			// let verification = proof::verify(&public_params, dims, &commitment, &cell);
-			let verification = proof::verify_v2(&pmp_pp, dims, &commitment, &cell);
+			let verification = proof::verify(&public_params, dims, &commitment, &cell);
 			assert!(verification.is_ok());
 			assert!(verification.unwrap())
 		}
