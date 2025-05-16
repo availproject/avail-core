@@ -1,23 +1,31 @@
+#[cfg(feature = "std")]
+use std::convert::TryInto;
+
 use thiserror_no_std::Error;
 
-#[cfg(feature = "std")]
-use crate::{data::Cell, matrix::Dimensions};
 #[cfg(feature = "std")]
 use avail_core::constants::kate::COMMITMENT_SIZE;
 
 #[cfg(feature = "std")]
-use poly_multiproof::traits::AsBytes;
-#[cfg(feature = "std")]
 use poly_multiproof::{
+	ark_bls12_381::{Bls12_381, Fr},
 	ark_poly::{EvaluationDomain as ArkEvaluationDomain, GeneralEvaluationDomain},
-	m1_blst::{Bls12_381, Fr, M1NoPrecomp, Proof as ArkProof},
-	traits::KZGProof,
+	merlin::Transcript,
+	method1::{M1NoPrecomp, Proof as ArkProof},
+	msm::blst::BlstMSMEngine,
+	traits::{AsBytes, KZGProof, PolyMultiProofNoPrecomp},
 };
 
 #[cfg(feature = "std")]
 use crate::commons::ArkScalar;
 #[cfg(feature = "std")]
 type ArkCommitment = poly_multiproof::Commitment<Bls12_381>;
+#[cfg(feature = "std")]
+use crate::data::GCellBlock;
+#[cfg(feature = "std")]
+use crate::data::SingleCell;
+#[cfg(feature = "std")]
+use crate::matrix::Dimensions;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -29,6 +37,16 @@ pub enum Error {
 	InvalidDegree,
 	#[error("Position isn't in domain")]
 	InvalidPositionInDomain,
+	#[error("Failed to generate domain points")]
+	FailedToGenerateDomainPoints,
+	#[error("Failed to convert evals to ArkScalar")]
+	FailedToConvertEvalsToArkScalar,
+	#[error("Failed to parse proof")]
+	FailedToParseProof,
+	#[error("Failed to extract Commitments")]
+	FailedToExtractCommitments,
+	#[error("Failed to verify proof")]
+	FailedToVerifyProof,
 }
 
 #[cfg(feature = "std")]
@@ -37,10 +55,10 @@ impl std::error::Error for Error {}
 /// Verifies proof for a given cell using arkworks primitives.
 #[cfg(feature = "std")]
 pub fn verify_v2(
-	public_parameters: &M1NoPrecomp,
+	public_parameters: &M1NoPrecomp<Bls12_381, BlstMSMEngine>,
 	dimensions: Dimensions,
 	commitment: &[u8; COMMITMENT_SIZE],
-	cell: &Cell,
+	cell: &SingleCell,
 ) -> Result<bool, Error> {
 	// Deserialize commitment
 	let commitment = ArkCommitment::from_bytes(commitment).map_err(|_| Error::InvalidData)?;
@@ -57,7 +75,58 @@ pub fn verify_v2(
 	let proof = ArkProof::from_bytes(&cell.proof()).map_err(|_| Error::InvalidData)?;
 
 	// Verify the proof
-	public_parameters
-		.verify(&commitment, domain_point, value, &proof)
+	KZGProof::verify::<BlstMSMEngine>(public_parameters, &commitment, domain_point, value, &proof)
 		.map_err(|_| Error::InvalidData)
+}
+
+#[cfg(feature = "std")]
+pub fn domain_points(n: usize) -> Result<Vec<ArkScalar>, Error> {
+	let domain = GeneralEvaluationDomain::<ArkScalar>::new(n).ok_or(Error::InvalidDomain)?;
+	Ok(domain.elements().collect())
+}
+
+#[cfg(feature = "std")]
+#[allow(clippy::type_complexity)]
+pub async fn verify_multi_proof(
+	pmp: &M1NoPrecomp<Bls12_381, BlstMSMEngine>,
+	proof: &[((Vec<[u8; 32]>, [u8; 48]), GCellBlock)],
+	commitments: &[u8],
+	cols: usize, // Number of columns in the original grid
+) -> Result<bool, Error> {
+	let points = domain_points(cols)?;
+	for ((eval, proof), cellblock) in proof.iter() {
+		let evals_flat = eval
+			.iter()
+			.map(ArkScalar::from_bytes)
+			.collect::<Result<Vec<_>, _>>()
+			.map_err(|_| Error::FailedToConvertEvalsToArkScalar)?;
+		let evals_grid = evals_flat
+			.chunks_exact((cellblock.end_x - cellblock.start_x) as usize)
+			.collect::<Vec<_>>();
+
+		let proofs = ArkProof::from_bytes(proof).map_err(|_| Error::FailedToParseProof)?;
+
+		let commits = commitments
+			.chunks_exact(48)
+			.skip(cellblock.start_y as usize)
+			.take((cellblock.end_y - cellblock.start_y) as usize)
+			.map(|c| ArkCommitment::from_bytes(c.try_into().unwrap()))
+			.collect::<Result<Vec<_>, _>>()
+			.map_err(|_| Error::FailedToExtractCommitments)?;
+
+		let verified = PolyMultiProofNoPrecomp::verify(
+			pmp,
+			&mut Transcript::new(b"avail-mp"),
+			&commits[..],
+			&points[(cellblock.start_x as usize)..(cellblock.end_x as usize)],
+			&evals_grid,
+			&proofs,
+		)
+		.map_err(|_| Error::FailedToVerifyProof)?;
+		if !verified {
+			return Ok(false);
+		}
+	}
+
+	Ok(true)
 }

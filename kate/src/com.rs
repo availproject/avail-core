@@ -7,6 +7,7 @@ use std::{
 	sync::Mutex,
 	time::Instant,
 };
+use thiserror_no_std::Error;
 
 use avail_core::{
 	const_generic_asserts::{USizeGreaterOrEq, USizeSafeCastToU32, UsizeEven, UsizeNonZero},
@@ -22,13 +23,11 @@ use rand_chacha::{
 	rand_core::{Error as ChaChaError, SeedableRng},
 	ChaChaRng,
 };
-
 use rayon::prelude::*;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::SaturatedConversion;
 use static_assertions::const_assert_eq;
-use thiserror_no_std::Error;
 
 use crate::{
 	config::{
@@ -38,16 +37,14 @@ use crate::{
 	metrics::Metrics,
 	padded_len_of_pad_iec_9797_1, BlockDimensions, Seed, TryFromBlockDimensionsError,
 };
-use kate_recovery::commons::{ArkEvaluationDomain, ArkScalar};
+use kate_recovery::commons::{ArkEvaluationDomain, ArkPublicParams, ArkScalar};
 #[cfg(feature = "std")]
 use kate_recovery::matrix::Dimensions;
 #[cfg(feature = "std")]
-use poly_multiproof::m1_blst::Bls12_381;
-#[cfg(feature = "std")]
-use poly_multiproof::traits::Committer;
+use poly_multiproof::ark_bls12_381::Bls12_381;
 #[cfg(feature = "std")]
 type ArkCommitment = poly_multiproof::Commitment<Bls12_381>;
-use poly_multiproof::m1_blst::M1NoPrecomp;
+use poly_multiproof::traits::Committer;
 use poly_multiproof::traits::KZGProof;
 use poly_multiproof::{ark_poly::EvaluationDomain, traits::AsBytes};
 
@@ -378,7 +375,7 @@ pub fn par_extend_data_matrix<M: Metrics>(
 }
 
 pub fn build_proof<M: Metrics>(
-	public_params: &M1NoPrecomp,
+	public_params: &ArkPublicParams,
 	block_dims: BlockDimensions,
 	ext_data_matrix: &DMatrix<ArkScalar>,
 	cells: &[Cell],
@@ -573,7 +570,7 @@ fn get_row(m: &DMatrix<ArkScalar>, row_idx: usize) -> Vec<ArkScalar> {
 #[cfg(feature = "std")]
 // Generate a commitment
 fn commit(
-	prover_key: &M1NoPrecomp,
+	prover_key: &ArkPublicParams,
 	domain: ArkEvaluationDomain,
 	row: Vec<ArkScalar>,
 ) -> Result<ArkCommitment, Error> {
@@ -934,7 +931,7 @@ mod tests {
 
 			let col: u16 = cell.col.0.try_into().expect("`random_cells` function generates a valid `u16` for columns");
 			let position = Position { row: cell.row.0, col};
-			let cell = data::Cell { position,  content: proof.try_into().unwrap() };
+			let cell = data::SingleCell { position,  content: proof.try_into().unwrap() };
 
 			let extended_dims = dims.try_into().unwrap();
 			let commitment = commitments::from_slice(&commitments).unwrap()[row];
@@ -1304,11 +1301,10 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 			assert_eq!(proof.len(), 80);
 
 			let dims = Dimensions::new(1, 4).unwrap();
-			let cell = data::Cell {
+			let cell = data::SingleCell {
 				position: Position { row: 0, col },
 				content: proof.try_into().unwrap(),
 			};
-			// let verification = proof::verify(&public_params, dims, &commitment, &cell);
 			let verification = proof::verify_v2(&pmp_pp, dims, &commitment, &cell);
 			assert!(verification.is_ok());
 			assert!(verification.unwrap())

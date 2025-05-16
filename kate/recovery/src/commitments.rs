@@ -4,7 +4,7 @@ use sp_std::prelude::*;
 use thiserror_no_std::Error;
 
 #[cfg(feature = "std")]
-use super::commons::{ArkEvaluationDomain, ArkScalar};
+use super::commons::{ArkEvaluationDomain, ArkPublicParams, ArkScalar};
 #[cfg(feature = "std")]
 use crate::{com, matrix};
 #[cfg(feature = "std")]
@@ -16,7 +16,6 @@ use core::convert::TryFrom;
 #[cfg(feature = "std")]
 use poly_multiproof::{
 	ark_poly::EvaluationDomain,
-	m1_blst::M1NoPrecomp,
 	traits::{AsBytes, Committer},
 };
 
@@ -93,7 +92,7 @@ fn try_into_scalars(data: &[u8]) -> Result<Vec<ArkScalar>, Error> {
 /// * `app_id` - Application ID
 #[cfg(feature = "std")]
 pub fn verify_equality(
-	public_params: &M1NoPrecomp,
+	public_params: &ArkPublicParams,
 	commitments: &[[u8; COMMITMENT_SIZE]],
 	rows: &[Option<Vec<u8>>],
 	index: &DataLookup,
@@ -132,7 +131,7 @@ pub fn verify_equality(
 
 #[cfg(feature = "std")]
 fn row_index_commitment_verification(
-	prover_key: &M1NoPrecomp,
+	prover_key: &ArkPublicParams,
 	domain: ArkEvaluationDomain,
 	commitment: &[u8],
 	maybe_row: &Option<Vec<u8>>,
@@ -162,14 +161,13 @@ pub fn from_slice(source: &[u8]) -> Result<Vec<[u8; COMMITMENT_SIZE]>, TryFromSl
 #[cfg(test)]
 mod tests {
 	use super::verify_equality;
-	use crate::testnet;
+	use crate::{commons::ArkPublicParams, testnet};
 	use avail_core::{AppId, DataLookup};
 	use once_cell::sync::Lazy;
-	use poly_multiproof::m1_blst::M1NoPrecomp;
 
 	use crate::{commitments, matrix};
 
-	static PUBLIC_PARAMETERS: Lazy<M1NoPrecomp> =
+	static PUBLIC_PARAMETERS: Lazy<ArkPublicParams> =
 		Lazy::new(|| testnet::multiproof_params(256, 256));
 
 	#[test]

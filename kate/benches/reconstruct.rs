@@ -1,6 +1,6 @@
 use avail_core::{AppExtrinsic, AppId, BlockLengthColumns, BlockLengthRows, DataLookup};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use kate::gridgen::AsBytes;
+use kate::gridgen::core::AsBytes;
 use kate::{com::build_proof, com::par_build_commitments, com::Cell, metrics::IgnoreMetrics, Seed};
 use kate_recovery::{
 	com::reconstruct_extrinsics,
@@ -160,7 +160,7 @@ fn reconstruct(xts: &[AppExtrinsic]) {
 			.try_into()
 			.expect("`random_cells` function generates a valid `u16` for columns");
 		let position = Position { row, col };
-		let cell = data::Cell {
+		let cell = data::SingleCell {
 			position,
 			content: proof.try_into().unwrap(),
 		};

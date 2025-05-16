@@ -1,15 +1,18 @@
 #![deny(clippy::arithmetic_side_effects)]
 
 use core::convert::TryInto;
+use kate_recovery::commons::ArkPublicParams;
 use poly_multiproof::{
+	ark_bls12_381::{G1Projective as G1, G2Projective as G2},
 	ark_serialize::CanonicalDeserialize,
-	m1_blst::{self, G1, G2},
 };
 use sp_std::vec::Vec;
 
 // Loads the pre-generated trusted g1 & g2 from the file
 fn load_trusted_g1_g2() -> (Vec<G1>, Vec<G2>) {
-	// for degree = 1024
+	// For degree 1024, we include 513 G2 points.
+	// The rationale is that in multiproof constructions, we never need more than half the degree in G2 points.
+	// Creating a multiproof grid with width equal to the original data grid doesn't make sense.
 	let contents = include_str!("g1_g2_1024.txt");
 	let mut lines = contents.lines();
 	let g1_len: usize = lines.next().unwrap().parse().unwrap();
@@ -40,9 +43,9 @@ fn load_trusted_g1_g2() -> (Vec<G1>, Vec<G2>) {
 }
 
 ///  Construct public parameters from pre-generated points for degree upto 1024
-pub fn multiproof_params() -> m1_blst::M1NoPrecomp {
+pub fn multiproof_params() -> ArkPublicParams {
 	let (g1, g2) = load_trusted_g1_g2();
-	m1_blst::M1NoPrecomp::new_from_powers(g1, g2)
+	ArkPublicParams::new_from_powers(&g1, &g2)
 }
 
 #[cfg(test)]
@@ -56,7 +59,7 @@ mod tests {
 		},
 		traits::KZGProof,
 	};
-	use poly_multiproof::{m1_blst::Fr, traits::Committer};
+	use poly_multiproof::{ark_bls12_381::Fr, msm::blst::BlstMSMEngine, traits::Committer};
 	use rand::thread_rng;
 
 	#[test]
@@ -78,11 +81,9 @@ mod tests {
 			.unwrap();
 
 		let verify1 = pmp
-			.verify(&pmp_commit, pmp_domain_pts[1], points[1], &proof)
+			.verify::<BlstMSMEngine>(&pmp_commit, pmp_domain_pts[1], points[1], &proof)
 			.unwrap();
 
 		assert!(verify1);
 	}
 }
-
-// vim: set noet nowrap

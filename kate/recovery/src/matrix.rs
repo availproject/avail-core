@@ -236,7 +236,7 @@ impl Dimensions {
 		Some(data)
 	}
 
-	/// Cell positions for given column in extended matrix.
+	/// SingleCell positions for given column in extended matrix.
 	/// Empty if column index is not valid.
 	pub fn col_positions(&self, col: u16) -> Vec<Position> {
 		if self.cols().get() <= col {
@@ -247,7 +247,7 @@ impl Dimensions {
 			.collect::<Vec<_>>()
 	}
 
-	/// Cell positions for given rows in extended matrix.
+	/// SingleCell positions for given rows in extended matrix.
 	/// Empty if row index is not valid.
 	fn extended_row_positions(&self, row: u32) -> Vec<Position> {
 		if self.extended_rows() <= row {
@@ -258,7 +258,7 @@ impl Dimensions {
 			.collect::<Vec<_>>()
 	}
 
-	/// Cell positions for given rows in extended matrix.
+	/// SingleCell positions for given rows in extended matrix.
 	/// Row indexes that are out of bounds are ignored.
 	pub fn extended_rows_positions(&self, rows: &[u32]) -> Vec<Position> {
 		rows.iter()
@@ -331,6 +331,23 @@ impl Dimensions {
 		partition: &Partition,
 	) -> impl Iterator<Item = Position> {
 		let size = self.extended_size() as f64 / partition.fraction as f64;
+		let start = (size * (partition.number - 1) as f64).floor() as u32;
+		let end = (size * (partition.number as f64)).ceil() as u32;
+		let cols: u32 = self.cols.get().into();
+
+		(start..end).map(move |cell| Position {
+			row: cell / cols,
+			col: (cell % cols) as u16,
+		})
+	}
+
+	/// Generates cell positions for given block partition
+	#[cfg(feature = "std")]
+	pub fn iter_mcell_partition_positions(
+		&self,
+		partition: &Partition,
+	) -> impl Iterator<Item = Position> {
+		let size = self.size::<u32>() as f64 / partition.fraction as f64;
 		let start = (size * (partition.number - 1) as f64).floor() as u32;
 		let end = (size * (partition.number as f64)).ceil() as u32;
 		let cols: u32 = self.cols.get().into();

@@ -1,6 +1,7 @@
 use super::*;
-use crate::{couscous, gridgen::*, Seed};
+use crate::{com::Cell, couscous, gridgen::core::*, Seed};
 use avail_core::{AppExtrinsic, BlockLengthColumns, BlockLengthRows};
+use core::num::NonZeroU16;
 use hex_literal::hex;
 use kate_recovery::{
 	commitments::verify_equality,
@@ -144,7 +145,7 @@ fn test_zero_deg_poly_commit(row_values: Vec<u8>) {
 	//let ae = AppExtrinsic { 0.into(), vec![}
 	let ev = EvaluationGrid {
 		lookup: Default::default(), // Shouldn't need to care about this
-		evals: DMatrix::from_row_iterator(len, 1, row).transpose(),
+		evals: nalgebra::DMatrix::from_row_iterator(len, 1, row).transpose(),
 	};
 
 	println!("Row: {:?}", ev.evals);
@@ -167,7 +168,7 @@ fn test_zero_deg_poly_commit(row_values: Vec<u8>) {
 		let cell_bytes = ev.get(0usize, x).unwrap().to_bytes().unwrap();
 		let content = [&proof_bytes[..], &cell_bytes[..]].concat();
 		let dims = Dimensions::new(1, 4).unwrap();
-		let cell = kate_recovery::data::Cell {
+		let cell = kate_recovery::data::SingleCell {
 			position: Position {
 				row: 0,
 				col: x as u16,
