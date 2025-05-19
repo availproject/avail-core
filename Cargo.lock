@@ -2596,7 +2596,7 @@ checksum = "626dec3cac7cc0e1577a2ec3fc496277ec2baa084bebad95bb6fdbfae235f84c"
 [[package]]
 name = "poly-multiproof"
 version = "0.1.1"
-source = "git+https://github.com/availproject/poly-multiproof#c2794e32ca040e6b2544abde18b7187af3e66feb"
+source = "git+https://github.com/availproject/poly-multiproof?rev=c2794e32ca040e6b2544abde18b7187af3e66feb#c2794e32ca040e6b2544abde18b7187af3e66feb"
 dependencies = [
  "ark-bls12-381",
  "ark-ec",
