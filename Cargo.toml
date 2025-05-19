@@ -48,7 +48,7 @@ blake2b_simd = { version = "1.0.2", default-features = false }
 sha2 = { version = "0.10.7", default-features = false }
 sha3 = { version = "0.10.0", default-features = false }
 
-poly-multiproof = { git = "https://github.com/availproject/poly-multiproof", ref="494468b86ac8e16dca21d465d921990c578eaad3", default-features = false, features = ["ark-bls12-381", "blst"]}
+poly-multiproof = { git = "https://github.com/availproject/poly-multiproof", rev="c2794e32ca040e6b2544abde18b7187af3e66feb", default-features = false, features = ["ark-bls12-381", "blst"]}
 hash-db = { version = "0.16.0",  default-features = false }
 
 # Others
