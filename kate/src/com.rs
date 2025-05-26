@@ -26,7 +26,6 @@ use rand_chacha::{
 use rayon::prelude::*;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use sp_arithmetic::traits::SaturatedConversion;
 use static_assertions::const_assert_eq;
 
 use crate::{
@@ -291,7 +290,8 @@ fn pad_to_chunk<const CHUNK_SIZE: usize>(chunk: DataChunk) -> Vec<u8> {
 }
 
 fn pad_iec_9797_1(mut data: Vec<u8>) -> Vec<DataChunk> {
-	let padded_size = padded_len_of_pad_iec_9797_1(data.len().saturated_into());
+	let data_len = u32::try_from(data.len()).unwrap_or(u32::MAX);
+	let padded_size = padded_len_of_pad_iec_9797_1(data_len);
 	data.resize(padded_size as usize, 0u8);
 
 	// Transform into `DataChunk`.
@@ -495,7 +495,8 @@ pub fn build_proof<M: Metrics>(
 		res[PROOF_SIZE..].copy_from_slice(&point_bytes);
 	});
 
-	metrics.proof_build_time(total_start.elapsed(), cells.len().saturated_into());
+	let cells_len = u32::try_from(cells.len()).unwrap_or(u32::MAX);
+	metrics.proof_build_time(total_start.elapsed(), cells_len);
 
 	if let Ok(mut errors) = locked_errors.lock() {
 		if let Some(error) = errors.pop() {
@@ -522,7 +523,8 @@ pub fn par_build_commitments<const CHUNK_SIZE: usize, M: Metrics>(
 	let (tx_layout, block, block_dims) =
 		flatten_and_pad_block::<CHUNK_SIZE>(rows, cols, extrinsics_by_key, rng_seed)?;
 
-	metrics.block_dims_and_size(block_dims, block.len().saturated_into());
+	let block_len = u32::try_from(block.len()).unwrap_or(u32::MAX);
+	metrics.block_dims_and_size(block_dims, block_len);
 
 	let ext_matrix = par_extend_data_matrix(block_dims, &block, metrics)?;
 
@@ -663,6 +665,7 @@ mod tests {
 		constants::kate::{CHUNK_SIZE, COMMITMENT_SIZE, DATA_CHUNK_SIZE},
 		DataLookup,
 	};
+	use core::usize;
 	use hex_literal::hex;
 	use kate_recovery::{
 		com::*,
@@ -676,7 +679,6 @@ mod tests {
 		prelude::*,
 	};
 	use rand::{prelude::IteratorRandom, Rng, SeedableRng};
-	use sp_arithmetic::Percent;
 	use std::{convert::TryInto, iter::repeat};
 	use test_case::test_case;
 
@@ -885,15 +887,14 @@ mod tests {
 	fn random_cells(
 		max_cols: BlockLengthColumns,
 		max_rows: BlockLengthRows,
-		percents: Percent,
+		percents: u8,
 	) -> Vec<Cell> {
-		let max_cols = max_cols.into();
-		let max_rows = max_rows.into();
+		let max_cols: u32 = max_cols.into();
+		let max_rows: u32 = max_rows.into();
 
 		let rng = &mut ChaChaRng::from_seed([0u8; 32]);
-		let amount: usize = percents
-			.mul_ceil::<u32>(max_cols * max_rows)
-			.saturated_into();
+		let amount = (percents as u32 * (max_cols * max_rows)).div_ceil(100);
+		let amount = usize::try_from(amount).unwrap_or(usize::MAX);
 
 		(0..max_cols)
 			.flat_map(move |col| {
@@ -923,7 +924,7 @@ mod tests {
 		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
 		// let public_params = testnet::public_params(dims_cols);
 		let public_params = couscous::multiproof_params();
-		for cell in random_cells(dims.cols, dims.rows, Percent::one() ) {
+		for cell in random_cells(dims.cols, dims.rows, 1 ) {
 			let row = usize::try_from(cell.row.0).unwrap();
 
 			let proof = build_proof(&public_params, dims, &matrix, &[cell], &metrics).unwrap();
@@ -1199,12 +1200,12 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 	#[test_case( build_extrinsics(&[]) => padded_len_group(&[], 32) ; "Empty chunk list")]
 	#[test_case( build_extrinsics(&[4096]) => padded_len_group(&[4096], 32) ; "4K chunk")]
 	fn test_padding_len(extrinsics: Vec<Vec<u8>>) -> u32 {
-		extrinsics
+		let sum = extrinsics
 			.into_iter()
 			.flat_map(pad_iec_9797_1)
 			.map(|chunk| pad_to_chunk::<TCHUNK_SIZE>(chunk).len())
-			.sum::<usize>()
-			.saturated_into()
+			.sum::<usize>();
+		u32::try_from(sum).unwrap_or(u32::MAX)
 	}
 
 	#[test]

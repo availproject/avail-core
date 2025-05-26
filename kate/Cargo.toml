@@ -17,7 +17,6 @@ poly-multiproof = { workspace = true, default-features = false, features = ["bls
 
 # Parity & Substrate
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive"] }
-sp-arithmetic.workspace = true
 sp-std.workspace = true
 
 # 3rd-party
@@ -61,7 +60,6 @@ std = [
 	"rand_chacha/std",
 	"serde",
 	"serde_json/std",
-	"sp-arithmetic/std",
 ]
 
 serde = [ "avail-core/serde", "dep:serde" ]

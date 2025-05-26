@@ -18,12 +18,9 @@ use super::commons::{ArkEvaluationDomain, ArkScalar};
 #[cfg(feature = "std")]
 use codec::{Decode, IoReader};
 #[cfg(feature = "std")]
-use poly_multiproof::{ark_ff::Field, ark_poly::EvaluationDomain, traits::AsBytes};
+pub use num_traits::{One, Zero};
 #[cfg(feature = "std")]
-pub use sp_arithmetic::{
-	traits::{One, SaturatedConversion as _, Zero},
-	Percent,
-};
+use poly_multiproof::{ark_ff::Field, ark_poly::EvaluationDomain, traits::AsBytes};
 #[cfg(feature = "std")]
 use static_assertions::{const_assert, const_assert_ne};
 #[cfg(feature = "std")]
@@ -83,14 +80,13 @@ impl std::error::Error for ReconstructionError {
 pub fn columns_positions<R: rand::RngCore>(
 	dimensions: matrix::Dimensions,
 	positions: &[matrix::Position],
-	factor: Percent,
+	factor: u8,
 	rng: &mut R,
 ) -> Vec<matrix::Position> {
 	use rand::seq::SliceRandom;
 
-	let cells = factor
-		.mul_ceil(dimensions.extended_rows())
-		.saturated_into::<usize>();
+	let cells = (factor as u32 * dimensions.extended_rows()).div_ceil(100);
+	let cells = usize::try_from(cells).unwrap_or(usize::MAX);
 
 	let columns: HashSet<u16> = HashSet::from_iter(positions.iter().map(|position| position.col));
 
