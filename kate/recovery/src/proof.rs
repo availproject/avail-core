@@ -1,12 +1,8 @@
-#[cfg(feature = "std")]
-use std::convert::TryInto;
-
+use core::convert::TryInto;
 use thiserror_no_std::Error;
 
-#[cfg(feature = "std")]
+use crate::commons::ArkScalar;
 use avail_core::constants::kate::COMMITMENT_SIZE;
-
-#[cfg(feature = "std")]
 use poly_multiproof::{
 	ark_bls12_381::{Bls12_381, Fr},
 	ark_poly::{EvaluationDomain as ArkEvaluationDomain, GeneralEvaluationDomain},
@@ -15,17 +11,12 @@ use poly_multiproof::{
 	msm::blst::BlstMSMEngine,
 	traits::{AsBytes, KZGProof, PolyMultiProofNoPrecomp},
 };
-
-#[cfg(feature = "std")]
-use crate::commons::ArkScalar;
-#[cfg(feature = "std")]
+use sp_std::vec::Vec;
 type ArkCommitment = poly_multiproof::Commitment<Bls12_381>;
-#[cfg(feature = "std")]
-use crate::data::GCellBlock;
-#[cfg(feature = "std")]
-use crate::data::SingleCell;
-#[cfg(feature = "std")]
-use crate::matrix::Dimensions;
+use crate::{
+	data::{GCellBlock, SingleCell},
+	matrix::Dimensions,
+};
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -49,11 +40,7 @@ pub enum Error {
 	FailedToVerifyProof,
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for Error {}
-
 /// Verifies proof for a given cell using arkworks primitives.
-#[cfg(feature = "std")]
 pub fn verify_v2(
 	public_parameters: &M1NoPrecomp<Bls12_381, BlstMSMEngine>,
 	dimensions: Dimensions,
@@ -79,14 +66,14 @@ pub fn verify_v2(
 		.map_err(|_| Error::InvalidData)
 }
 
-#[cfg(feature = "std")]
+/// Generates domain points for a given size using arkworks primitives.
 pub fn domain_points(n: usize) -> Result<Vec<ArkScalar>, Error> {
 	let domain = GeneralEvaluationDomain::<ArkScalar>::new(n).ok_or(Error::InvalidDomain)?;
 	Ok(domain.elements().collect())
 }
 
-#[cfg(feature = "std")]
 #[allow(clippy::type_complexity)]
+/// Verifies a multi-proof for multiple cells with single proof using arkworks primitives.
 pub async fn verify_multi_proof(
 	pmp: &M1NoPrecomp<Bls12_381, BlstMSMEngine>,
 	proof: &[((Vec<[u8; 32]>, [u8; 48]), GCellBlock)],
