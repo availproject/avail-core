@@ -14,7 +14,6 @@ use nalgebra::DMatrix;
 use rand::{prelude::IteratorRandom, Rng, SeedableRng};
 use rand_chacha::ChaChaRng;
 use serde::{Deserialize, Serialize};
-use sp_arithmetic::{traits::SaturatedConversion, Percent};
 
 const XTS_JSON_SETS: &str = include_str!("reconstruct.data.json");
 
@@ -81,15 +80,14 @@ fn sample_cells_from_matrix(matrix: &DMatrix<ArkScalar>, columns: Option<&[u16]>
 fn random_cells(
 	max_cols: BlockLengthColumns,
 	max_rows: BlockLengthRows,
-	percents: Percent,
+	percents: u8,
 ) -> Vec<Cell> {
-	let max_cols = max_cols.into();
-	let max_rows = max_rows.into();
+	let max_cols: u32 = max_cols.into();
+	let max_rows: u32 = max_rows.into();
 
 	let rng = &mut ChaChaRng::from_seed([0u8; 32]);
-	let amount: usize = percents
-		.mul_ceil::<u32>(max_cols * max_rows)
-		.saturated_into();
+	let amount = (percents as u32 * (max_cols * max_rows)).div_ceil(100);
+	let amount: usize = usize::try_from(amount).unwrap_or(usize::MAX);
 
 	(0..max_cols)
 		.flat_map(move |col| {
@@ -148,7 +146,7 @@ fn reconstruct(xts: &[AppExtrinsic]) {
 		usize::try_from(dims_cols).unwrap(),
 		usize::try_from(dims_cols).unwrap(),
 	);
-	for cell in random_cells(dims.cols(), dims.rows(), Percent::one()) {
+	for cell in random_cells(dims.cols(), dims.rows(), 100) {
 		let row: u32 = cell.row.into();
 
 		let proof = build_proof(&public_params, dims, &matrix, &[cell], &metrics).unwrap();

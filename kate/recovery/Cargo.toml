@@ -12,7 +12,6 @@ poly-multiproof = { workspace = true, default-features = false, features = ["bls
 
 # Parity
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive"] }
-sp-arithmetic.workspace = true
 sp-std.workspace = true
 
 # 3rd-parties
@@ -26,6 +25,7 @@ once_cell = { workspace = true, optional = true }
 rand = { workspace = true, optional = true }
 rand_chacha = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
+num-traits = { workspace = true, optional = true }
 
 [dev-dependencies]
 hex.workspace = true
@@ -40,8 +40,8 @@ std = [
 	"rand/std",
 	"rand_chacha/std",
 	"serde",
-	"sp-arithmetic/std",
 	"sp-std/std",
+	"num-traits",
 ]
 
 serde = [ "dep:serde" ]
