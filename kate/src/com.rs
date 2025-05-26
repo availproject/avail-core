@@ -924,7 +924,7 @@ mod tests {
 		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
 		// let public_params = testnet::public_params(dims_cols);
 		let public_params = couscous::multiproof_params();
-		for cell in random_cells(dims.cols, dims.rows, 1 ) {
+		for cell in random_cells(dims.cols, dims.rows, 100 ) {
 			let row = usize::try_from(cell.row.0).unwrap();
 
 			let proof = build_proof(&public_params, dims, &matrix, &[cell], &metrics).unwrap();

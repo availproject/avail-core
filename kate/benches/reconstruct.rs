@@ -146,7 +146,7 @@ fn reconstruct(xts: &[AppExtrinsic]) {
 		usize::try_from(dims_cols).unwrap(),
 		usize::try_from(dims_cols).unwrap(),
 	);
-	for cell in random_cells(dims.cols(), dims.rows(), 1) {
+	for cell in random_cells(dims.cols(), dims.rows(), 100) {
 		let row: u32 = cell.row.into();
 
 		let proof = build_proof(&public_params, dims, &matrix, &[cell], &metrics).unwrap();
