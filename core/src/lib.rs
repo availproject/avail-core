@@ -5,8 +5,8 @@ use core::fmt::Debug;
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use derive_more::{Add, Constructor, Deref, Into, Mul};
+use num_traits::Zero;
 use scale_info::TypeInfo;
-use sp_arithmetic::traits::Zero;
 
 #[cfg(feature = "runtime")]
 use sp_debug_derive::RuntimeDebug;

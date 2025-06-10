@@ -10,7 +10,7 @@ scale-info = { version = "2", default-features = false, features = ["derive"] }
 
 # Polkadot SDK
 binary-merkle-tree = { git = "https://github.com/availproject/polkadot-sdk", rev = "5237e012d7d973b7210fc1929b2f1ff8726333b5", default-features = false }
-sp-arithmetic = { git = "https://github.com/availproject/polkadot-sdk", rev = "5237e012d7d973b7210fc1929b2f1ff8726333b5", default-features = false }
+# sp-arithmetic = { git = "https://github.com/availproject/polkadot-sdk", rev = "5237e012d7d973b7210fc1929b2f1ff8726333b5", default-features = false }
 sp-std = { git = "https://github.com/availproject/polkadot-sdk", rev = "5237e012d7d973b7210fc1929b2f1ff8726333b5", default-features = false }
 sp-trie = { git = "https://github.com/availproject/polkadot-sdk", rev = "5237e012d7d973b7210fc1929b2f1ff8726333b5", default-features = false }
 sp-runtime = { git = "https://github.com/availproject/polkadot-sdk", rev = "5237e012d7d973b7210fc1929b2f1ff8726333b5", default-features = false }
@@ -37,7 +37,6 @@ criterion = { version = "0.4", default-features = false }
 serde = { version = "1.0.196", default-features = false, features = ["derive", "alloc"] }
 hex = { version = "0.4", default-features = false, features = ["alloc", "serde"] }
 serde_json = { version = "1", default-features = false }
-dusk-bytes = { version = "0.1.6", default-features = false }
 impl-serde = { version = "0.5.0", default-features = false }
 
 # Crypto
@@ -49,15 +48,14 @@ blake2b_simd = { version = "1.0.2", default-features = false }
 sha2 = { version = "0.10.7", default-features = false }
 sha3 = { version = "0.10.0", default-features = false }
 
-poly-multiproof = { git = "https://github.com/availproject/poly-multiproof", default-features = false, branch = "toufeeq/blst-0.3.11" }
-dusk-plonk = { git = "https://github.com/availproject/plonk.git", default-features = false, features = ["alloc"], tag = "v0.12.0-polygon-2" }
-
+poly-multiproof = { git = "https://github.com/availproject/poly-multiproof", rev="c2794e32ca040e6b2544abde18b7187af3e66feb", default-features = false, features = ["ark-bls12-381", "blst"]}
 hash-db = { version = "0.16.0",  default-features = false }
 
 # Others
 rayon = "1.5.2"
 once_cell = "1.8.0"
 nalgebra = { version = "0.32.2", default-features = false }
+num-traits = { version = "0.2.18", default-features = false }
 
 # ETH
 ethabi-decode = { git = "https://github.com/Snowfork/ethabi-decode.git", branch = "master", default-features = false }
@@ -68,10 +66,6 @@ sp-crypto-ec-utils = { git = "https://github.com/availproject/polkadot-sdk", rev
 [profile.dev.package]
 nalgebra = { opt-level = 3 }
 blst = { opt-level = 3 }
-dusk-bls12_381 = { opt-level = 3 }
-dusk-plonk = { opt-level = 3 }
-dusk-jubjub = { opt-level = 3 }
-dusk-bytes = { opt-level = 3 }
 rayon = { opt-level = 3 }
 rayon-core = { opt-level = 3 }
 poly-multiproof = { opt-level = 3 }

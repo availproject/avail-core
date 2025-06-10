@@ -1,20 +1,22 @@
-use avail_core::constants::kate::{CHUNK_SIZE, COMMITMENT_SIZE};
+use avail_core::constants::kate::COMMITMENT_SIZE;
 use core::{array::TryFromSliceError, convert::TryInto, num::TryFromIntError};
 use sp_std::prelude::*;
 use thiserror_no_std::Error;
 
 #[cfg(feature = "std")]
+use super::commons::{ArkEvaluationDomain, ArkPublicParams, ArkScalar};
+#[cfg(feature = "std")]
 use crate::{com, matrix};
+#[cfg(feature = "std")]
+use avail_core::constants::kate::CHUNK_SIZE;
 #[cfg(feature = "std")]
 use avail_core::{ensure, AppId, DataLookup};
 #[cfg(feature = "std")]
 use core::convert::TryFrom;
 #[cfg(feature = "std")]
-use dusk_bytes::Serializable;
-#[cfg(feature = "std")]
-use dusk_plonk::{
-	fft::{EvaluationDomain, Evaluations},
-	prelude::{BlsScalar, CommitKey, PublicParameters},
+use poly_multiproof::{
+	ark_poly::EvaluationDomain,
+	traits::{AsBytes, Committer},
 };
 
 #[derive(Error, Debug)]
@@ -37,6 +39,8 @@ pub enum Error {
 	BadRowsData,
 	#[error("Integer conversion error")]
 	IntError(#[from] TryFromIntError),
+	#[error("Arkworks error")]
+	ArkworksError,
 }
 
 #[cfg(feature = "std")]
@@ -51,35 +55,26 @@ impl std::error::Error for Error {
 }
 
 #[cfg(feature = "std")]
-impl From<dusk_bytes::Error> for Error {
-	fn from(e: dusk_bytes::Error) -> Self {
-		match e {
-			dusk_bytes::Error::InvalidData => Self::ScalarDataError,
-			dusk_bytes::Error::BadLength { .. } => Self::BadScalarDataLen,
-			dusk_bytes::Error::InvalidChar { .. } => Self::BadScalarData,
-		}
-	}
-}
-#[cfg(feature = "std")]
-impl From<dusk_plonk::error::Error> for Error {
-	fn from(_: dusk_plonk::error::Error) -> Self {
-		Self::PlonkError
+impl From<poly_multiproof::Error> for Error {
+	fn from(e: poly_multiproof::Error) -> Self {
+		log::debug!("arkworks error: {:?}", e);
+		Self::ArkworksError
 	}
 }
 
 #[cfg(feature = "std")]
-fn try_into_scalar(chunk: &[u8]) -> Result<BlsScalar, Error> {
+fn try_into_scalar(chunk: &[u8]) -> Result<ArkScalar, Error> {
 	let sized_chunk = <[u8; CHUNK_SIZE]>::try_from(chunk)?;
-	BlsScalar::from_bytes(&sized_chunk).map_err(From::from)
+	ArkScalar::from_bytes(&sized_chunk).map_err(From::from)
 }
 
 #[cfg(feature = "std")]
-fn try_into_scalars(data: &[u8]) -> Result<Vec<BlsScalar>, Error> {
+fn try_into_scalars(data: &[u8]) -> Result<Vec<ArkScalar>, Error> {
 	let chunks = data.chunks_exact(CHUNK_SIZE);
 	ensure!(chunks.remainder().is_empty(), Error::BadLen);
 	chunks
 		.map(try_into_scalar)
-		.collect::<Result<Vec<BlsScalar>, Error>>()
+		.collect::<Result<Vec<ArkScalar>, Error>>()
 }
 
 /// Verifies given commitments and row commitments equality.
@@ -97,7 +92,7 @@ fn try_into_scalars(data: &[u8]) -> Result<Vec<BlsScalar>, Error> {
 /// * `app_id` - Application ID
 #[cfg(feature = "std")]
 pub fn verify_equality(
-	public_params: &PublicParameters,
+	public_params: &ArkPublicParams,
 	commitments: &[[u8; COMMITMENT_SIZE]],
 	rows: &[Option<Vec<u8>>],
 	index: &DataLookup,
@@ -113,8 +108,7 @@ pub fn verify_equality(
 	}
 
 	let dim_cols = dimensions.width();
-	let (prover_key, _) = public_params.trim(dim_cols)?;
-	let domain = EvaluationDomain::new(dim_cols)?;
+	let domain = ArkEvaluationDomain::new(dim_cols).ok_or(Error::ArkworksError)?;
 
 	// This is a single-threaded implementation.
 	// At some point we should benchmark and decide
@@ -125,7 +119,7 @@ pub fn verify_equality(
 		.zip(0u32..)
 		.filter(|(.., index)| app_rows.contains(index))
 		.filter_map(|((commitment, maybe_row), index)| {
-			row_index_commitment_verification(&prover_key, domain, commitment, maybe_row, index)
+			row_index_commitment_verification(public_params, domain, commitment, maybe_row, index)
 				.transpose()
 		})
 		.collect::<Result<Vec<u32>, Error>>()?;
@@ -137,18 +131,19 @@ pub fn verify_equality(
 
 #[cfg(feature = "std")]
 fn row_index_commitment_verification(
-	prover_key: &CommitKey,
-	domain: EvaluationDomain,
+	prover_key: &ArkPublicParams,
+	domain: ArkEvaluationDomain,
 	commitment: &[u8],
 	maybe_row: &Option<Vec<u8>>,
 	index: u32,
 ) -> Result<Option<u32>, Error> {
 	if let Some(row) = maybe_row.as_ref() {
 		let scalars = try_into_scalars(row)?;
-		let polynomial = Evaluations::from_vec_and_domain(scalars, domain).interpolate();
-		let result = prover_key.commit(&polynomial)?;
+		let polynomial = domain.ifft(&scalars);
+		let result = prover_key.commit(polynomial)?;
 
-		if result.to_bytes() == commitment {
+		let result_bytes = result.to_bytes().map_err(|_| Error::ArkworksError)?;
+		if result_bytes.as_ref() == commitment {
 			return Ok(Some(index));
 		}
 	}
@@ -166,16 +161,14 @@ pub fn from_slice(source: &[u8]) -> Result<Vec<[u8; COMMITMENT_SIZE]>, TryFromSl
 #[cfg(test)]
 mod tests {
 	use super::verify_equality;
+	use crate::{commons::ArkPublicParams, testnet};
 	use avail_core::{AppId, DataLookup};
-	use dusk_plonk::prelude::PublicParameters;
 	use once_cell::sync::Lazy;
-	use rand::SeedableRng;
-	use rand_chacha::ChaChaRng;
 
 	use crate::{commitments, matrix};
 
-	static PUBLIC_PARAMETERS: Lazy<PublicParameters> =
-		Lazy::new(|| PublicParameters::setup(256, &mut ChaChaRng::seed_from_u64(42)).unwrap());
+	static PUBLIC_PARAMETERS: Lazy<ArkPublicParams> =
+		Lazy::new(|| testnet::multiproof_params(256, 256));
 
 	#[test]
 	fn verify_equality_err() {

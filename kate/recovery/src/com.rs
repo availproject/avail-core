@@ -14,13 +14,13 @@ use sp_std::prelude::*;
 use thiserror_no_std::Error;
 
 #[cfg(feature = "std")]
+use super::commons::{ArkEvaluationDomain, ArkScalar};
+#[cfg(feature = "std")]
 use codec::{Decode, IoReader};
 #[cfg(feature = "std")]
-use dusk_bytes::Serializable as _;
+pub use num_traits::{One, Zero};
 #[cfg(feature = "std")]
-use dusk_plonk::{fft::EvaluationDomain, prelude::BlsScalar};
-#[cfg(feature = "std")]
-pub use sp_arithmetic::{traits::SaturatedConversion as _, Percent};
+use poly_multiproof::{ark_ff::Field, ark_poly::EvaluationDomain, traits::AsBytes};
 #[cfg(feature = "std")]
 use static_assertions::{const_assert, const_assert_ne};
 #[cfg(feature = "std")]
@@ -82,14 +82,13 @@ impl std::error::Error for ReconstructionError {
 pub fn columns_positions<R: rand::RngCore>(
 	dimensions: matrix::Dimensions,
 	positions: &[matrix::Position],
-	factor: Percent,
+	factor: u8,
 	rng: &mut R,
 ) -> Vec<matrix::Position> {
 	use rand::seq::SliceRandom;
 
-	let cells = factor
-		.mul_ceil(dimensions.extended_rows())
-		.saturated_into::<usize>();
+	let cells = (factor as u32 * dimensions.extended_rows()).div_ceil(100);
+	let cells = usize::try_from(cells).unwrap_or(usize::MAX);
 
 	let columns: HashSet<u16> = HashSet::from_iter(positions.iter().map(|position| position.col));
 
@@ -220,25 +219,33 @@ pub fn reconstruct_extrinsics(
 #[cfg(feature = "std")]
 pub fn reconstruct_columns(
 	dimensions: matrix::Dimensions,
-	cells: &[data::Cell],
+	cells: &[data::SingleCell],
 ) -> Result<HashMap<u16, Vec<[u8; CHUNK_SIZE]>>, ReconstructionError> {
-	let cells: Vec<data::DataCell> = cells.iter().cloned().map(Into::into).collect::<Vec<_>>();
-	let columns = map_cells(dimensions, cells)?;
+	// Convert cells into DataCells
+	let data_cells: Vec<data::DataCell> = cells.iter().cloned().map(Into::into).collect();
 
+	// Map cells by column
+	let columns = map_cells(dimensions, data_cells)?;
+
+	// Reconstruct each column
 	columns
 		.iter()
 		.map(|(&col, cells)| {
+			// Ensure minimum required number of cells
 			ensure!(
 				cells.len() >= dimensions.height(),
 				ReconstructionError::InvalidColumn(col)
 			);
 
-			let cells = cells.values().cloned().collect::<Vec<_>>();
+			// Extract and clone values
+			let cell_values = cells.values().cloned().collect::<Vec<_>>();
 
-			let column = reconstruct_column(dimensions.extended_rows(), &cells)?
+			// Reconstruct the column
+			let column = reconstruct_column(dimensions.extended_rows(), &cell_values)?
 				.iter()
-				.map(BlsScalar::to_bytes)
-				.collect::<Vec<[u8; CHUNK_SIZE]>>();
+				.map(ArkScalar::to_bytes)
+				.collect::<Result<Vec<[u8; CHUNK_SIZE]>, _>>()
+				.map_err(|_| ReconstructionError::InvalidColumn(col))?;
 
 			Ok((col, column))
 		})
@@ -277,8 +284,10 @@ fn reconstruct_available(
 			.and_then(|col| col.get(row))
 			.map(Option::as_ref)
 			.unwrap_or(None)
-			.map(BlsScalar::to_bytes)
-			.unwrap_or_else(|| [0; CHUNK_SIZE]);
+			.map(ArkScalar::to_bytes)
+			.transpose()
+			.map_err(|_| ReconstructionError::InvalidColumn(col as u16))?
+			.unwrap_or([0; CHUNK_SIZE]);
 		result.extend(bytes);
 	}
 	Ok(result)
@@ -399,10 +408,10 @@ pub fn unflatten_padded_data(
 fn reconstruct_poly(
 	// domain I'm working with
 	// all (i)ffts to be performed on it
-	eval_domain: EvaluationDomain,
+	eval_domain: ArkEvaluationDomain,
 	// subset of available data
-	subset: Vec<Option<BlsScalar>>,
-) -> Result<Vec<BlsScalar>, ReconstructionError> {
+	subset: Vec<Option<ArkScalar>>,
+) -> Result<Vec<ArkScalar>, ReconstructionError> {
 	let missing_indices = subset
 		.iter()
 		.enumerate()
@@ -412,16 +421,16 @@ fn reconstruct_poly(
 	let (mut zero_poly, zero_eval) =
 		zero_poly_fn(eval_domain, missing_indices.as_slice(), subset.len() as u64);
 	for i in 0..subset.len() {
-		if subset[i].is_none() && zero_eval[i] != BlsScalar::zero() {
+		if subset[i].is_none() && zero_eval[i] != ArkScalar::zero() {
 			return Err(ReconstructionError::BadZeroPoly);
 		}
 	}
-	let mut poly_evals_with_zero: Vec<BlsScalar> = Vec::new();
+	let mut poly_evals_with_zero: Vec<ArkScalar> = Vec::new();
 	for i in 0..subset.len() {
 		if let Some(v) = subset[i] {
 			poly_evals_with_zero.push(v * zero_eval[i]);
 		} else {
-			poly_evals_with_zero.push(BlsScalar::zero());
+			poly_evals_with_zero.push(ArkScalar::zero());
 		}
 	}
 	let mut poly_with_zero = eval_domain.ifft(&poly_evals_with_zero[..]);
@@ -430,24 +439,26 @@ fn reconstruct_poly(
 	let mut eval_shifted_poly_with_zero = eval_domain.fft(&poly_with_zero[..]);
 	let eval_shifted_zero_poly = eval_domain.fft(&zero_poly[..]);
 	for i in 0..eval_shifted_poly_with_zero.len() {
-		eval_shifted_poly_with_zero[i] *= eval_shifted_zero_poly[i].invert().unwrap();
+		eval_shifted_poly_with_zero[i] *= eval_shifted_zero_poly[i]
+			.inverse()
+			.ok_or(ReconstructionError::BadZeroPoly)?;
 	}
 
 	let mut shifted_reconstructed_poly = eval_domain.ifft(&eval_shifted_poly_with_zero[..]);
 	unshift_poly(&mut shifted_reconstructed_poly[..]);
 
-	let short_domain = EvaluationDomain::new(eval_domain.size() / 2).unwrap();
+	let short_domain = ArkEvaluationDomain::new(eval_domain.size() / 2).unwrap();
 
 	let reconstructed_data = short_domain.fft(&shifted_reconstructed_poly[..]);
 	Ok(reconstructed_data)
 }
 
 #[cfg(feature = "std")]
-fn expand_root_of_unity(eval_domain: EvaluationDomain) -> Vec<BlsScalar> {
-	let root_of_unity = eval_domain.group_gen;
-	let mut roots: Vec<BlsScalar> = vec![BlsScalar::one(), root_of_unity];
+fn expand_root_of_unity(eval_domain: ArkEvaluationDomain) -> Vec<ArkScalar> {
+	let root_of_unity = eval_domain.group_gen();
+	let mut roots: Vec<ArkScalar> = vec![ArkScalar::one(), root_of_unity];
 	let mut i = 1;
-	while roots[i] != BlsScalar::one() {
+	while roots[i] != ArkScalar::one() {
 		roots.push(roots[i] * root_of_unity);
 		i += 1;
 	}
@@ -456,17 +467,17 @@ fn expand_root_of_unity(eval_domain: EvaluationDomain) -> Vec<BlsScalar> {
 
 #[cfg(feature = "std")]
 fn zero_poly_fn(
-	eval_domain: EvaluationDomain,
+	eval_domain: ArkEvaluationDomain,
 	missing_indices: &[u64],
 	length: u64,
-) -> (Vec<BlsScalar>, Vec<BlsScalar>) {
+) -> (Vec<ArkScalar>, Vec<ArkScalar>) {
 	let expanded_r_o_u = expand_root_of_unity(eval_domain);
 	let domain_stride = eval_domain.size() as u64 / length;
-	let mut zero_poly: Vec<BlsScalar> = Vec::with_capacity(length as usize);
-	let mut sub: BlsScalar;
+	let mut zero_poly: Vec<ArkScalar> = Vec::with_capacity(length as usize);
+	let mut sub: ArkScalar;
 	for i in 0..missing_indices.len() {
 		let v = missing_indices[i];
-		sub = BlsScalar::zero() - expanded_r_o_u[(v * domain_stride) as usize];
+		sub = ArkScalar::zero() - expanded_r_o_u[(v * domain_stride) as usize];
 		zero_poly.push(sub);
 		if i > 0 {
 			zero_poly[i] = zero_poly[i] + zero_poly[i - 1];
@@ -477,9 +488,9 @@ fn zero_poly_fn(
 			zero_poly[0] *= sub
 		}
 	}
-	zero_poly.push(BlsScalar::one());
+	zero_poly.push(ArkScalar::one());
 	for _ in zero_poly.len()..zero_poly.capacity() {
-		zero_poly.push(BlsScalar::zero());
+		zero_poly.push(ArkScalar::zero());
 	}
 	let zero_eval = eval_domain.fft(&zero_poly[..]);
 	(zero_poly, zero_eval)
@@ -487,14 +498,14 @@ fn zero_poly_fn(
 
 // in-place shifting
 #[cfg(feature = "std")]
-fn shift_poly(poly: &mut [BlsScalar]) {
+fn shift_poly(poly: &mut [ArkScalar]) {
 	// primitive root of unity
-	let shift_factor = BlsScalar::from(5);
-	let mut factor_power = BlsScalar::one();
+	let shift_factor = ArkScalar::from(5);
+	let mut factor_power = ArkScalar::one();
 	// hoping it won't panic, though it should be handled properly
 	//
 	// this is actually 1/ shift_factor --- multiplicative inverse
-	let inv_factor = shift_factor.invert().unwrap();
+	let inv_factor = shift_factor.inverse().unwrap();
 
 	for coef in poly {
 		*coef *= factor_power;
@@ -504,10 +515,10 @@ fn shift_poly(poly: &mut [BlsScalar]) {
 
 // in-place unshifting
 #[cfg(feature = "std")]
-fn unshift_poly(poly: &mut [BlsScalar]) {
+fn unshift_poly(poly: &mut [ArkScalar]) {
 	// primitive root of unity
-	let shift_factor = BlsScalar::from(5);
-	let mut factor_power = BlsScalar::one();
+	let shift_factor = ArkScalar::from(5);
+	let mut factor_power = ArkScalar::one();
 
 	for coef in poly {
 		*coef *= factor_power;
@@ -529,7 +540,7 @@ pub type AppDataRange = Range<u32>;
 pub fn reconstruct_column(
 	row_count: u32,
 	cells: &[data::DataCell],
-) -> Result<Vec<BlsScalar>, ReconstructionError> {
+) -> Result<Vec<ArkScalar>, ReconstructionError> {
 	// just ensures all rows are from same column !
 	// it's required as that's how it's erasure coded during
 	// construction in validator node
@@ -543,13 +554,13 @@ pub fn reconstruct_column(
 
 	// given row index in column of interest, finds it if present
 	// and returns back wrapped in `Some`, otherwise returns `None`
-	fn find_row_by_index(idx: u32, cells: &[data::DataCell]) -> Option<BlsScalar> {
+	fn find_row_by_index(idx: u32, cells: &[data::DataCell]) -> Option<ArkScalar> {
 		cells
 			.iter()
 			.find(|cell| cell.position.row == idx)
 			.and_then(|cell| {
-				<[u8; BlsScalar::SIZE]>::try_from(&cell.data[..])
-					.map(|data| BlsScalar::from_bytes(&data).ok())
+				<[u8; CHUNK_SIZE]>::try_from(&cell.data[..])
+					.map(|data| ArkScalar::from_bytes(&data).ok())
 					.ok()
 					.flatten()
 			})
@@ -572,9 +583,9 @@ pub fn reconstruct_column(
 		ReconstructionError::CellsFromDifferentCols
 	);
 
-	let eval_domain = EvaluationDomain::new(row_count_sz)
-		.map_err(|_| ReconstructionError::InvalidEvaluationDomain)?;
-	let mut subset: Vec<Option<BlsScalar>> = Vec::with_capacity(row_count_sz);
+	let eval_domain = ArkEvaluationDomain::new(row_count_sz)
+		.ok_or(ReconstructionError::InvalidEvaluationDomain)?;
+	let mut subset: Vec<Option<ArkScalar>> = Vec::with_capacity(row_count_sz);
 
 	// fill up vector in ordered fashion
 	for i in 0..row_count {
@@ -701,7 +712,9 @@ pub fn reconstruct_rows(
 			.and_then(|col| col.get(row))
 			.map(Option::as_ref)
 			.unwrap_or(None)
-			.map(BlsScalar::to_bytes)
+			.map(ArkScalar::to_bytes)
+			.transpose()
+			.map_err(|_| ReconstructionError::InvalidColumn(col as u16))?
 			.unwrap_or_else(|| [0; CHUNK_SIZE]);
 
 		result[row][col * CHUNK_SIZE..(col + 1) * CHUNK_SIZE].copy_from_slice(&bytes);
@@ -713,7 +726,7 @@ pub fn reconstruct_rows(
 mod tests {
 	use std::convert::TryInto;
 
-	use dusk_bytes::Serializable;
+	// use dusk_bytes::Serializable;
 	use rand::{Rng, SeedableRng};
 	use rand_chacha::ChaChaRng;
 	use test_case::test_case;
@@ -755,17 +768,17 @@ mod tests {
 	#[test]
 	fn data_reconstruction_success() {
 		let domain_size = 1usize << 4;
-		let half_eval_domain = EvaluationDomain::new(domain_size).unwrap();
-		let eval_domain = EvaluationDomain::new(domain_size * 2).unwrap();
+		let half_eval_domain = ArkEvaluationDomain::new(domain_size).unwrap();
+		let eval_domain = ArkEvaluationDomain::new(domain_size * 2).unwrap();
 
 		// some dummy source data I care about
-		let mut src: Vec<BlsScalar> = Vec::with_capacity(domain_size * 2);
+		let mut src: Vec<ArkScalar> = Vec::with_capacity(domain_size * 2);
 		for i in 0..domain_size {
-			src.push(BlsScalar::from(1 << (i + 1)));
+			src.push(ArkScalar::from(1 << (i + 1)));
 		}
 		// fill extended portion of vector with zeros
 		for _ in domain_size..(2 * domain_size) {
-			src.push(BlsScalar::zero());
+			src.push(ArkScalar::zero());
 		}
 
 		// erasure code it
@@ -785,15 +798,15 @@ mod tests {
 	#[test]
 	fn data_reconstruction_failure_0() {
 		let domain_size = 1usize << 4;
-		let half_eval_domain = EvaluationDomain::new(domain_size).unwrap();
-		let eval_domain = EvaluationDomain::new(domain_size * 2).unwrap();
+		let half_eval_domain = ArkEvaluationDomain::new(domain_size).unwrap();
+		let eval_domain = ArkEvaluationDomain::new(domain_size * 2).unwrap();
 
-		let mut src: Vec<BlsScalar> = Vec::with_capacity(domain_size * 2);
+		let mut src: Vec<ArkScalar> = Vec::with_capacity(domain_size * 2);
 		for i in 0..domain_size {
-			src.push(BlsScalar::from(1 << (i + 1)));
+			src.push(ArkScalar::from(1 << (i + 1)));
 		}
 		for _ in domain_size..(2 * domain_size) {
-			src.push(BlsScalar::zero());
+			src.push(ArkScalar::zero());
 		}
 
 		let temp = half_eval_domain.ifft(&src[0..domain_size]);
@@ -823,7 +836,7 @@ mod tests {
 	//
 	// Need for writing these test cases originates in a conversation
 	// with Prabal<https://github.com/prabal-banerjee> where we were discussing
-	// how to ensure input byte chunks to dusk-plonk's `BlsScalar::from_bytes()`
+	// how to ensure input byte chunks to dusk-plonk's `ArkScalar::from_bytes()`
 	// is always lesser than prime field modulus ( 255 bits wide ), because
 	// we'll get data bytes from arbitrary sources which will be concatenated into
 	// single large byte array & finally (multiple) field elements to be produced by chunking contiguous bytes,
@@ -844,7 +857,7 @@ mod tests {
 	//
 	// **Solution** So we decided to chunk contiguous 31 bytes from large input byte array and
 	// append zero byte(s) to each chunk for making 32 -bytes wide before inputting
-	// 256 -bit integer to `BlsScalar::from_bytes( ... )` function
+	// 256 -bit integer to `ArkScalar::from_bytes( ... )` function
 	//
 	// Note, this means, for each field element of 256 -bits, we've 6 -bits free to use
 	// and at this moment that's just set to zeros !
@@ -863,13 +876,10 @@ mod tests {
 		// along with test description, for historical purposes.
 
 		let mut data = [0xffu8; 32];
-		assert_eq!(
-			BlsScalar::from_bytes(&data),
-			Err(dusk_bytes::Error::InvalidData)
-		);
+		assert!(ArkScalar::from_bytes(&data).is_err());
 
 		data[31] = 0x3f;
-		assert!(BlsScalar::from_bytes(&data).is_ok());
+		assert!(ArkScalar::from_bytes(&data).is_ok());
 	}
 
 	#[test]
@@ -879,8 +889,8 @@ mod tests {
 		let input = [0xffu8; 32 << 4];
 
 		let domain_size = ((input.len() as f64) / GROUP_TOGETHER as f64).ceil() as usize;
-		let half_eval_domain = EvaluationDomain::new(domain_size).unwrap();
-		let eval_domain = EvaluationDomain::new(domain_size * 2).unwrap();
+		let half_eval_domain = ArkEvaluationDomain::new(domain_size).unwrap();
+		let eval_domain = ArkEvaluationDomain::new(domain_size * 2).unwrap();
 
 		let mut input_wide: Vec<[u8; 32]> = Vec::with_capacity(domain_size);
 
@@ -898,8 +908,8 @@ mod tests {
 
 		let src = input_wide
 			.iter()
-			.map(|e| BlsScalar::from_bytes(e).unwrap())
-			.chain(vec![BlsScalar::zero(); domain_size])
+			.map(|e| ArkScalar::from_bytes(e).unwrap())
+			.chain(vec![ArkScalar::zero(); domain_size])
 			.collect::<Vec<_>>();
 
 		// erasure code it
@@ -921,13 +931,13 @@ mod tests {
 			} else {
 				&input[i * GROUP_TOGETHER..(i + 1) * GROUP_TOGETHER]
 			};
-			let chunk_1 = &recovered[i].to_bytes()[..chunk_0.len()];
+			let chunk_1 = &recovered[i].to_bytes().unwrap()[..chunk_0.len()];
 
 			assert_eq!(chunk_0, chunk_1, "at i = {}", i);
 		}
 	}
 
-	fn drop_few(data: &mut [Option<BlsScalar>], mut available: usize) {
+	fn drop_few(data: &mut [Option<ArkScalar>], mut available: usize) {
 		assert!(available <= data.len());
 
 		let mut idx = 0;
@@ -944,9 +954,9 @@ mod tests {
 	// reconstruction purpose
 	//
 	// @note this is just a helper function for writing test case
-	fn random_subset(data: &[BlsScalar], seed: [u8; 32]) -> (Vec<Option<BlsScalar>>, usize) {
+	fn random_subset(data: &[ArkScalar], seed: [u8; 32]) -> (Vec<Option<ArkScalar>>, usize) {
 		let mut rng = ChaChaRng::from_seed(seed);
-		let mut subset: Vec<Option<BlsScalar>> = Vec::with_capacity(data.len());
+		let mut subset: Vec<Option<ArkScalar>> = Vec::with_capacity(data.len());
 		let mut available = 0;
 		for item in data {
 			if rng.gen::<u8>() % 2 == 0 {
@@ -978,22 +988,22 @@ mod tests {
 		}
 	}
 
-	fn build_coded_eval_domain() -> (Vec<BlsScalar>, u32, u16) {
+	fn build_coded_eval_domain() -> (Vec<ArkScalar>, u32, u16) {
 		let domain_size = 1u16 << 2;
 		let row_count = domain_size.checked_mul(2).unwrap();
-		let eval_domain = EvaluationDomain::new(domain_size as usize).unwrap();
+		let eval_domain = ArkEvaluationDomain::new(domain_size as usize).unwrap();
 
-		let mut src: Vec<BlsScalar> = Vec::with_capacity(row_count as usize);
+		let mut src: Vec<ArkScalar> = Vec::with_capacity(row_count as usize);
 		for i in 0..domain_size {
-			src.push(BlsScalar::from(1 << (i + 1)));
+			src.push(ArkScalar::from(1 << (i + 1)));
 		}
-		eval_domain.ifft_slice(src.as_mut_slice());
+		eval_domain.ifft(src.as_mut_slice());
 		for _ in domain_size..row_count {
-			src.push(BlsScalar::zero());
+			src.push(ArkScalar::zero());
 		}
 
 		// erasure coded all data
-		let eval_domain = EvaluationDomain::new(row_count as usize).unwrap();
+		let eval_domain = ArkEvaluationDomain::new(row_count as usize).unwrap();
 		let coded = eval_domain.fft(&src);
 		assert!(coded.len() == row_count as usize);
 
@@ -1016,19 +1026,19 @@ mod tests {
 		let cells = vec![
 			DataCell {
 				position: Position { row: 0, col: 0 },
-				data: coded[0].to_bytes(),
+				data: coded[0].to_bytes().unwrap(),
 			},
 			DataCell {
 				position: Position { row: 4, col: 0 },
-				data: coded[4].to_bytes(),
+				data: coded[4].to_bytes().unwrap(),
 			},
 			DataCell {
 				position: Position { row: 6, col: 0 },
-				data: coded[6].to_bytes(),
+				data: coded[6].to_bytes().unwrap(),
 			},
 			DataCell {
 				position: Position { row: 2, col: 0 },
-				data: coded[2].to_bytes(),
+				data: coded[2].to_bytes().unwrap(),
 			},
 		];
 
@@ -1054,19 +1064,19 @@ mod tests {
 		let cells = vec![
 			DataCell {
 				position: Position { row: 0, col: 0 },
-				data: coded[0].to_bytes(),
+				data: coded[0].to_bytes().unwrap(),
 			},
 			DataCell {
 				position: Position { row: 0, col: 0 },
-				data: coded[0].to_bytes(),
+				data: coded[0].to_bytes().unwrap(),
 			},
 			DataCell {
 				position: Position { row: 6, col: 0 },
-				data: coded[6].to_bytes(),
+				data: coded[6].to_bytes().unwrap(),
 			},
 			DataCell {
 				position: Position { row: 2, col: 0 },
-				data: coded[2].to_bytes(),
+				data: coded[2].to_bytes().unwrap(),
 			},
 		];
 
@@ -1087,15 +1097,15 @@ mod tests {
 		let cells = vec![
 			DataCell {
 				position: Position { row: 4, col: 0 },
-				data: coded[4].to_bytes(),
+				data: coded[4].to_bytes().unwrap(),
 			},
 			DataCell {
 				position: Position { row: 6, col: 0 },
-				data: coded[6].to_bytes(),
+				data: coded[6].to_bytes().unwrap(),
 			},
 			DataCell {
 				position: Position { row: 2, col: 0 },
-				data: coded[2].to_bytes(),
+				data: coded[2].to_bytes().unwrap(),
 			},
 		];
 
@@ -1116,19 +1126,19 @@ mod tests {
 		let cells = vec![
 			DataCell {
 				position: Position { row: 0, col: 0 },
-				data: coded[0].to_bytes(),
+				data: coded[0].to_bytes().unwrap(),
 			},
 			DataCell {
 				position: Position { row: 5, col: 0 },
-				data: coded[4].to_bytes(),
+				data: coded[4].to_bytes().unwrap(),
 			},
 			DataCell {
 				position: Position { row: 6, col: 0 },
-				data: coded[6].to_bytes(),
+				data: coded[6].to_bytes().unwrap(),
 			},
 			DataCell {
 				position: Position { row: 2, col: 0 },
-				data: coded[2].to_bytes(),
+				data: coded[2].to_bytes().unwrap(),
 			},
 		];
 

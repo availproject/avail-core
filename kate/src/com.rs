@@ -7,6 +7,7 @@ use std::{
 	sync::Mutex,
 	time::Instant,
 };
+use thiserror_no_std::Error;
 
 use avail_core::{
 	const_generic_asserts::{USizeGreaterOrEq, USizeSafeCastToU32, UsizeEven, UsizeNonZero},
@@ -16,38 +17,35 @@ use avail_core::{
 };
 use codec::Encode;
 use derive_more::Constructor;
-use dusk_bytes::Serializable;
-use dusk_plonk::{
-	commitment_scheme::kzg10,
-	error::Error as PlonkError,
-	fft::{EvaluationDomain, Evaluations},
-	prelude::{BlsScalar, CommitKey},
-};
 use nalgebra::base::DMatrix;
 use rand::Rng;
 use rand_chacha::{
 	rand_core::{Error as ChaChaError, SeedableRng},
 	ChaChaRng,
 };
-
 use rayon::prelude::*;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use sp_arithmetic::traits::SaturatedConversion;
 use static_assertions::const_assert_eq;
-use thiserror_no_std::Error;
 
 use crate::{
-	com::kzg10::commitment::Commitment,
 	config::{
 		COL_EXTENSION, MAXIMUM_BLOCK_SIZE, MINIMUM_BLOCK_SIZE, PROOF_SIZE, ROW_EXTENSION,
 		SCALAR_SIZE,
 	},
 	metrics::Metrics,
-	padded_len_of_pad_iec_9797_1, BlockDimensions, Seed, TryFromBlockDimensionsError, LOG_TARGET,
+	padded_len_of_pad_iec_9797_1, BlockDimensions, Seed, TryFromBlockDimensionsError,
 };
+use kate_recovery::commons::{ArkEvaluationDomain, ArkPublicParams, ArkScalar};
 #[cfg(feature = "std")]
 use kate_recovery::matrix::Dimensions;
+#[cfg(feature = "std")]
+use poly_multiproof::ark_bls12_381::Bls12_381;
+#[cfg(feature = "std")]
+type ArkCommitment = poly_multiproof::Commitment<Bls12_381>;
+use poly_multiproof::traits::Committer;
+use poly_multiproof::traits::KZGProof;
+use poly_multiproof::{ark_poly::EvaluationDomain, traits::AsBytes};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Constructor, Clone, Copy, PartialEq, Eq, Debug)]
@@ -75,8 +73,9 @@ impl Cell {
 
 #[derive(Error, Debug)]
 pub enum Error {
-	PlonkError(#[from] PlonkError),
-	DuskBytesError(#[from] dusk_bytes::Error),
+	// Keeping the removed errors placeholder for backwards compatibility
+	PlonkErrorPlaceholder,
+	DuskBytesErrorPlaceholder,
 	MultiproofError(#[from] poly_multiproof::Error),
 	CellLengthExceeded,
 	BadHeaderHash,
@@ -291,7 +290,8 @@ fn pad_to_chunk<const CHUNK_SIZE: usize>(chunk: DataChunk) -> Vec<u8> {
 }
 
 fn pad_iec_9797_1(mut data: Vec<u8>) -> Vec<DataChunk> {
-	let padded_size = padded_len_of_pad_iec_9797_1(data.len().saturated_into());
+	let data_len = u32::try_from(data.len()).unwrap_or(u32::MAX);
+	let padded_size = padded_len_of_pad_iec_9797_1(data_len);
 	data.resize(padded_size as usize, 0u8);
 
 	// Transform into `DataChunk`.
@@ -302,20 +302,10 @@ fn pad_iec_9797_1(mut data: Vec<u8>) -> Vec<DataChunk> {
 		.expect("Const assertion ensures this transformation to `DataChunk`. qed")
 }
 
-fn extend_column_with_zeros(column: &[BlsScalar], height: usize) -> Vec<BlsScalar> {
-	let mut extended = Vec::with_capacity(height);
-	let copied = core::cmp::min(height, column.len());
-
-	extended.extend_from_slice(&column[..copied]);
-	extended.resize(height, BlsScalar::zero());
-
-	extended
-}
-
-pub fn to_bls_scalar(chunk: &[u8]) -> Result<BlsScalar, Error> {
+pub fn to_bls_scalar(chunk: &[u8]) -> Result<ArkScalar, Error> {
 	let scalar_size_chunk =
 		<[u8; SCALAR_SIZE]>::try_from(chunk).map_err(|_| Error::InvalidChunkLength)?;
-	BlsScalar::from_bytes(&scalar_size_chunk).map_err(|_| Error::CellLengthExceeded)
+	ArkScalar::from_bytes(&scalar_size_chunk).map_err(|_| Error::CellLengthExceeded)
 }
 
 fn make_dims(bd: BlockDimensions) -> Result<Dimensions, Error> {
@@ -335,7 +325,7 @@ pub fn par_extend_data_matrix<M: Metrics>(
 	block_dims: BlockDimensions,
 	block: &[u8],
 	metrics: &M,
-) -> Result<DMatrix<BlsScalar>, Error> {
+) -> Result<DMatrix<ArkScalar>, Error> {
 	let start = Instant::now();
 	let dims = make_dims(block_dims)?;
 	let (ext_rows, _): (usize, usize) = dims
@@ -354,10 +344,11 @@ pub fn par_extend_data_matrix<M: Metrics>(
 	let scalars = chunks
 		.into_par_iter()
 		.map(to_bls_scalar)
-		.collect::<Result<Vec<BlsScalar>, Error>>()?;
+		.collect::<Result<Vec<ArkScalar>, Error>>()?;
 
-	let extended_column_eval_domain = EvaluationDomain::new(ext_rows)?;
-	let column_eval_domain = EvaluationDomain::new(rows)?; // rows_num = column_length
+	let extended_column_eval_domain =
+		ArkEvaluationDomain::new(ext_rows).ok_or(Error::InvalidDimensionExtension)?;
+	let column_eval_domain = ArkEvaluationDomain::new(rows).ok_or(Error::DomainSizeInvalid)?; // rows_num = column_length
 
 	// The data is currently row-major, so we need to put it into column-major
 	let col_wise_scalars = DMatrix::from_row_iterator(rows, cols, scalars);
@@ -367,12 +358,11 @@ pub fn par_extend_data_matrix<M: Metrics>(
 		.flat_map(|col| {
 			let col_view = col_wise_scalars.column(col).data.into_slice();
 			debug_assert_eq!(col_view.len(), rows);
-			let mut ext_col = extend_column_with_zeros(col_view, ext_rows);
-			// (i)fft functions input parameter slice size has to be a power of 2, otherwise it panics
-			column_eval_domain.ifft_slice(&mut ext_col[0..rows]);
-			extended_column_eval_domain.fft_slice(ext_col.as_mut_slice());
-			debug_assert_eq!(ext_col.len(), ext_rows);
-			ext_col
+
+			let coeffs = column_eval_domain.ifft(col_view);
+			let extended_col = extended_column_eval_domain.fft(&coeffs);
+			debug_assert_eq!(extended_col.len(), ext_rows);
+			extended_col
 		})
 		.collect::<Vec<_>>();
 	debug_assert_eq!(Some(ext_columns_wise.len()), cols.checked_mul(ext_rows));
@@ -385,9 +375,9 @@ pub fn par_extend_data_matrix<M: Metrics>(
 }
 
 pub fn build_proof<M: Metrics>(
-	public_params: &kzg10::PublicParameters,
+	public_params: &ArkPublicParams,
 	block_dims: BlockDimensions,
-	ext_data_matrix: &DMatrix<BlsScalar>,
+	ext_data_matrix: &DMatrix<ArkScalar>,
 	cells: &[Cell],
 	metrics: &M,
 ) -> Result<Vec<u8>, Error> {
@@ -400,17 +390,11 @@ pub fn build_proof<M: Metrics>(
 
 	const SPROOF_SIZE: usize = PROOF_SIZE + SCALAR_SIZE;
 
-	let (prover_key, _) = public_params.trim(cols).map_err(Error::from)?;
-
-	// Generate all the x-axis points of the domain on which all the row polynomials reside
-	let row_eval_domain = EvaluationDomain::new(cols)?;
+	let row_eval_domain = ArkEvaluationDomain::new(cols).ok_or(Error::DomainSizeInvalid)?;
 	let row_dom_x_pts = row_eval_domain.elements().collect::<Vec<_>>();
 
 	let mut result_bytes: Vec<u8> = vec![0u8; SPROOF_SIZE.saturating_mul(cells.len())];
-
-	let prover_key = &prover_key;
 	let row_dom_x_pts = &row_dom_x_pts;
-
 	let total_start = Instant::now();
 
 	// attempt to parallelly compute proof for all requested cells
@@ -420,7 +404,7 @@ pub fn build_proof<M: Metrics>(
 
 	let locked_errors = Mutex::new(Vec::<Error>::new());
 
-	let get_cell_row = |cell: &Cell| -> Result<(Vec<BlsScalar>, usize, usize), Error> {
+	let get_cell_row = |cell: &Cell| -> Result<(Vec<ArkScalar>, usize, usize), Error> {
 		let r_index = usize::try_from(cell.row.0)?;
 		if r_index >= ext_rows || cell.col >= block_dims.cols {
 			return Err(Error::IndexOutOfRange);
@@ -432,7 +416,7 @@ pub fn build_proof<M: Metrics>(
 
 		// construct polynomial per extended matrix row
 		#[cfg(feature = "parallel")]
-		let row: Vec<BlsScalar> = {
+		let row: Vec<ArkScalar> = {
 			let mut row = Vec::with_capacity(ext_cols.checked_add(1).ok_or(Error::BlockTooBig)?);
 			(0..ext_cols)
 				.into_par_iter()
@@ -443,7 +427,7 @@ pub fn build_proof<M: Metrics>(
 		#[cfg(not(feature = "parallel"))]
 		let row = (0..ext_cols)
 			.map(get_ext_data_matrix)
-			.collect::<Vec<BlsScalar>>();
+			.collect::<Vec<ArkScalar>>();
 
 		Ok((row, r_index, c_index))
 	};
@@ -463,26 +447,56 @@ pub fn build_proof<M: Metrics>(
 		// # SAFETY: `interpolate` function panics if the following debug assertion is not met,
 		// so it would simplify the location of that error.
 		debug_assert_eq!(row.len(), cols.next_power_of_two());
-		let poly = Evaluations::from_vec_and_domain(row, row_eval_domain).interpolate();
-		let witness = prover_key.compute_single_witness(&poly, &row_dom_x_pts[c_index]);
 
-		match prover_key.commit(&witness) {
-			Ok(commitment_to_witness) => {
-				let evaluated_point =
-					ext_data_matrix[r_index.saturating_add(c_index.saturating_mul(ext_rows))];
+		let poly = row_eval_domain.ifft(&row);
 
-				res[0..PROOF_SIZE].copy_from_slice(&commitment_to_witness.to_bytes());
-				res[PROOF_SIZE..].copy_from_slice(&evaluated_point.to_bytes());
+		let witness = match public_params.compute_witness_polynomial(poly, row_dom_x_pts[c_index]) {
+			Ok(w) => w,
+			Err(e) => {
+				if let Ok(mut errors) = locked_errors.lock() {
+					errors.push(Error::MultiproofError(e));
+				}
+				return;
+			},
+		};
+
+		let commitment_bytes = match public_params.open(witness) {
+			Ok(commitment_to_witness) => match commitment_to_witness.to_bytes() {
+				Ok(bytes) => bytes,
+				Err(e) => {
+					if let Ok(mut errors) = locked_errors.lock() {
+						errors.push(Error::MultiproofError(e));
+					}
+					return;
+				},
 			},
 			Err(e) => {
 				if let Ok(mut errors) = locked_errors.lock() {
-					errors.push(Error::PlonkError(e))
+					errors.push(Error::MultiproofError(e));
 				}
+				return;
 			},
 		};
+
+		let point_bytes = match ext_data_matrix
+			[r_index.saturating_add(c_index.saturating_mul(ext_rows))]
+		.to_bytes()
+		{
+			Ok(bytes) => bytes,
+			Err(e) => {
+				if let Ok(mut errors) = locked_errors.lock() {
+					errors.push(Error::MultiproofError(e));
+				}
+				return;
+			},
+		};
+
+		res[0..PROOF_SIZE].copy_from_slice(&commitment_bytes);
+		res[PROOF_SIZE..].copy_from_slice(&point_bytes);
 	});
 
-	metrics.proof_build_time(total_start.elapsed(), cells.len().saturated_into());
+	let cells_len = u32::try_from(cells.len()).unwrap_or(u32::MAX);
+	metrics.proof_build_time(total_start.elapsed(), cells_len);
 
 	if let Ok(mut errors) = locked_errors.lock() {
 		if let Some(error) = errors.pop() {
@@ -500,9 +514,8 @@ pub fn par_build_commitments<const CHUNK_SIZE: usize, M: Metrics>(
 	extrinsics_by_key: &[AppExtrinsic],
 	rng_seed: Seed,
 	metrics: &M,
-) -> Result<(XtsLayout, Vec<u8>, BlockDimensions, DMatrix<BlsScalar>), Error> {
+) -> Result<(XtsLayout, Vec<u8>, BlockDimensions, DMatrix<ArkScalar>), Error> {
 	use crate::couscous;
-	use avail_core::from_substrate;
 
 	let start = Instant::now();
 
@@ -510,7 +523,8 @@ pub fn par_build_commitments<const CHUNK_SIZE: usize, M: Metrics>(
 	let (tx_layout, block, block_dims) =
 		flatten_and_pad_block::<CHUNK_SIZE>(rows, cols, extrinsics_by_key, rng_seed)?;
 
-	metrics.block_dims_and_size(block_dims, block.len().saturated_into());
+	let block_len = u32::try_from(block.len()).unwrap_or(u32::MAX);
+	metrics.block_dims_and_size(block_dims, block_len);
 
 	let ext_matrix = par_extend_data_matrix(block_dims, &block, metrics)?;
 
@@ -522,23 +536,9 @@ pub fn par_build_commitments<const CHUNK_SIZE: usize, M: Metrics>(
 
 	metrics.preparation_block_time(start.elapsed());
 
-	let public_params = couscous::public_params();
-
-	if log::log_enabled!(target: LOG_TARGET, log::Level::Debug) {
-		let raw_pp = public_params.to_raw_var_bytes();
-		let hash_pp = hex::encode(from_substrate::blake2_128(&raw_pp));
-		let hex_pp = hex::encode(raw_pp);
-		log::debug!(
-			target: LOG_TARGET,
-			"Public params (len={}): hash: {}",
-			hex_pp.len(),
-			hash_pp,
-		);
-	}
-
-	// let (prover_key, _) = public_params.trim(block_dims_cols)?;
-	let prover_key = public_params.commit_key();
-	let row_eval_domain = EvaluationDomain::new(block_dims_cols)?;
+	let public_params = couscous::multiproof_params();
+	let row_eval_domain =
+		ArkEvaluationDomain::new(block_dims_cols).ok_or(Error::DomainSizeInvalid)?;
 
 	let start = Instant::now();
 	let mut commitments =
@@ -547,35 +547,37 @@ pub fn par_build_commitments<const CHUNK_SIZE: usize, M: Metrics>(
 		.into_par_iter()
 		.map(|row_idx| {
 			let ext_row = get_row(&ext_matrix, row_idx);
-			commit(&prover_key, row_eval_domain, ext_row)
+			commit(&public_params, row_eval_domain, ext_row)
 		})
 		.collect_into_vec(&mut commitments);
 
 	let commitments = commitments.into_iter().collect::<Result<Vec<_>, _>>()?;
 	let commitments_bytes = commitments
 		.into_par_iter()
-		.flat_map(|c| c.to_bytes())
-		.collect();
-
+		.map(|c| c.to_bytes().map(|b| b.to_vec()))
+		.collect::<Result<Vec<_>, _>>()? // propagate the first error
+		.into_iter()
+		.flatten()
+		.collect::<Vec<u8>>();
 	metrics.commitment_build_time(start.elapsed());
 
 	Ok((tx_layout, commitments_bytes, block_dims, ext_matrix))
 }
 
 #[cfg(feature = "std")]
-fn get_row(m: &DMatrix<BlsScalar>, row_idx: usize) -> Vec<BlsScalar> {
+fn get_row(m: &DMatrix<ArkScalar>, row_idx: usize) -> Vec<ArkScalar> {
 	m.row(row_idx).iter().cloned().collect()
 }
 
 #[cfg(feature = "std")]
 // Generate a commitment
 fn commit(
-	prover_key: &CommitKey,
-	domain: EvaluationDomain,
-	row: Vec<BlsScalar>,
-) -> Result<Commitment, Error> {
-	let poly = Evaluations::from_vec_and_domain(row, domain).interpolate();
-	prover_key.commit(&poly).map_err(Error::from)
+	prover_key: &ArkPublicParams,
+	domain: ArkEvaluationDomain,
+	row: Vec<ArkScalar>,
+) -> Result<ArkCommitment, Error> {
+	let poly = domain.ifft(&row);
+	prover_key.commit(poly).map_err(Error::from)
 }
 
 #[cfg(feature = "std")]
@@ -583,29 +585,40 @@ pub fn scalars_to_app_rows(
 	id: AppId,
 	lookup: &DataLookup,
 	dimensions: Dimensions,
-	matrix: &DMatrix<BlsScalar>,
+	matrix: &DMatrix<ArkScalar>,
 ) -> Vec<Option<Vec<u8>>> {
 	let app_rows = kate_recovery::com::app_specific_rows(lookup, dimensions, id);
 	dimensions
 		.iter_extended_rows()
 		.map(|i| {
-			app_rows.iter().find(|&&row| row == i).map(|_| {
+			if app_rows.iter().any(|&row| row == i) {
 				let row = get_row(matrix, i as usize);
-				row.iter()
-					.flat_map(BlsScalar::to_bytes)
-					.collect::<Vec<u8>>()
-			})
+				let maybe_bytes: Result<Vec<u8>, _> = row
+					.iter()
+					.map(ArkScalar::to_bytes)
+					.collect::<Result<Vec<[u8; SCALAR_SIZE]>, _>>()
+					.map(|chunks| chunks.into_iter().flatten().collect());
+				match maybe_bytes {
+					Ok(bytes) => Some(bytes),
+					Err(e) => {
+						log::error!("Failed to convert scalar at row {} to bytes: {:?}", i, e);
+						None
+					},
+				}
+			} else {
+				None
+			}
 		})
 		.collect()
 }
 
 #[cfg(feature = "std")]
 fn row(
-	data: &DMatrix<BlsScalar>,
+	data: &DMatrix<ArkScalar>,
 	i: usize,
 	cols: BlockLengthColumns,
 	extended_rows: BlockLengthRows,
-) -> Vec<BlsScalar> {
+) -> Vec<ArkScalar> {
 	let mut row = Vec::with_capacity(cols.0 as usize);
 	(0..(cols.0 as usize).saturating_mul(extended_rows.0 as usize))
 		.step_by(extended_rows.0 as usize)
@@ -618,37 +631,50 @@ fn row(
 pub fn scalars_to_rows(
 	rows: &[u32],
 	dimensions: &Dimensions,
-	data: &DMatrix<BlsScalar>,
+	data: &DMatrix<ArkScalar>,
 ) -> Vec<Option<Vec<u8>>> {
 	let extended_rows = BlockLengthRows(dimensions.extended_rows());
 	let cols = BlockLengthColumns(dimensions.cols().get() as u32);
 	dimensions
 		.iter_extended_rows()
 		.map(|i| {
-			rows.contains(&i).then(|| {
-				row(data, i as usize, cols, extended_rows)
+			if rows.contains(&i) {
+				let scalars = row(data, i as usize, cols, extended_rows);
+				let maybe_bytes: Result<Vec<u8>, _> = scalars
 					.iter()
-					.flat_map(BlsScalar::to_bytes)
-					.collect::<Vec<u8>>()
-			})
+					.map(ArkScalar::to_bytes)
+					.collect::<Result<Vec<[u8; SCALAR_SIZE]>, _>>()
+					.map(|chunks| chunks.into_iter().flatten().collect());
+				match maybe_bytes {
+					Ok(bytes) => Some(bytes),
+					Err(e) => {
+						log::error!("Failed to convert scalars at row {} to bytes: {:?}", i, e);
+						None
+					},
+				}
+			} else {
+				None
+			}
 		})
-		.collect::<Vec<Option<Vec<u8>>>>()
+		.collect()
 }
 
 #[cfg(test)]
 mod tests {
+	use crate::gridgen::core::AsBytes;
 	use avail_core::{
 		constants::kate::{CHUNK_SIZE, COMMITMENT_SIZE, DATA_CHUNK_SIZE},
 		DataLookup,
 	};
-	use codec::{Compact, CompactLen as _};
-	use dusk_bytes::Serializable;
-	use dusk_plonk::bls12_381::BlsScalar;
+	use codec::{Compact, CompactLen, Decode};
+	use core::num::NonZeroU16;
+	use core::usize;
 	use hex_literal::hex;
+	use kate_recovery::proof::domain_points;
 	use kate_recovery::{
 		com::*,
 		commitments,
-		data::{self, DataCell},
+		data::{self, DataCell, SingleCell},
 		matrix::{Dimensions, Position},
 		proof,
 	};
@@ -657,7 +683,6 @@ mod tests {
 		prelude::*,
 	};
 	use rand::{prelude::IteratorRandom, Rng, SeedableRng};
-	use sp_arithmetic::Percent;
 	use std::{convert::TryInto, iter::repeat};
 	use test_case::test_case;
 
@@ -665,9 +690,10 @@ mod tests {
 	use crate::{
 		com::{pad_iec_9797_1, par_extend_data_matrix, BlockDimensions},
 		couscous,
-		gridgen::{EvaluationGrid, Multiproof},
+		gridgen::core::{EvaluationGrid, Multiproof},
 		metrics::IgnoreMetrics,
 		padded_len,
+		pmp::{merlin::Transcript, traits::PolyMultiProofNoPrecomp, Commitment},
 	};
 
 	const TCHUNK_SIZE: usize = 32;
@@ -720,7 +746,7 @@ mod tests {
 			hex!("1ebf725495e11b806dc58d261ac918a4f85260cb45618241614c432a2153ae16"),
 		]
 		.iter()
-		.map(BlsScalar::from_bytes)
+		.map(ArkScalar::from_bytes)
 		.collect::<Result<Vec<_>, _>>()
 		.expect("Invalid Expected result");
 		let expected = DMatrix::from_iterator(4, 4, expected);
@@ -801,17 +827,16 @@ mod tests {
 	}
 
 	// returns the random cell positions by respecting the max col_percent % per column
-	fn sampled_cells(dimensions: Dimensions, col_percent: Percent) -> Vec<Position> {
+	fn sampled_cells(dimensions: Dimensions, col_percent: u8) -> Vec<Position> {
 		let mut rng = rand::thread_rng();
 		let mut sampled_positions = vec![];
-
 		for col in 0..dimensions.cols().get() {
 			let total_cells = dimensions.rows().get();
-			let sample_size = col_percent.mul_floor(total_cells).saturated_into::<usize>();
+			let sample_size = (col_percent as u32 * total_cells as u32) / 100;
 
 			let col_positions: Vec<Position> = (0..total_cells)
 				.map(|row| Position::new(row as u32, col))
-				.choose_multiple(&mut rng, sample_size);
+				.choose_multiple(&mut rng, sample_size.try_into().unwrap());
 
 			sampled_positions.extend(col_positions);
 		}
@@ -820,7 +845,7 @@ mod tests {
 	}
 
 	fn sample_cells_from_matrix(
-		matrix: &DMatrix<BlsScalar>,
+		matrix: &DMatrix<ArkScalar>,
 		columns: Option<&[u16]>,
 	) -> Vec<DataCell> {
 		fn random_indexes(length: usize, seed: Seed) -> Vec<usize> {
@@ -857,7 +882,7 @@ mod tests {
 						let position = Position::new(row_pos, col_idx);
 						debug_assert!(*row_idx < col_view.len());
 						let data = col_view[*row_idx].to_bytes();
-						DataCell::new(position, data)
+						DataCell::new(position, data.unwrap())
 					})
 					.collect::<Vec<_>>()
 			})
@@ -886,15 +911,14 @@ mod tests {
 	fn random_cells(
 		max_cols: BlockLengthColumns,
 		max_rows: BlockLengthRows,
-		percents: Percent,
+		percents: u8,
 	) -> Vec<Cell> {
-		let max_cols = max_cols.into();
-		let max_rows = max_rows.into();
+		let max_cols: u32 = max_cols.into();
+		let max_rows: u32 = max_rows.into();
 
 		let rng = &mut ChaChaRng::from_seed([0u8; 32]);
-		let amount: usize = percents
-			.mul_ceil::<u32>(max_cols * max_rows)
-			.saturated_into();
+		let amount = (percents as u32 * (max_cols * max_rows)).div_ceil(100);
+		let amount = usize::try_from(amount).unwrap_or(usize::MAX);
 
 		(0..max_cols)
 			.flat_map(move |col| {
@@ -922,8 +946,9 @@ mod tests {
 		}
 
 		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
-		let public_params = couscous::public_params();
-		for cell in random_cells(dims.cols, dims.rows, Percent::one() ) {
+		// let public_params = testnet::public_params(dims_cols);
+		let public_params = couscous::multiproof_params();
+		for cell in random_cells(dims.cols, dims.rows, 100 ) {
 			let row = usize::try_from(cell.row.0).unwrap();
 
 			let proof = build_proof(&public_params, dims, &matrix, &[cell], &metrics).unwrap();
@@ -931,11 +956,12 @@ mod tests {
 
 			let col: u16 = cell.col.0.try_into().expect("`random_cells` function generates a valid `u16` for columns");
 			let position = Position { row: cell.row.0, col};
-			let cell = data::Cell { position,  content: proof.try_into().unwrap() };
+			let cell = data::SingleCell { position,  content: proof.try_into().unwrap() };
 
 			let extended_dims = dims.try_into().unwrap();
 			let commitment = commitments::from_slice(&commitments).unwrap()[row];
-			let verification =  proof::verify(&public_params, extended_dims, &commitment,  &cell);
+			// let verification =  proof::verify(&public_params, extended_dims, &commitment,  &cell);
+			let verification =  proof::verify_v2(&public_params, extended_dims, &commitment,  &cell);
 			prop_assert!(verification.is_ok());
 			prop_assert!(verification.unwrap());
 		}
@@ -951,7 +977,7 @@ mod tests {
 
 		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
 		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
-		let public_params = couscous::public_params();
+		let public_params = couscous::multiproof_params();
 		let extended_dims = dims.try_into().unwrap();
 		let commitments = commitments::from_slice(&commitments).unwrap();
 		for xt in xts {
@@ -971,7 +997,7 @@ mod tests {
 
 		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
 		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
-		let public_params = couscous::public_params();
+		let public_params = couscous::multiproof_params();
 		let extended_dims =  dims.try_into().unwrap();
 		let commitments = commitments::from_slice(&commitments).unwrap();
 		for xt in xts {
@@ -987,8 +1013,6 @@ mod tests {
 	#[test]
 	// To test extension of commitments directly from the commitment bytes
 	fn test_commitments_extension() {
-		use crate::pmp::{m1_blst::Bls12_381, Commitment};
-		use poly_multiproof::traits::AsBytes;
 		// exact 4 rows
 		let tx_size: usize = 4 * 256 * 31 - 8;
 		let mut rng = ChaChaRng::from_seed([0u8; 32]);
@@ -1061,8 +1085,6 @@ mod tests {
 
 	#[test]
 	fn test_row_padding_at_unified_grid() {
-		use crate::gridgen::AsBytes;
-
 		// exact 3 rows
 		let tx_size: usize = 3 * 256 * 31;
 		let mut rng = rand::thread_rng();
@@ -1158,8 +1180,6 @@ mod tests {
 
 	#[test]
 	fn test_pre_generated_row() {
-		use crate::gridgen::AsBytes;
-
 		// exact 3 rows
 		let tx_size: usize = 3 * 256 * 31;
 		let mut rng = rand::thread_rng();
@@ -1193,7 +1213,7 @@ mod tests {
 		if padded_rows > original_rows {
 			// we need to perform row padding using pregenrated rows
 			let (_padded_row, padded_row_commitment) =
-				crate::gridgen::get_pregenerated_row_and_commitment(256)
+				crate::gridgen::core::get_pregenerated_row_and_commitment(256)
 					.expect("lets hope, it works :)");
 
 			header_commitments = header_commitments
@@ -1223,8 +1243,6 @@ mod tests {
 
 	#[test]
 	fn test_simple_build_and_verify() {
-		use crate::gridgen::AsBytes;
-
 		let original_data = br#"Testing Avail DA verification"#;
 		println!("Original data (hex): {}", hex::encode(original_data));
 
@@ -1257,7 +1275,7 @@ mod tests {
 			)
 		);
 		let public_params = couscous::multiproof_params();
-		let pp = couscous::public_params();
+
 		let extended_grid = poly_grid
 			.extended_commitments(&public_params, 2)
 			.map_err(|e| format!("Grid extension failed: {e:?}"))
@@ -1309,13 +1327,13 @@ mod tests {
 				col: col.try_into().expect("Column conversion failed"),
 			};
 
-			let cell = data::Cell {
+			let cell = SingleCell {
 				position,
 				content: cell_proof,
 			};
 
 			let commitment = commitments_vec[row as usize];
-			let verification = proof::verify(&pp, grid.dims(), &commitment, &cell);
+			let verification = proof::verify_v2(&public_params, grid.dims(), &commitment, &cell);
 			assert!(
 				verification.is_ok(),
 				"Verification failed for cell ({}, {}): {:?}",
@@ -1334,10 +1352,6 @@ mod tests {
 
 	#[test]
 	fn test_merge_grid() {
-		use crate::gridgen::AsBytes;
-		use core::num::NonZeroU16;
-		use rand::Rng;
-
 		// single full row
 		let tx_size: usize = 256 * 32 - 256;
 		let mut rng = rand::thread_rng();
@@ -1352,7 +1366,6 @@ mod tests {
 
 		println!("grid dims: {:?}", grid1.dims());
 		let public_params = couscous::multiproof_params();
-		let _pp = couscous::public_params();
 		let extended_grid = poly_grid1
 			.extended_commitments(&public_params, 2)
 			.map_err(|e| format!("Grid extension failed: {e:?}"))
@@ -1378,7 +1391,6 @@ mod tests {
 
 		println!("grid dims: {:?}", grid2.dims());
 		let public_params = couscous::multiproof_params();
-		let pp = couscous::public_params();
 		let extended_grid2 = poly_grid2
 			.extended_commitments(&public_params, 2)
 			.map_err(|e| format!("Grid extension failed: {e:?}"))
@@ -1447,13 +1459,14 @@ mod tests {
 				col: col.try_into().expect("Column conversion failed"),
 			};
 
-			let cell = data::Cell {
+			let cell = SingleCell {
 				position,
 				content: cell_proof,
 			};
 
 			let commitment = commitments_vec[row as usize];
-			let verification = proof::verify(&pp, merged_grid.dims(), &commitment, &cell);
+			let verification =
+				proof::verify_v2(&public_params, merged_grid.dims(), &commitment, &cell);
 			assert!(
 				verification.is_ok(),
 				"Verification failed for cell ({}, {}): {:?}",
@@ -1472,7 +1485,6 @@ mod tests {
 
 	#[test]
 	fn test_commitments_consistency() {
-		use crate::gridgen::AsBytes;
 		let tx_size: usize = 50 * 1024 * 32 - 1032;
 		let mut rng = rand::thread_rng();
 		let data: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
@@ -1618,8 +1630,8 @@ get erasure coded to ensure redundancy."#;
 				.map(|position| {
 					let col: usize = position.col.into();
 					let row = usize::try_from(position.row).unwrap();
-					let data = matrix.get((row, col)).map(BlsScalar::to_bytes).unwrap();
-					DataCell::new(position, data)
+					let data = matrix.get((row, col)).map(ArkScalar::to_bytes).unwrap();
+					DataCell::new(position, data.unwrap())
 				})
 				.collect::<Vec<_>>();
 			let data = &decode_app_extrinsics(&index, dimensions, cells, xt.app_id).unwrap()[0];
@@ -1736,12 +1748,12 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 	#[test_case( build_extrinsics(&[]) => padded_len_group(&[], 32) ; "Empty chunk list")]
 	#[test_case( build_extrinsics(&[4096]) => padded_len_group(&[4096], 32) ; "4K chunk")]
 	fn test_padding_len(extrinsics: Vec<Vec<u8>>) -> u32 {
-		extrinsics
+		let sum = extrinsics
 			.into_iter()
 			.flat_map(pad_iec_9797_1)
 			.map(|chunk| pad_to_chunk::<TCHUNK_SIZE>(chunk).len())
-			.sum::<usize>()
-			.saturated_into()
+			.sum::<usize>();
+		u32::try_from(sum).unwrap_or(u32::MAX)
 	}
 
 	#[test]
@@ -1788,9 +1800,11 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 		// There are two main cases that generate a zero degree polynomial. One is for data that is non-zero, but the same.
 		// The other is for all-zero data. They differ, as the former yields a polynomial with one coefficient, and latter generates zero coefficients.
 		let len = row_values.len();
-		let public_params = couscous::public_params();
-		let (prover_key, _) = public_params.trim(len).map_err(Error::from).unwrap();
-		let row_eval_domain = EvaluationDomain::new(len).map_err(Error::from).unwrap();
+		// let public_params = testnet::public_params(len);
+		// let public_params = couscous::public_params();
+		let pmp_pp = couscous::multiproof_params();
+		// let (prover_key, _) = public_params.trim(len).map_err(Error::from).unwrap();
+		let row_eval_domain = ArkEvaluationDomain::new(len).unwrap();
 
 		let row = row_values
 			.iter()
@@ -1798,14 +1812,14 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 				let mut value = [0u8; 32];
 				let v = value.last_mut().unwrap();
 				*v = *val;
-				BlsScalar::from_bytes(&value).unwrap()
+				ArkScalar::from_bytes(&value).unwrap()
 			})
 			.collect::<Vec<_>>();
 
 		assert_eq!(row.len(), len);
 		println!("Row: {:?}", row);
-		let commitment: [u8; COMMITMENT_SIZE] = commit(&prover_key, row_eval_domain, row.clone())
-			.map(|com| com.to_bytes())
+		let commitment: [u8; COMMITMENT_SIZE] = commit(&pmp_pp, row_eval_domain, row.clone())
+			.map(|com| com.to_bytes().unwrap())
 			.unwrap();
 		println!("Commitment: {commitment:?}");
 
@@ -1823,7 +1837,7 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 				row: BlockLengthRows(0),
 			};
 			let proof = build_proof(
-				&public_params,
+				&pmp_pp,
 				BlockDimensions::new(BlockLengthRows(1), BlockLengthColumns(4), TCHUNK).unwrap(),
 				&ext_m,
 				&[cell],
@@ -1835,11 +1849,11 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 			assert_eq!(proof.len(), 80);
 
 			let dims = Dimensions::new(1, 4).unwrap();
-			let cell = data::Cell {
+			let cell = data::SingleCell {
 				position: Position { row: 0, col },
 				content: proof.try_into().unwrap(),
 			};
-			let verification = proof::verify(&public_params, dims, &commitment, &cell);
+			let verification = proof::verify_v2(&pmp_pp, dims, &commitment, &cell);
 			assert!(verification.is_ok());
 			assert!(verification.unwrap())
 		}
@@ -1870,10 +1884,6 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 
 	#[test]
 	fn test_data_reconstruction() {
-		use codec::Decode;
-		use poly_multiproof::traits::AsBytes;
-		use std::num::NonZeroU16;
-
 		let mut rng = rand::thread_rng();
 
 		// 4 rows
@@ -1893,7 +1903,7 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 		let lookup = DataLookup::from_id_and_len_iter(app_rows.into_iter()).unwrap();
 
 		// if any of the column has less than 50% of cells, that column wont be able to reconstructed
-		let sampled_cells = sampled_cells(extended_grid.dims(), Percent::from_percent(50));
+		let sampled_cells = sampled_cells(extended_grid.dims(), 50);
 		println!("Got {} random cells", sampled_cells.len());
 		let data_cells: Vec<_> = sampled_cells
 			.iter()
@@ -1946,9 +1956,6 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 
 	#[test]
 	fn test_multiproof_verification_from_data() {
-		use crate::pmp::{merlin::Transcript, traits::PolyMultiProofNoPrecomp};
-		use avail_core::{BlockLengthColumns, BlockLengthRows};
-
 		let rows: u16 = 1;
 		let cols: u16 = 16;
 		let target_dims = Dimensions::new_from(1, 8).unwrap();
@@ -1965,15 +1972,9 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 
 		let pp = crate::couscous::multiproof_params();
 
-		let points = crate::gridgen::domain_points(cols.into()).unwrap();
-		let grid = crate::gridgen::EvaluationGrid::from_data(
-			data,
-			cols.into(),
-			cols.into(),
-			rows.into(),
-			seed,
-		)
-		.unwrap();
+		let points = domain_points(cols.into()).unwrap();
+		let grid =
+			EvaluationGrid::from_data(data, cols.into(), cols.into(), rows.into(), seed).unwrap();
 		println!("original grid dimension: {:#?}", grid.dims());
 		println!("target grid dimension: {:#?}", target_dims);
 		let polys = grid.make_polynomial_grid().unwrap();
@@ -1995,15 +1996,15 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 					)
 					.unwrap();
 				println!("mp_block: {:#?}", block);
-				let verified = pp
-					.verify(
-						&mut Transcript::new(b"avail-mp"),
-						&commitments,
-						&points[block.start_x..block.end_x],
-						&evals,
-						&proof,
-					)
-					.unwrap();
+				let verified = PolyMultiProofNoPrecomp::verify(
+					&pp,
+					&mut Transcript::new(b"avail-mp"),
+					&commitments,
+					&points[block.start_x..block.end_x],
+					&evals,
+					&proof,
+				)
+				.unwrap();
 
 				assert!(
 					verified,
