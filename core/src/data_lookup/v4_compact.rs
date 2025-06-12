@@ -83,18 +83,27 @@ impl CompactDataLookup {
 			return Self::new_error();
 		}
 
+		// Special case: Only AppId(0) entries
+		if lookup.index.iter().all(|(id, _)| *id == AppId(0)) {
+			return Self {
+				size: lookup.len(),
+				index: vec![], // Empty index indicates all AppId(0)
+				rows_per_tx: lookup.rows_per_tx.clone(),
+			};
+		}
+
+		// Normal case: Mixed or non-zero AppIds
 		let index = lookup
 			.index
 			.iter()
-			.filter(|(id, _)| *id != AppId(0))
+			.filter(|(id, _)| *id != AppId(0)) // Still filter out AppId(0) for normal case
 			.map(|(id, range)| DataLookupItem::new(*id, range.start))
 			.collect();
-		let size = lookup.index.last().map_or(0, |(_, range)| range.end);
-		let rows_per_tx = lookup.rows_per_tx.clone(); // Copy the rows_per_tx field
+
 		Self {
-			size,
+			size: lookup.len(),
 			index,
-			rows_per_tx,
+			rows_per_tx: lookup.rows_per_tx.clone(),
 		}
 	}
 }

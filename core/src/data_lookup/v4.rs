@@ -169,6 +169,7 @@ impl DataLookup {
 			}
 
 			offset = offset.checked_add(len).ok_or(Error::OffsetOverflows)?;
+			// SAFETY: We can never have more than `u16::MAX` rows per transaction because of BlockLength limitations.
 			current_rows_per_tx.push(len as u16);
 		}
 
@@ -207,8 +208,13 @@ impl TryFrom<CompactDataLookup> for DataLookup {
 			return Ok(DataLookup::new_error());
 		}
 
-		let mut offset = 0;
-		let mut prev_id = AppId(0);
+		if compacted.index.is_empty() && compacted.size > 0 {
+			return Ok(DataLookup {
+				index: vec![(AppId(0), 0..compacted.size)],
+				rows_per_tx: compacted.rows_per_tx,
+			});
+		}
+
 		let mut index = Vec::with_capacity(
 			compacted
 				.index
@@ -216,16 +222,29 @@ impl TryFrom<CompactDataLookup> for DataLookup {
 				.checked_add(1)
 				.ok_or(Error::OffsetOverflows)?,
 		);
+		let mut offset = 0;
 
-		for c_item in compacted.index {
-			index.push((prev_id, offset..c_item.start));
-			prev_id = c_item.app_id;
-			offset = c_item.start;
+		// Handle potential gap before first item
+		if let Some(first) = compacted.index.first() {
+			if first.start > offset {
+				index.push((AppId(0), offset..first.start));
+				offset = first.start;
+			}
 		}
 
-		let last_range = offset..compacted.size;
-		if !last_range.is_empty() {
-			index.push((prev_id, last_range));
+		// Process middle items
+		for window in compacted.index.windows(2) {
+			let current = &window[0];
+			let next = &window[1];
+			index.push((current.app_id, offset..next.start));
+			offset = next.start;
+		}
+
+		// Handle last item
+		if let Some(last) = compacted.index.last() {
+			if offset < compacted.size {
+				index.push((last.app_id, offset..compacted.size));
+			}
 		}
 
 		let lookup = DataLookup {
@@ -251,16 +270,9 @@ impl From<V3DataLookup> for DataLookup {
 
 impl From<&V3DataLookup> for DataLookup {
 	fn from(v3: &V3DataLookup) -> Self {
-		// Similar logic but working with a reference
-		let rows_per_tx = v3
-			.index
-			.iter()
-			.map(|(_, range)| (range.end - range.start) as u16)
-			.collect();
-
 		DataLookup {
 			index: v3.index.clone(),
-			rows_per_tx,
+			rows_per_tx: Vec::new(),
 		}
 	}
 }
@@ -296,6 +308,20 @@ impl TypeInfo for DataLookup {
 mod test {
 	use super::*;
 	use test_case::test_case;
+
+	#[test]
+	fn test_no_appid_zero_entries() {
+		let lookup = DataLookup {
+			index: vec![(AppId(1), 0..1)],
+			rows_per_tx: vec![1],
+		};
+
+		let compact = CompactDataLookup::from_data_lookup(&lookup);
+		let reconstructed = DataLookup::try_from(compact).unwrap();
+
+		assert_eq!(reconstructed.index.len(), 1);
+		assert_eq!(reconstructed.index[0].0, AppId(1));
+	}
 
 	#[test_case( vec![(0, 15), (1, 20), (2, 150)] => Ok(vec![(0,0..15),(1, 15..35), (2, 35..185)]); "Valid case")]
 	#[test_case( vec![(0, usize::MAX)] => Err(Error::OffsetOverflows); "Offset overflows at zero")]
@@ -354,6 +380,7 @@ mod test {
 		let lookup = DataLookup::from_id_and_len_iter(id_lens.into_iter()).unwrap();
 		let lookup_json = serde_json::to_string(&lookup).unwrap();
 		let compressed_from_json = serde_json::from_str::<CompactDataLookup>(&lookup_json).unwrap();
+		println!("compressed_from_json: {:#?}", compressed_from_json);
 		let expanded_lookup = DataLookup::try_from(compressed_from_json.clone()).unwrap();
 
 		assert_eq!(lookup, expanded_lookup);
