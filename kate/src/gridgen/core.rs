@@ -7,7 +7,8 @@ use crate::pmp::{
 	Pairing,
 };
 use avail_core::{
-	app_extrinsic::AppExtrinsic, constants::kate::DATA_CHUNK_SIZE, ensure, AppId, DataLookup,
+	app_extrinsic::AppExtrinsic, constants::kate::DATA_CHUNK_SIZE, ensure, AppId,
+	V3DataLookup::DataLookup,
 };
 use codec::Encode;
 use core::{

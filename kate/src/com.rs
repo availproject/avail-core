@@ -12,8 +12,8 @@ use thiserror_no_std::Error;
 use avail_core::{
 	const_generic_asserts::{USizeGreaterOrEq, USizeSafeCastToU32, UsizeEven, UsizeNonZero},
 	constants::kate::{DATA_CHUNK_SIZE, EXTENSION_FACTOR},
-	data_lookup::Error as DataLookupError,
-	ensure, AppExtrinsic, AppId, BlockLengthColumns, BlockLengthRows, DataLookup,
+	data_lookup::v3::{DataLookup as DataLookupV3, Error as DataLookupError},
+	ensure, AppExtrinsic, AppId, BlockLengthColumns, BlockLengthRows,
 };
 use codec::Encode;
 use derive_more::Constructor;
@@ -583,7 +583,7 @@ fn commit(
 #[cfg(feature = "std")]
 pub fn scalars_to_app_rows(
 	id: AppId,
-	lookup: &DataLookup,
+	lookup: &DataLookupV3,
 	dimensions: Dimensions,
 	matrix: &DMatrix<ArkScalar>,
 ) -> Vec<Option<Vec<u8>>> {
@@ -665,6 +665,7 @@ mod tests {
 	use avail_core::{
 		constants::kate::{CHUNK_SIZE, COMMITMENT_SIZE, DATA_CHUNK_SIZE},
 		DataLookup,
+		V3DataLookup::DataLookup as DataLookupV3,
 	};
 	use codec::{Compact, CompactLen, Decode};
 	use core::num::NonZeroU16;
@@ -809,7 +810,7 @@ mod tests {
 
 		assert_eq!(dims, expected_dims, "Dimensions don't match the expected");
 		assert_eq!(data, expected_data, "Data doesn't match the expected data");
-		let lookup = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
+		let lookup = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
 
 		const_assert!((CHUNK_SIZE as u64) <= (u32::MAX as u64));
 		let data_lookup = lookup.projected_ranges(CHUNK_SIZE as u32).unwrap();
@@ -938,7 +939,7 @@ mod tests {
 
 		let columns = sample_cells_from_matrix(&matrix, None);
 		let extended_dims = dims.try_into().unwrap();
-		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
+		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
 		let reconstructed = reconstruct_extrinsics(&index, extended_dims, columns).unwrap();
 		for ((app_id, data), xt) in reconstructed.iter().zip(xts) {
 			prop_assert_eq!(app_id.0, *xt.app_id);
@@ -975,7 +976,7 @@ mod tests {
 	fn test_commitments_verify(ref xts in app_extrinsics_strategy())  {
 		let (layout, commitments, dims, matrix) = par_build_commitments::<TCHUNK_SIZE,_>(BlockLengthRows(64), BlockLengthColumns(16), xts, Seed::default(), &IgnoreMetrics{}).unwrap();
 
-		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
+		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
 		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
 		let public_params = couscous::multiproof_params();
 		let extended_dims = dims.try_into().unwrap();
@@ -995,7 +996,7 @@ mod tests {
 	fn verify_commitments_missing_row(ref xts in app_extrinsics_strategy())  {
 		let (layout, commitments, dims, matrix) = par_build_commitments::<TCHUNK_SIZE,_>(BlockLengthRows(64), BlockLengthColumns(16), xts, Seed::default(), &IgnoreMetrics{}).unwrap();
 
-		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
+		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
 		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
 		let public_params = couscous::multiproof_params();
 		let extended_dims =  dims.try_into().unwrap();
@@ -1586,7 +1587,7 @@ get erasure coded to ensure redundancy."#;
 
 		let extended_dims = dims.try_into()?;
 
-		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
+		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
 		let res_1 = reconstruct_app_extrinsics(&index, extended_dims, cols_1, AppId(1)).unwrap();
 		assert_eq!(res_1[0], app_id_1_data);
 
@@ -1622,7 +1623,7 @@ get erasure coded to ensure redundancy."#;
 		let matrix = par_extend_data_matrix(dims, &data[..], &IgnoreMetrics {})?;
 		let dimensions: Dimensions = dims.try_into()?;
 
-		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
+		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
 		for xt in xts {
 			let positions = app_specific_cells(&index, dimensions, xt.app_id).unwrap();
 			let cells = positions
@@ -1666,7 +1667,7 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 		let cols = sample_cells_from_matrix(&matrix, None);
 
 		let extended_dims = dims.try_into()?;
-		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
+		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
 		let res = reconstruct_extrinsics(&index, extended_dims, cols).unwrap();
 		let s = String::from_utf8_lossy(res[0].1[0].as_slice());
 
@@ -1698,7 +1699,7 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 		let cols = sample_cells_from_matrix(&matrix, None);
 		let extended_dims = dims.try_into().unwrap();
 
-		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
+		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
 		let res = reconstruct_extrinsics(&index, extended_dims, cols).unwrap();
 
 		assert_eq!(res[0].1[0], xt1);

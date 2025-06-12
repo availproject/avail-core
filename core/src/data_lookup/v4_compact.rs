@@ -1,4 +1,4 @@
-use crate::{AppId, DataLookup};
+use crate::{data_lookup::v4::DataLookup, AppId};
 
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;

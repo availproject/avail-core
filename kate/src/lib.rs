@@ -25,7 +25,7 @@ pub const LOG_TARGET: &str = "kate";
 pub const U32_USIZE_ERR: &str = "`u32` cast to `usize` overflows, unsupported platform";
 pub type Seed = [u8; 32];
 
-#[cfg(feature = "std")]
+// #[cfg(feature = "std")]
 pub type M1NoPrecomp =
 	pmp::method1::M1NoPrecomp<pmp::ark_bls12_381::Bls12_381, pmp::msm::blst::BlstMSMEngine>;
 

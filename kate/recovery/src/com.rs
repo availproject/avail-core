@@ -6,9 +6,12 @@ use core::{num::TryFromIntError, ops::Range};
 #[cfg(feature = "std")]
 use avail_core::{
 	constants::kate::{CHUNK_SIZE, DATA_CHUNK_SIZE},
-	ensure,
+	ensure, DataLookup,
 };
-use avail_core::{data_lookup::Error as DataLookupError, AppId, DataLookup};
+use avail_core::{
+	data_lookup::v3::{DataLookup as DataLookupV3, Error as DataLookupError},
+	AppId,
+};
 
 use sp_std::prelude::*;
 use thiserror_no_std::Error;
@@ -129,7 +132,7 @@ fn map_cells(
 /// * `dimensions` - Extended matrix dimensions
 /// * `app_id` - Application ID
 pub fn app_specific_rows(
-	index: &DataLookup,
+	index: &DataLookupV3,
 	dimensions: matrix::Dimensions,
 	app_id: AppId,
 ) -> Vec<u32> {
@@ -149,7 +152,7 @@ pub fn app_specific_rows(
 /// * `dimensions` - Extended matrix dimensions
 /// * `app_id` - Application ID
 pub fn app_specific_cells(
-	index: &DataLookup,
+	index: &DataLookupV3,
 	dimensions: matrix::Dimensions,
 	id: AppId,
 ) -> Option<Vec<matrix::Position>> {
@@ -173,7 +176,7 @@ pub type AppData = Vec<Vec<u8>>;
 /// * `app_id` - Application ID
 #[cfg(feature = "std")]
 pub fn reconstruct_app_extrinsics(
-	index: &DataLookup,
+	index: &DataLookupV3,
 	dimensions: matrix::Dimensions,
 	cells: Vec<data::DataCell>,
 	app_id: AppId,
@@ -199,7 +202,7 @@ pub fn reconstruct_app_extrinsics(
 /// * `cells` - Cells from required columns, at least 50% cells per column
 #[cfg(feature = "std")]
 pub fn reconstruct_extrinsics(
-	lookup: &DataLookup,
+	lookup: &DataLookupV3,
 	dimensions: matrix::Dimensions,
 	cells: Vec<data::DataCell>,
 ) -> Result<Vec<(AppId, AppData)>, ReconstructionError> {
@@ -304,7 +307,7 @@ fn reconstruct_available(
 /// * `app_id` - Application ID
 #[cfg(feature = "std")]
 pub fn decode_app_extrinsics(
-	index: &DataLookup,
+	index: &DataLookupV3,
 	dimensions: matrix::Dimensions,
 	cells: Vec<data::DataCell>,
 	app_id: AppId,
@@ -611,8 +614,9 @@ pub fn reconstruct_extrinsics_data(
 
 	let app_tx_indices = lookup
 		.transactions()
+		// TODO: Update the correct error type
 		.ok_or(ReconstructionError::DataLookup(
-			DataLookupError::EmptyTransactions,
+			DataLookupError::DataNotSorted,
 		))?;
 
 	let rows = reconstruct_rows(dimension, cells)
@@ -744,7 +748,7 @@ mod tests {
 	#[test_case(4 => Vec::<u32>::new() ; "There is no app 4")]
 	fn test_app_specific_rows(id: u32) -> Vec<u32> {
 		let id_lens: Vec<(u32, u32)> = vec![(0, 2), (1, 3), (2, 3), (3, 8)];
-		let index = DataLookup::from_id_and_len_iter(id_lens.into_iter()).unwrap();
+		let index = DataLookupV3::from_id_and_len_iter(id_lens.into_iter()).unwrap();
 		let dimensions = Dimensions::new(8, 4).unwrap();
 
 		app_specific_rows(&index, dimensions, AppId(id))
@@ -759,7 +763,7 @@ mod tests {
 	#[test_case(2 => Vec::<Position>::new() ; "App 2 has no cells")]
 	fn test_app_specific_cells(app_id: u32) -> Vec<Position> {
 		let id_lens: Vec<(u32, usize)> = vec![(0, 5), (1, 3)];
-		let index = DataLookup::from_id_and_len_iter(id_lens.into_iter()).unwrap();
+		let index = DataLookupV3::from_id_and_len_iter(id_lens.into_iter()).unwrap();
 		let dimensions = Dimensions::new(4, 4).unwrap();
 
 		app_specific_cells(&index, dimensions, AppId(app_id)).unwrap_or_default()
