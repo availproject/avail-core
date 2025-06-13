@@ -43,6 +43,10 @@ impl SingleCell {
 	pub fn proof(&self) -> [u8; 48] {
 		self.content[..48].try_into().expect("content is 80 bytes")
 	}
+
+	pub fn to_bytes(&self) -> Vec<u8> {
+		self.content.to_vec()
+	}
 }
 
 #[derive(Debug, Clone, Constructor)]
@@ -247,7 +251,7 @@ impl Cell {
 	pub fn to_bytes(&self) -> Vec<u8> {
 		match self {
 			Cell::MultiProofCell(mcell) => mcell.to_bytes(),
-			Cell::SingleCell(cell) => cell.data().to_vec(),
+			Cell::SingleCell(cell) => cell.to_bytes(),
 		}
 	}
 }
