@@ -5,8 +5,8 @@ use core::fmt::Debug;
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use derive_more::{Add, Constructor, Deref, Into, Mul};
+use num_traits::Zero;
 use scale_info::TypeInfo;
-use sp_arithmetic::traits::Zero;
 
 #[cfg(feature = "runtime")]
 use sp_debug_derive::RuntimeDebug;
@@ -49,7 +49,9 @@ pub mod data_proof;
 pub use data_proof::DataProof;
 
 pub mod data_lookup;
-pub use data_lookup::*;
+pub use data_lookup::v3 as V3DataLookup;
+pub use data_lookup::v4::*;
+pub use data_lookup::{v3_compact, v4_compact};
 
 pub mod app_extrinsic;
 pub use app_extrinsic::AppExtrinsic;

@@ -1,14 +1,14 @@
 use super::PMP;
 use crate::{
 	com::Cell,
-	gridgen::{tests::sample_cells, EvaluationGrid},
+	gridgen::{core::EvaluationGrid, tests::sample_cells},
 	Seed,
 };
 use avail_core::{AppExtrinsic, AppId, BlockLengthColumns, BlockLengthRows};
 use core::num::NonZeroU16;
 use kate_recovery::{
 	com::{reconstruct_app_extrinsics, reconstruct_extrinsics},
-	data::Cell as DCell,
+	data::SingleCell as DCell,
 	matrix::{Dimensions, Position},
 };
 use poly_multiproof::traits::AsBytes;
@@ -76,7 +76,7 @@ fn test_build_and_reconstruct(exts in super::app_extrinsics_strategy())  {
 		content[48..].copy_from_slice(&grid.get(y, x).unwrap().to_bytes().unwrap()[..]);
 
 		let dcell = DCell{position: Position { row: y as u32, col: x as u16 }, content };
-		let verification =  kate_recovery::proof::verify(&kate_recovery::testnet::public_params(256), bdims, &commitments[y].to_bytes().unwrap(),  &dcell);
+		let verification =  kate_recovery::proof::verify_v2(&kate_recovery::testnet::multiproof_params(256, 256) , bdims, &commitments[y].to_bytes().unwrap(),  &dcell);
 		prop_assert!(verification.is_ok());
 		prop_assert!(verification.unwrap());
 	}
@@ -85,7 +85,7 @@ fn test_build_and_reconstruct(exts in super::app_extrinsics_strategy())  {
 
 #[test]
 fn test_reconstruct_app_extrinsics_with_app_id() {
-	let app_id_1_data = br#""This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns 
+	let app_id_1_data = br#""This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns
 get erasure coded to ensure redundancy."#;
 
 	let app_id_2_data =

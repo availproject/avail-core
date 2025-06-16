@@ -1,4 +1,6 @@
-use avail_core::{constants::kate::DATA_CHUNK_SIZE, AppExtrinsic, AppId, DataLookup};
+use avail_core::{
+	constants::kate::DATA_CHUNK_SIZE, AppExtrinsic, AppId, V3DataLookup::DataLookup as DataLookupV3,
+};
 use hex_literal::hex;
 use kate_recovery::{
 	com::{app_specific_cells, decode_app_extrinsics, reconstruct_extrinsics},
@@ -9,8 +11,8 @@ use nalgebra::base::DMatrix;
 use poly_multiproof::traits::AsBytes;
 
 use crate::{
-	gridgen::{tests::sample_cells, ArkScalar, EvaluationGrid},
-	Seed,
+	gridgen::{core::EvaluationGrid, tests::sample_cells},
+	ArkScalar, Seed,
 };
 use core::num::NonZeroU16;
 
@@ -27,7 +29,7 @@ fn newapi_test_flatten_block() {
 	let evals = EvaluationGrid::from_extrinsics(extrinsics, 4, 256, 256, Seed::default()).unwrap();
 
 	let id_lens: Vec<(u32, usize)> = vec![(0, 2), (1, 2), (2, 2), (3, 3)];
-	let expected_lookup = DataLookup::from_id_and_len_iter(id_lens.into_iter()).unwrap();
+	let expected_lookup = DataLookupV3::from_id_and_len_iter(id_lens.into_iter()).unwrap();
 
 	assert_eq!(evals.lookup, expected_lookup, "The layouts don't match");
 	assert_eq!(
@@ -82,11 +84,11 @@ fn newapi_test_extend_data_matrix() {
 	let scalars = (0..=247)
 		.collect::<Vec<u8>>()
 		.chunks_exact(DATA_CHUNK_SIZE)
-		.flat_map(crate::gridgen::pad_to_bls_scalar)
+		.flat_map(crate::gridgen::core::pad_to_bls_scalar)
 		.collect::<Vec<_>>();
 
 	let grid = EvaluationGrid {
-		lookup: DataLookup::default(),
+		lookup: DataLookupV3::default(),
 		evals: DMatrix::from_row_iterator(2, 4, scalars),
 	};
 	let extend = grid
@@ -98,7 +100,7 @@ fn newapi_test_extend_data_matrix() {
 
 #[test]
 fn test_decode_app_extrinsics() {
-	let app_id_1_data = br#""This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns 
+	let app_id_1_data = br#""This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns
 get erasure coded to ensure redundancy."#;
 
 	let app_id_2_data =
@@ -144,7 +146,7 @@ get erasure coded to ensure redundancy."#;
 
 #[test]
 fn test_extend_mock_data() {
-	let orig_data = br#"This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns 
+	let orig_data = br#"This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns
 get erasure coded to ensure redundancy.
 Let's see how this gets encoded and then reconstructed by sampling only some data."#;
 	let exts = vec![AppExtrinsic::from(orig_data.to_vec())];

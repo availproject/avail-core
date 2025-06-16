@@ -1,8 +1,7 @@
-use crate::{AppId, DataLookup};
-
+use crate::{data_lookup::v3::DataLookup, AppId};
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_std::{vec, vec::Vec};
+use sp_std::vec::Vec;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -43,25 +42,17 @@ where
 //
 #[derive(Encode, Decode, TypeInfo, Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct CompactDataLookup {
 	/// size of the look up
 	#[codec(compact)]
 	pub(crate) size: u32,
 	/// sorted vector of tuples(key, start index)
 	pub(crate) index: Vec<DataLookupItem>,
-	/// number of rows each DA transaction takes
-	pub(crate) rows_per_tx: Vec<u16>,
 }
 
 impl CompactDataLookup {
-	/// ATTN: Ensure the values passed for `index` & `rows_per_tx` are coherent & in order.
-	pub fn new(size: u32, index: Vec<DataLookupItem>, rows_per_tx: Vec<u16>) -> Self {
-		Self {
-			size,
-			index,
-			rows_per_tx,
-		}
+	pub fn new(size: u32, index: Vec<DataLookupItem>) -> Self {
+		Self { size, index }
 	}
 
 	pub fn is_error(&self) -> bool {
@@ -74,7 +65,6 @@ impl CompactDataLookup {
 		Self {
 			size: 0,
 			index: [DataLookupItem::new(AppId(0), 0)].to_vec(),
-			rows_per_tx: vec![], // Initialize with empty vector
 		}
 	}
 
@@ -90,12 +80,7 @@ impl CompactDataLookup {
 			.map(|(id, range)| DataLookupItem::new(*id, range.start))
 			.collect();
 		let size = lookup.index.last().map_or(0, |(_, range)| range.end);
-		let rows_per_tx = lookup.rows_per_tx.clone(); // Copy the rows_per_tx field
-		Self {
-			size,
-			index,
-			rows_per_tx,
-		}
+		Self { size, index }
 	}
 }
 

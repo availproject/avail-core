@@ -1,10 +1,12 @@
 use super::*;
-use crate::{couscous, gridgen::*, testnet, Seed};
+use crate::{com::Cell, couscous, gridgen::core::*, Seed};
 use avail_core::{AppExtrinsic, BlockLengthColumns, BlockLengthRows};
+use core::num::NonZeroU16;
 use hex_literal::hex;
 use kate_recovery::{
 	commitments::verify_equality,
 	matrix::{Dimensions, Position},
+	testnet,
 };
 use test_case::test_case;
 
@@ -17,7 +19,7 @@ fn test_build_commitments_simple_commitment_check() {
 		76, 41, 174, 145, 187, 12, 97, 32, 75, 111, 149, 209, 243, 195, 165, 10, 166, 172, 47, 41,
 		218, 24, 212, 66, 62, 5, 187, 191, 129, 5, 105, 3,
 	];
-	let pmp_pp = crate::testnet::multiproof_params(256, 256);
+	let pmp_pp = testnet::multiproof_params(256, 256);
 
 	let evals = EvaluationGrid::from_extrinsics(
 		vec![AppExtrinsic::from(original_data)],
@@ -83,7 +85,7 @@ proptest! {
 			.map(|c| c.to_bytes().unwrap())
 			.collect::<Vec<_>>();
 
-		let public_params = testnet::public_params( BlockLengthColumns(g_cols.into()));
+		let public_params = testnet::multiproof_params(g_cols.into(), g_cols.into());
 
 		for xt in exts.iter() {
 			let rows = grid.app_rows(xt.app_id, Some(orig_dims)).unwrap().unwrap();
@@ -110,7 +112,7 @@ proptest! {
 			.map(|c| c.to_bytes().unwrap())
 			.collect::<Vec<_>>();
 
-		let public_params = testnet::public_params( BlockLengthColumns(g_cols.into()));
+		let public_params = testnet::multiproof_params(g_cols.into(), g_cols.into());
 
 		for xt in xts {
 			let rows = grid.app_rows(xt.app_id, Some(orig_dims)).unwrap().unwrap();
@@ -143,7 +145,7 @@ fn test_zero_deg_poly_commit(row_values: Vec<u8>) {
 	//let ae = AppExtrinsic { 0.into(), vec![}
 	let ev = EvaluationGrid {
 		lookup: Default::default(), // Shouldn't need to care about this
-		evals: DMatrix::from_row_iterator(len, 1, row).transpose(),
+		evals: nalgebra::DMatrix::from_row_iterator(len, 1, row).transpose(),
 	};
 
 	println!("Row: {:?}", ev.evals);
@@ -166,15 +168,19 @@ fn test_zero_deg_poly_commit(row_values: Vec<u8>) {
 		let cell_bytes = ev.get(0usize, x).unwrap().to_bytes().unwrap();
 		let content = [&proof_bytes[..], &cell_bytes[..]].concat();
 		let dims = Dimensions::new(1, 4).unwrap();
-		let cell = kate_recovery::data::Cell {
+		let cell = kate_recovery::data::SingleCell {
 			position: Position {
 				row: 0,
 				col: x as u16,
 			},
 			content: content.try_into().unwrap(),
 		};
-		let verification =
-			kate_recovery::proof::verify(&couscous::public_params(), dims, &commitment, &cell);
+		let verification = kate_recovery::proof::verify_v2(
+			&couscous::multiproof_params(),
+			dims,
+			&commitment,
+			&cell,
+		);
 		assert!(verification.is_ok());
 		assert!(verification.unwrap())
 	}
