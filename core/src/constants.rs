@@ -12,6 +12,11 @@ pub const DA_DISPATCH_RATIO: u8 = 100;
 const_assert!(BLOCK_CHUNK_SIZE.get() > 0);
 pub const BLOCK_CHUNK_SIZE: NonZeroU32 = unsafe { NonZeroU32::new_unchecked(32) };
 
+// DA extrinsics pallet & call indices in Avail runtime.
+pub const ORIGINAL_PALLET_INDEX: u8 = 0x1d;
+pub const ORIGINAL_CALL_INDEX: u8 = 0x05;
+pub const LIGHT_CALL_INDEX: u8 = 0x06;
+
 /// Money matters.
 pub mod currency {
 

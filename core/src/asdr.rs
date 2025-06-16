@@ -18,7 +18,7 @@
 //! Generic implementation of an unchecked (pre-verification) extrinsic.
 use crate::{
 	traits::{GetAppId, MaybeCaller},
-	AppId, OpaqueExtrinsic,
+	AppId, OpaqueExtrinsic, ORIGINAL_PALLET_INDEX, LIGHT_CALL_INDEX
 };
 
 use crate::from_substrate::blake2_256;
@@ -55,6 +55,8 @@ use {
 /// It ensures that if the representation is changed and the format is not known,
 /// the decoding fails.
 pub const EXTRINSIC_FORMAT_VERSION: u8 = 4;
+
+const DA_LIGHT_PREFIX: &[u8] = &[ORIGINAL_PALLET_INDEX, LIGHT_CALL_INDEX];
 
 /// The `SignaturePayload` of `UncheckedExtrinsic`.
 type SignaturePayload<Address, Signature, Extra> = (Address, Signature, Extra);
@@ -217,24 +219,28 @@ where
 	type Checked = CheckedExtrinsic<AccountId, C, E>;
 
 	fn check(self, lookup: &Lookup) -> Result<Self::Checked, TransactionValidityError> {
+
+		let call_encoded = self.function.encode();
 		Ok(match self.signature {
 			Some((signed, signature, extra)) => {
 				let signed = lookup.lookup(signed)?;
-				let raw_payload = SignedPayload::new(self.function, extra)?;
-				if !raw_payload.using_encoded(|payload| signature.verify(payload, &signed)) {
-					return Err(InvalidTransaction::BadProof.into());
+
+				let is_valid = if call_encoded.starts_with(DA_LIGHT_PREFIX) {
+					log::info!("bypassing the signature verification for da_light!");
+					// lets bypass the signature verification for da_light
+					true
+				} else {
+					let raw_payload = SignedPayload::new(self.function.clone(), extra.clone())?;
+					raw_payload.using_encoded(|payload| signature.verify(payload, &signed))
+				};
+				if !is_valid {
+					return Err(InvalidTransaction::BadProof.into())
 				}
 
-				let (function, extra, _) = raw_payload.deconstruct();
-				CheckedExtrinsic {
-					signed: Some((signed, extra)),
-					function,
-				}
+				let function = self.function;
+				CheckedExtrinsic { signed: Some((signed, extra)), function }
 			},
-			None => CheckedExtrinsic {
-				signed: None,
-				function: self.function,
-			},
+			None => CheckedExtrinsic { signed: None, function: self.function },
 		})
 	}
 
