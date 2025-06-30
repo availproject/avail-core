@@ -1352,6 +1352,110 @@ mod tests {
 	}
 
 	#[test]
+	fn test_from_data_build_and_verify() {
+		let original_data = b"test".to_vec();
+		println!(
+			"Original data (hex): {}",
+			hex::encode(original_data.clone())
+		);
+
+		let grid = EvaluationGrid::from_data(original_data, 1024, 1024, 1024, Seed::default())
+			.expect("Failed to create evaluation grid");
+		// if we want to add erasure coding, we can do it here by extending the grid
+		// .extend_columns(NonZeroU16::new(2).expect("2>0")).expect("Failed to extend the grid");
+
+		let poly_grid = grid
+			.make_polynomial_grid()
+			.map_err(|e| format!("Make polynomial grid failed: {e:?}"))
+			.unwrap();
+
+		println!("grid dims: {:?}", grid.dims());
+		println!(
+			"grid row 0 {}",
+			hex::encode(
+				grid.row(0)
+					.unwrap()
+					.iter()
+					.map(|s| s.to_bytes().unwrap())
+					.collect::<Vec<_>>()
+					.concat()
+			)
+		);
+		let public_params = couscous::multiproof_params();
+
+		let extended_grid = poly_grid
+			.extended_commitments(&public_params, 2)
+			.map_err(|e| format!("Grid extension failed: {e:?}"))
+			.unwrap();
+
+		let mut commitments = Vec::new();
+		for c in extended_grid.iter() {
+			match c.to_bytes() {
+				Ok(bytes) => commitments.extend(bytes),
+				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+			}
+		}
+
+		let commitments_vec =
+			commitments::from_slice(&commitments).expect("Failed to parse commitments");
+
+		let col = 0u32;
+		let row = 0u32;
+		let data = grid
+			.get(row as usize, col as usize)
+			.expect("Missing cell in grid")
+			.to_bytes()
+			.expect("Data serialization failed");
+
+		let cell = Cell::new(BlockLengthRows(row), BlockLengthColumns(col as u32));
+		let proof = poly_grid
+			.proof(&public_params, &cell)
+			.expect("Proof generation failed")
+			.to_bytes()
+			.expect("Proof serialization failed");
+
+		let cell_proof: [u8; 80] = {
+			let mut buffer = [0u8; 80];
+			buffer[..proof.len()].copy_from_slice(&proof);
+			buffer[proof.len()..].copy_from_slice(&data);
+			buffer
+		};
+
+		println!(
+			"Cell index: ({}, {}), Cell bytes (hex): {}",
+			row,
+			col,
+			hex::encode(&cell_proof)
+		);
+
+		let position = Position {
+			row,
+			col: col.try_into().expect("Column conversion failed"),
+		};
+
+		let cell = SingleCell {
+			position,
+			content: cell_proof,
+		};
+
+		let commitment = commitments_vec[row as usize];
+		let verification = proof::verify_v2(&public_params, grid.dims(), &commitment, &cell);
+		assert!(
+			verification.is_ok(),
+			"Verification failed for cell ({}, {}): {:?}",
+			row,
+			col,
+			verification.err()
+		);
+		assert!(
+			verification.unwrap(),
+			"Verification returned false for cell ({}, {})",
+			row,
+			col
+		);
+	}
+
+	#[test]
 	fn test_merge_grid() {
 		// single full row
 		let tx_size: usize = 256 * 32 - 256;

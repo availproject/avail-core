@@ -18,7 +18,7 @@
 //! Generic implementation of an unchecked (pre-verification) extrinsic.
 use crate::{
 	traits::{GetAppId, MaybeCaller},
-	AppId, OpaqueExtrinsic, ORIGINAL_PALLET_INDEX, LIGHT_CALL_INDEX
+	AppId, OpaqueExtrinsic, LIGHT_CALL_INDEX, ORIGINAL_PALLET_INDEX,
 };
 
 use crate::from_substrate::blake2_256;
@@ -219,7 +219,6 @@ where
 	type Checked = CheckedExtrinsic<AccountId, C, E>;
 
 	fn check(self, lookup: &Lookup) -> Result<Self::Checked, TransactionValidityError> {
-
 		let call_encoded = self.function.encode();
 		Ok(match self.signature {
 			Some((signed, signature, extra)) => {
@@ -234,13 +233,19 @@ where
 					raw_payload.using_encoded(|payload| signature.verify(payload, &signed))
 				};
 				if !is_valid {
-					return Err(InvalidTransaction::BadProof.into())
+					return Err(InvalidTransaction::BadProof.into());
 				}
 
 				let function = self.function;
-				CheckedExtrinsic { signed: Some((signed, extra)), function }
+				CheckedExtrinsic {
+					signed: Some((signed, extra)),
+					function,
+				}
 			},
-			None => CheckedExtrinsic { signed: None, function: self.function },
+			None => CheckedExtrinsic {
+				signed: None,
+				function: self.function,
+			},
 		})
 	}
 

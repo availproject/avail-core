@@ -1,7 +1,11 @@
 use core::convert::TryInto;
 use thiserror_no_std::Error;
 
-use crate::commons::ArkScalar;
+use crate::commons::{ArkCommitment, ArkScalar};
+use crate::{
+	data::{GCellBlock, SingleCell},
+	matrix::Dimensions,
+};
 use avail_core::constants::kate::COMMITMENT_SIZE;
 use poly_multiproof::{
 	ark_bls12_381::{Bls12_381, Fr},
@@ -12,11 +16,6 @@ use poly_multiproof::{
 	traits::{AsBytes, KZGProof, PolyMultiProofNoPrecomp},
 };
 use sp_std::vec::Vec;
-type ArkCommitment = poly_multiproof::Commitment<Bls12_381>;
-use crate::{
-	data::{GCellBlock, SingleCell},
-	matrix::Dimensions,
-};
 
 #[derive(Error, Debug)]
 pub enum Error {
