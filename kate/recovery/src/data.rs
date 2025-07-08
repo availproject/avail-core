@@ -281,21 +281,23 @@ impl TryFrom<Cell> for SingleCell {
 
 /// Merges cells data per row.
 /// Cells are sorted before merge.
-pub fn rows(dimensions: Dimensions, cells: &[&SingleCell]) -> Vec<(RowIndex, Vec<u8>)> {
+pub fn rows(dimensions: Dimensions, cells: &[&Cell]) -> Vec<(RowIndex, Vec<u8>)> {
 	let mut sorted_cells = cells.to_vec();
 
-	sorted_cells
-		.sort_by(|a, b| (a.position.row, a.position.col).cmp(&(b.position.row, b.position.col)));
+	sorted_cells.sort_by(|a, b| {
+		(a.position().row, a.position().col).cmp(&(b.position().row, b.position().col))
+	});
 
 	let mut rows = BTreeMap::new();
 	for cell in sorted_cells {
-		rows.entry(RowIndex(cell.position.row))
-			.or_insert_with(Vec::default)
+		let row_index = RowIndex(cell.position().row);
+		rows.entry(row_index)
+			.or_insert_with(Vec::new)
 			.extend(cell.data());
 	}
 
 	rows.retain(|_, row| row.len() == dimensions.row_byte_size());
-	rows.into_iter().collect::<Vec<(_, _)>>()
+	rows.into_iter().collect()
 }
 
 impl From<SingleCell> for DataCell {
