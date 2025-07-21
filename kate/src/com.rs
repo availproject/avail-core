@@ -858,7 +858,7 @@ mod tests {
 						let position = Position::new(row_pos, col_idx);
 						debug_assert!(*row_idx < col_view.len());
 						let data = col_view[*row_idx].to_bytes();
-						DataCell::new(position, data.unwrap())
+						DataCell::new(position, data.unwrap().to_vec())
 					})
 					.collect::<Vec<_>>()
 			})
@@ -1083,7 +1083,7 @@ get erasure coded to ensure redundancy."#;
 					let col: usize = position.col.into();
 					let row = usize::try_from(position.row).unwrap();
 					let data = matrix.get((row, col)).map(ArkScalar::to_bytes).unwrap();
-					DataCell::new(position, data.unwrap())
+					DataCell::new(position, data.unwrap().to_vec())
 				})
 				.collect::<Vec<_>>();
 			let data = &decode_app_extrinsics(&index, dimensions, cells, xt.app_id).unwrap()[0];

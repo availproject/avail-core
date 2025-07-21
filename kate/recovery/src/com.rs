@@ -329,7 +329,7 @@ pub fn decode_app_extrinsics(
 			.filter(|cell| !cell.data.is_empty())
 		{
 			None => app_data.extend(vec![0; CHUNK_SIZE]),
-			Some(cell) => app_data.extend(cell.data),
+			Some(cell) => app_data.extend(cell.data.clone()),
 		}
 	}
 
@@ -897,19 +897,19 @@ mod tests {
 		let cells = vec![
 			DataCell {
 				position: Position { row: 0, col: 0 },
-				data: coded[0].to_bytes().unwrap(),
+				data: coded[0].to_bytes().unwrap().to_vec(),
 			},
 			DataCell {
 				position: Position { row: 4, col: 0 },
-				data: coded[4].to_bytes().unwrap(),
+				data: coded[4].to_bytes().unwrap().to_vec(),
 			},
 			DataCell {
 				position: Position { row: 6, col: 0 },
-				data: coded[6].to_bytes().unwrap(),
+				data: coded[6].to_bytes().unwrap().to_vec(),
 			},
 			DataCell {
 				position: Position { row: 2, col: 0 },
-				data: coded[2].to_bytes().unwrap(),
+				data: coded[2].to_bytes().unwrap().to_vec(),
 			},
 		];
 
@@ -935,19 +935,19 @@ mod tests {
 		let cells = vec![
 			DataCell {
 				position: Position { row: 0, col: 0 },
-				data: coded[0].to_bytes().unwrap(),
+				data: coded[0].to_bytes().unwrap().to_vec(),
 			},
 			DataCell {
 				position: Position { row: 0, col: 0 },
-				data: coded[0].to_bytes().unwrap(),
+				data: coded[0].to_bytes().unwrap().to_vec(),
 			},
 			DataCell {
 				position: Position { row: 6, col: 0 },
-				data: coded[6].to_bytes().unwrap(),
+				data: coded[6].to_bytes().unwrap().to_vec(),
 			},
 			DataCell {
 				position: Position { row: 2, col: 0 },
-				data: coded[2].to_bytes().unwrap(),
+				data: coded[2].to_bytes().unwrap().to_vec(),
 			},
 		];
 
@@ -968,15 +968,15 @@ mod tests {
 		let cells = vec![
 			DataCell {
 				position: Position { row: 4, col: 0 },
-				data: coded[4].to_bytes().unwrap(),
+				data: coded[4].to_bytes().unwrap().to_vec(),
 			},
 			DataCell {
 				position: Position { row: 6, col: 0 },
-				data: coded[6].to_bytes().unwrap(),
+				data: coded[6].to_bytes().unwrap().to_vec(),
 			},
 			DataCell {
 				position: Position { row: 2, col: 0 },
-				data: coded[2].to_bytes().unwrap(),
+				data: coded[2].to_bytes().unwrap().to_vec(),
 			},
 		];
 
@@ -997,19 +997,19 @@ mod tests {
 		let cells = vec![
 			DataCell {
 				position: Position { row: 0, col: 0 },
-				data: coded[0].to_bytes().unwrap(),
+				data: coded[0].to_bytes().unwrap().to_vec(),
 			},
 			DataCell {
 				position: Position { row: 5, col: 0 },
-				data: coded[4].to_bytes().unwrap(),
+				data: coded[4].to_bytes().unwrap().to_vec(),
 			},
 			DataCell {
 				position: Position { row: 6, col: 0 },
-				data: coded[6].to_bytes().unwrap(),
+				data: coded[6].to_bytes().unwrap().to_vec(),
 			},
 			DataCell {
 				position: Position { row: 2, col: 0 },
-				data: coded[2].to_bytes().unwrap(),
+				data: coded[2].to_bytes().unwrap().to_vec(),
 			},
 		];
 

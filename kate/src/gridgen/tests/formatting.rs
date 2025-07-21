@@ -129,7 +129,8 @@ get erasure coded to ensure redundancy."#;
 					.get((pos.row as usize, pos.col as usize))
 					.unwrap()
 					.to_bytes()
-					.unwrap(),
+					.unwrap()
+					.to_vec(),
 			})
 			.collect::<Vec<_>>();
 		let data = &decode_app_extrinsics(&grid.lookup, bdims, cells, xt.app_id).unwrap()[0];

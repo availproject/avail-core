@@ -70,7 +70,7 @@ fn sample_cells_from_matrix(matrix: &DMatrix<ArkScalar>, columns: Option<&[u16]>
 					let position = Position::new(row_pos, col_idx);
 					debug_assert!(*row_idx < col_view.len());
 					let data = col_view[*row_idx].to_bytes();
-					DataCell::new(position, data.unwrap())
+					DataCell::new(position, data.unwrap().to_vec())
 				})
 				.collect::<Vec<_>>()
 		})

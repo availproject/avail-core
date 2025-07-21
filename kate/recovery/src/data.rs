@@ -15,10 +15,10 @@ use alloc::string::String;
 /// Position and data of a cell in extended matrix
 #[derive(Default, Debug, Clone, Constructor)]
 pub struct DataCell {
-	/// SingleCell's position
+	/// Cell's position
 	pub position: Position,
-	/// SingleCell's data
-	pub data: [u8; 32],
+	/// Cell's data
+	pub data: Vec<u8>,
 }
 
 /// Position and content of a cell in extended matrix
@@ -304,6 +304,15 @@ impl From<SingleCell> for DataCell {
 	fn from(cell: SingleCell) -> Self {
 		DataCell {
 			position: cell.position,
+			data: cell.data().to_vec(),
+		}
+	}
+}
+
+impl From<MultiProofCell> for DataCell {
+	fn from(cell: MultiProofCell) -> Self {
+		DataCell {
+			position: cell.position,
 			data: cell.data(),
 		}
 	}
@@ -338,13 +347,13 @@ mod tests {
 		let dimensions = Dimensions::new(1, 2).unwrap();
 
 		let cell_variants = vec![
-			cell(position(1, 1), content([3; 32])).into(),
-			cell(position(1, 0), content([2; 32])).into(),
-			cell(position(0, 0), content([0; 32])).into(),
-			cell(position(0, 1), content([1; 32])).into(),
+			Cell::from(cell(position(1, 1), content([3; 32]))),
+			Cell::from(cell(position(1, 0), content([2; 32]))),
+			Cell::from(cell(position(0, 0), content([0; 32]))),
+			Cell::from(cell(position(0, 1), content([1; 32]))),
 		];
-
-		let cells: Vec<&SingleCell> = cell_variants.iter().collect();
+		
+		let cells: Vec<&Cell> = cell_variants.iter().collect();
 		let mut rows = rows(dimensions, &cells);
 		rows.sort_by_key(|(key, _)| key.0);
 
@@ -365,12 +374,12 @@ mod tests {
 		let dimensions = Dimensions::new(1, 2).unwrap();
 
 		let cell_variants = vec![
-			cell(position(1, 1), content([3; 32])).into(),
-			cell(position(0, 0), content([0; 32])).into(),
-			cell(position(0, 1), content([1; 32])).into(),
+			Cell::from(cell(position(1, 1), content([3; 32]))),
+			Cell::from(cell(position(0, 0), content([0; 32]))),
+			Cell::from(cell(position(0, 1), content([1; 32]))),
 		];
 
-		let cells: Vec<&SingleCell> = cell_variants.iter().collect();
+		let cells: Vec<&Cell> = cell_variants.iter().collect();
 		let mut rows = rows(dimensions, &cells);
 		rows.sort_by_key(|(key, _)| key.0);
 
