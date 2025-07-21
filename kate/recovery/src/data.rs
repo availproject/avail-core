@@ -352,7 +352,7 @@ mod tests {
 			Cell::from(cell(position(0, 0), content([0; 32]))),
 			Cell::from(cell(position(0, 1), content([1; 32]))),
 		];
-		
+
 		let cells: Vec<&Cell> = cell_variants.iter().collect();
 		let mut rows = rows(dimensions, &cells);
 		rows.sort_by_key(|(key, _)| key.0);
