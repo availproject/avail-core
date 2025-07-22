@@ -318,6 +318,15 @@ impl From<MultiProofCell> for DataCell {
 	}
 }
 
+impl From<Cell> for DataCell {
+	fn from(cell: Cell) -> Self {
+		match cell {
+			Cell::SingleCell(sc) => DataCell::from(sc),
+			Cell::MultiProofCell(mc) => DataCell::from(mc),
+		}
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use std::convert::TryInto;
