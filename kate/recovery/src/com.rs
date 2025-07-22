@@ -220,7 +220,13 @@ pub fn reconstruct_columns(
 	cells: &[data::Cell],
 ) -> Result<HashMap<u16, Vec<[u8; CHUNK_SIZE]>>, ReconstructionError> {
 	// Convert cells into DataCells
-	let data_cells: Vec<data::DataCell> = cells.iter().cloned().map(Into::into).collect();
+	let data_cells: Vec<data::DataCell> = cells
+		.iter()
+		.map(|cell| match cell {
+			data::Cell::SingleCell(sc) => data::DataCell::from(sc.clone()),
+			data::Cell::MultiProofCell(mc) => data::DataCell::from(mc.clone()),
+		})
+		.collect();
 
 	// Map cells by column
 	let columns = map_cells(dimensions, data_cells)?;
