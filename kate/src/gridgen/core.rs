@@ -7,7 +7,8 @@ use crate::pmp::{
 	Pairing,
 };
 use avail_core::{
-	app_extrinsic::AppExtrinsic, constants::kate::DATA_CHUNK_SIZE, ensure, AppId, DataLookup,
+	app_extrinsic::AppExtrinsic, constants::kate::DATA_CHUNK_SIZE, ensure, AppId,
+	V3DataLookup::DataLookup,
 };
 use codec::Encode;
 use core::{
@@ -27,10 +28,14 @@ use static_assertions::const_assert;
 use std::collections::BTreeMap;
 use thiserror_no_std::Error;
 
+use crate::couscous;
 use crate::{
 	com::{Cell, Error},
 	ArkScalar, Seed,
 };
+use lru::LruCache;
+use once_cell::sync::Lazy;
+use std::sync::Mutex;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
@@ -44,6 +49,12 @@ macro_rules! cfg_iter {
 		result
 	}};
 }
+
+// Since we wont be changing the column length very often, 8 is a good number to cache
+const CACHE_CAPACITY: usize = 8;
+
+static CACHED_ROWS: Lazy<Mutex<LruCache<usize, (Vec<ArkScalar>, Vec<u8>)>>> =
+	Lazy::new(|| Mutex::new(LruCache::new(CACHE_CAPACITY)));
 
 pub const SCALAR_SIZE: usize = 32;
 pub type Commitment = crate::pmp::Commitment<Bls12_381>;
@@ -156,6 +167,84 @@ impl EvaluationGrid {
 		Ok(EvaluationGrid {
 			lookup: DataLookup::default(),
 			evals: row_major_evals,
+		})
+	}
+
+	/// Merge multiple EvaluationGrids into one
+	pub fn merge(grids: Vec<EvaluationGrid>) -> Result<Self, Error> {
+		if grids.is_empty() {
+			return Err(Error::ZeroDimension);
+		}
+
+		let total_rows = grids.iter().map(|grid| grid.evals.nrows()).sum();
+		let cols = grids[0].evals.ncols();
+
+		// Ensure all grids have the same number of columns
+		for grid in &grids {
+			if grid.evals.ncols() != cols {
+				return Err(Error::DimensionsMismatch);
+			}
+		}
+
+		let mut merged_evals = DMatrix::zeros(total_rows, cols);
+		let mut current_row = 0;
+
+		for grid in grids {
+			let rows = grid.evals.nrows();
+			merged_evals
+				.rows_mut(current_row, rows)
+				.copy_from(&grid.evals);
+			current_row += rows;
+		}
+
+		Ok(EvaluationGrid {
+			// TODO: handle this properly
+			lookup: DataLookup::default(),
+			evals: merged_evals,
+		})
+	}
+
+	/// Merge multiple EvaluationGrids into one, ensuring the number of rows are in powers of 2 by padding additional rows if needed.
+	pub fn merge_with_padding(grids: Vec<EvaluationGrid>) -> Result<Self, Error> {
+		if grids.is_empty() {
+			return Err(Error::ZeroDimension);
+		}
+
+		let total_rows: usize = grids.iter().map(|grid| grid.evals.nrows()).sum();
+		let cols = grids[0].evals.ncols();
+
+		// Ensure all grids have the same number of columns
+		for grid in &grids {
+			if grid.evals.ncols() != cols {
+				return Err(Error::DimensionsMismatch);
+			}
+		}
+
+		// Calculate the next power of 2 for the total number of rows
+		let padded_rows = total_rows.next_power_of_two();
+
+		let mut merged_evals = DMatrix::zeros(padded_rows, cols);
+		let mut current_row = 0;
+
+		for grid in grids {
+			let rows = grid.evals.nrows();
+			merged_evals
+				.rows_mut(current_row, rows)
+				.copy_from(&grid.evals);
+			current_row += rows;
+		}
+
+		let (random_row, _) =
+			get_pregenerated_row_and_commitment(cols).expect("lets hope, it works :)");
+
+		for row in current_row..padded_rows {
+			merged_evals.row_mut(row).copy_from_slice(&random_row);
+		}
+
+		Ok(EvaluationGrid {
+			// TODO: handle this properly
+			lookup: DataLookup::default(),
+			evals: merged_evals,
 		})
 	}
 
@@ -289,6 +378,64 @@ impl EvaluationGrid {
 			inner,
 		})
 	}
+}
+
+/// Generate and cache a random row and its commitment given the column length.
+/// This function uses a default seed and a pregenerated SRS from couscous.
+///
+/// # Arguments
+///
+/// * `column_length` - The length of the column for which to generate the row and commitment.
+///
+/// # Returns
+///
+/// A tuple containing the generated row and its commitment.
+pub fn get_pregenerated_row_and_commitment(
+	column_length: usize,
+) -> Result<(Vec<ArkScalar>, Vec<u8>), Error> {
+	let mut cache = CACHED_ROWS.lock().unwrap();
+
+	// Check cache first
+	if let Some((row, commitment)) = cache.get(&column_length) {
+		return Ok((row.clone(), commitment.clone()));
+	}
+
+	let rng_seed = Seed::default();
+	let srs = couscous::multiproof_params();
+
+	let mut rng = ChaChaRng::from_seed(rng_seed);
+	let random_row: Vec<ArkScalar> = (0..column_length)
+		.map(|_| {
+			let rnd_values: [u8; SCALAR_SIZE - 1] = rng.gen();
+			pad_to_bls_scalar(rnd_values).expect("less than SCALAR_SIZE values, can't fail")
+		})
+		.collect();
+
+	// Create row major evaluations
+	let row_major_evals = DMatrix::from_row_iterator(1, column_length, random_row.iter().cloned());
+
+	let row_ev_grid = EvaluationGrid {
+		lookup: DataLookup::default(),
+		evals: row_major_evals,
+	};
+
+	let poly = row_ev_grid.make_polynomial_grid().unwrap();
+	let commitment_bytes: Vec<u8> = poly
+		.commitments(&srs)
+		.unwrap()
+		.first()
+		.unwrap()
+		.to_bytes()
+		.expect("Failed to convert comms to bytes")
+		.to_vec();
+
+	// Store the result in cache
+	cache.put(
+		column_length,
+		(random_row.clone(), commitment_bytes.clone()),
+	);
+
+	Ok((random_row, commitment_bytes))
 }
 
 pub struct PolynomialGrid {

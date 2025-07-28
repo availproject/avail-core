@@ -1,8 +1,8 @@
-use crate::{AppId, DataLookup};
+use crate::{data_lookup::v4::DataLookup, AppId};
 
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -43,17 +43,25 @@ where
 //
 #[derive(Encode, Decode, TypeInfo, Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct CompactDataLookup {
 	/// size of the look up
 	#[codec(compact)]
 	pub(crate) size: u32,
 	/// sorted vector of tuples(key, start index)
 	pub(crate) index: Vec<DataLookupItem>,
+	/// number of rows each DA transaction takes
+	pub(crate) rows_per_tx: Vec<u16>,
 }
 
 impl CompactDataLookup {
-	pub fn new(size: u32, index: Vec<DataLookupItem>) -> Self {
-		Self { size, index }
+	/// ATTN: Ensure the values passed for `index` & `rows_per_tx` are coherent & in order.
+	pub fn new(size: u32, index: Vec<DataLookupItem>, rows_per_tx: Vec<u16>) -> Self {
+		Self {
+			size,
+			index,
+			rows_per_tx,
+		}
 	}
 
 	pub fn is_error(&self) -> bool {
@@ -66,6 +74,7 @@ impl CompactDataLookup {
 		Self {
 			size: 0,
 			index: [DataLookupItem::new(AppId(0), 0)].to_vec(),
+			rows_per_tx: vec![], // Initialize with empty vector
 		}
 	}
 
@@ -74,14 +83,28 @@ impl CompactDataLookup {
 			return Self::new_error();
 		}
 
+		// Special case: Only AppId(0) entries
+		if lookup.index.iter().all(|(id, _)| *id == AppId(0)) {
+			return Self {
+				size: lookup.len(),
+				index: vec![], // Empty index indicates all AppId(0)
+				rows_per_tx: lookup.rows_per_tx.clone(),
+			};
+		}
+
+		// Normal case: Mixed or non-zero AppIds
 		let index = lookup
 			.index
 			.iter()
-			.filter(|(id, _)| *id != AppId(0))
+			.filter(|(id, _)| *id != AppId(0)) // Still filter out AppId(0) for normal case
 			.map(|(id, range)| DataLookupItem::new(*id, range.start))
 			.collect();
-		let size = lookup.index.last().map_or(0, |(_, range)| range.end);
-		Self { size, index }
+
+		Self {
+			size: lookup.len(),
+			index,
+			rows_per_tx: lookup.rows_per_tx.clone(),
+		}
 	}
 }
 

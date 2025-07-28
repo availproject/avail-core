@@ -1,4 +1,7 @@
-use avail_core::{AppExtrinsic, AppId, BlockLengthColumns, BlockLengthRows, DataLookup};
+use avail_core::{
+	data_lookup::v3::DataLookup as DataLookupV3, AppExtrinsic, AppId, BlockLengthColumns,
+	BlockLengthRows,
+};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use kate::gridgen::core::AsBytes;
 use kate::{com::build_proof, com::par_build_commitments, com::Cell, metrics::IgnoreMetrics, Seed};
@@ -133,7 +136,7 @@ fn reconstruct(xts: &[AppExtrinsic]) {
 
 	let columns = sample_cells_from_matrix(&matrix, None);
 	let extended_dims = dims.try_into().unwrap();
-	let lookup = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
+	let lookup = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
 	let reconstructed = reconstruct_extrinsics(&lookup, extended_dims, columns).unwrap();
 	for ((app_id, data), xt) in reconstructed.iter().zip(xts) {
 		assert_eq!(app_id.0, *xt.app_id);
