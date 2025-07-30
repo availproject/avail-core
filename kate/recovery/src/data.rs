@@ -300,7 +300,7 @@ pub fn rows(dimensions: Dimensions, cells: &[&Cell]) -> Vec<(RowIndex, Vec<u8>)>
 	rows.into_iter().collect()
 }
 
-/// Converts a `SingleCell` into a `DataCell`.`position` here refers 
+/// Converts a `SingleCell` into a `DataCell`.`position` here refers
 /// to the index of a cell in the main grid.
 impl From<SingleCell> for DataCell {
 	fn from(cell: SingleCell) -> Self {
@@ -311,7 +311,7 @@ impl From<SingleCell> for DataCell {
 	}
 }
 
-/// Converts a `MultiProofCell` into a `DataCell`.`position` here refers 
+/// Converts a `MultiProofCell` into a `DataCell`.`position` here refers
 /// to the index of a multiproof cell on the target multiproof grid.
 impl From<MultiProofCell> for DataCell {
 	fn from(cell: MultiProofCell) -> Self {
