@@ -6,9 +6,12 @@ use core::{num::TryFromIntError, ops::Range};
 #[cfg(feature = "std")]
 use avail_core::{
 	constants::kate::{CHUNK_SIZE, DATA_CHUNK_SIZE},
-	ensure,
+	ensure, DataLookup,
 };
-use avail_core::{data_lookup::Error as DataLookupError, AppId, DataLookup};
+use avail_core::{
+	data_lookup::v3::{DataLookup as DataLookupV3, Error as DataLookupError},
+	AppId,
+};
 
 use sp_std::prelude::*;
 use thiserror_no_std::Error;
@@ -60,6 +63,8 @@ pub enum ReconstructionError {
 	InvalidEvaluationDomain,
 	#[error("Bad zero poly evaluation")]
 	BadZeroPoly,
+	#[error("Row reconstruction failed")]
+	RowReconstructionFailed,
 }
 
 #[cfg(feature = "std")]
@@ -127,7 +132,7 @@ fn map_cells(
 /// * `dimensions` - Extended matrix dimensions
 /// * `app_id` - Application ID
 pub fn app_specific_rows(
-	index: &DataLookup,
+	index: &DataLookupV3,
 	dimensions: matrix::Dimensions,
 	app_id: AppId,
 ) -> Vec<u32> {
@@ -147,7 +152,7 @@ pub fn app_specific_rows(
 /// * `dimensions` - Extended matrix dimensions
 /// * `app_id` - Application ID
 pub fn app_specific_cells(
-	index: &DataLookup,
+	index: &DataLookupV3,
 	dimensions: matrix::Dimensions,
 	id: AppId,
 ) -> Option<Vec<matrix::Position>> {
@@ -171,7 +176,7 @@ pub type AppData = Vec<Vec<u8>>;
 /// * `app_id` - Application ID
 #[cfg(feature = "std")]
 pub fn reconstruct_app_extrinsics(
-	index: &DataLookup,
+	index: &DataLookupV3,
 	dimensions: matrix::Dimensions,
 	cells: Vec<data::DataCell>,
 	app_id: AppId,
@@ -197,7 +202,7 @@ pub fn reconstruct_app_extrinsics(
 /// * `cells` - Cells from required columns, at least 50% cells per column
 #[cfg(feature = "std")]
 pub fn reconstruct_extrinsics(
-	lookup: &DataLookup,
+	lookup: &DataLookupV3,
 	dimensions: matrix::Dimensions,
 	cells: Vec<data::DataCell>,
 ) -> Result<Vec<(AppId, AppData)>, ReconstructionError> {
@@ -302,7 +307,7 @@ fn reconstruct_available(
 /// * `app_id` - Application ID
 #[cfg(feature = "std")]
 pub fn decode_app_extrinsics(
-	index: &DataLookup,
+	index: &DataLookupV3,
 	dimensions: matrix::Dimensions,
 	cells: Vec<data::DataCell>,
 	app_id: AppId,
@@ -593,6 +598,134 @@ pub fn reconstruct_column(
 	reconstruct_poly(eval_domain, subset)
 }
 
+/// Reconstructs all extrinsics data for all app_id's from the given lookup and cells.
+///
+/// # Arguments
+/// * `lookup` - DataLookup
+/// * `dimension` - Original matrix dimensions
+/// * `cells` - Cells from all columns, at least 50% cells per column
+#[cfg(feature = "std")]
+pub fn reconstruct_extrinsics_data(
+	lookup: &DataLookup,
+	dimension: matrix::Dimensions,
+	cells: Vec<data::DataCell>,
+) -> Result<Vec<(AppId, Vec<Vec<u8>>)>, ReconstructionError> {
+	let mut reconstructed_data = Vec::new();
+
+	let app_tx_indices = lookup
+		.transactions()
+		// TODO: Update the correct error type
+		.ok_or(ReconstructionError::DataLookup(
+			DataLookupError::DataNotSorted,
+		))?;
+
+	let rows = reconstruct_rows(dimension, cells)
+		.map_err(|_| ReconstructionError::RowReconstructionFailed)?;
+
+	for (app_id, tx_indices) in app_tx_indices {
+		let mut app_data = Vec::new();
+
+		for tx in tx_indices {
+			let padded_data: Vec<u8> = tx
+				.iter()
+				.filter_map(|&r| rows.get(r as usize))
+				.flatten()
+				.cloned()
+				.collect();
+
+			let decoded_data = unpad_data(padded_data)?;
+			app_data.push(decoded_data);
+		}
+
+		reconstructed_data.push((app_id, app_data));
+	}
+
+	Ok(reconstructed_data)
+}
+
+#[cfg(feature = "std")]
+fn unpad_data(padded_data: Vec<u8>) -> Result<Vec<u8>, ReconstructionError> {
+	ensure!(
+		padded_data.len() % CHUNK_SIZE == 0,
+		ReconstructionError::InvalidEvaluationDomain
+	);
+
+	let encoded_data = padded_data
+		.chunks(CHUNK_SIZE)
+		.flat_map(|chunk| &chunk[0..DATA_CHUNK_SIZE])
+		.cloned()
+		.collect::<Vec<u8>>();
+
+	let mut encoded_slice = &encoded_data[..];
+	Vec::<u8>::decode(&mut encoded_slice).map_err(|_| ReconstructionError::InvalidEvaluationDomain)
+}
+
+/// Reconstructs extrinsics data for a specific application ID using the given data lookup and cells.
+///
+/// # Arguments
+/// * `app_id` - Application ID
+/// * `lookup` - DataLookup
+/// * `dimension` - Original matrix dimensions
+/// * `cells` - Cells from required columns, at least 50% cells per column
+#[cfg(feature = "std")]
+pub fn reconstruct_app_extrinsic_data(
+	app_id: AppId,
+	lookup: &DataLookup,
+	dimension: matrix::Dimensions,
+	cells: Vec<data::DataCell>,
+) -> Result<Vec<Vec<u8>>, ReconstructionError> {
+	let reconstructed_data = reconstruct_extrinsics_data(lookup, dimension, cells)?;
+
+	reconstructed_data
+		.into_iter()
+		.find(|(id, _)| *id == app_id)
+		.map(|(_, data)| data)
+		.ok_or(ReconstructionError::MissingId(app_id))
+}
+
+#[cfg(feature = "std")]
+pub fn reconstruct_rows(
+	dimensions: matrix::Dimensions,
+	cells: Vec<data::DataCell>,
+) -> Result<Vec<Vec<u8>>, ReconstructionError> {
+	let columns = map_cells(dimensions, cells)?;
+	let rows: usize = dimensions.height();
+
+	let scalars = (0..dimensions.cols().get())
+		.map(|col| match columns.get(&col) {
+			None => Ok(vec![None; rows]),
+			Some(column_cells) => {
+				ensure!(
+					column_cells.len() >= rows,
+					ReconstructionError::InvalidColumn(col)
+				);
+				let cells = column_cells.values().cloned().collect::<Vec<_>>();
+
+				reconstruct_column(dimensions.extended_rows(), &cells)
+					.map(|scalars| scalars.into_iter().map(Some).collect::<Vec<_>>())
+			},
+		})
+		.collect::<Result<Vec<Vec<_>>, ReconstructionError>>()?;
+
+	let mut result: Vec<Vec<u8>> =
+		vec![vec![0; dimensions.cols().get() as usize * CHUNK_SIZE]; rows];
+
+	for (row, col) in dimensions.iter_data() {
+		let bytes = scalars
+			.get(col)
+			.and_then(|col| col.get(row))
+			.map(Option::as_ref)
+			.unwrap_or(None)
+			.map(ArkScalar::to_bytes)
+			.transpose()
+			.map_err(|_| ReconstructionError::InvalidColumn(col as u16))?
+			.unwrap_or_else(|| [0; CHUNK_SIZE]);
+
+		result[row][col * CHUNK_SIZE..(col + 1) * CHUNK_SIZE].copy_from_slice(&bytes);
+	}
+	Ok(result)
+}
+
 #[cfg(test)]
 mod tests {
 	use std::convert::TryInto;
@@ -615,7 +748,7 @@ mod tests {
 	#[test_case(4 => Vec::<u32>::new() ; "There is no app 4")]
 	fn test_app_specific_rows(id: u32) -> Vec<u32> {
 		let id_lens: Vec<(u32, u32)> = vec![(0, 2), (1, 3), (2, 3), (3, 8)];
-		let index = DataLookup::from_id_and_len_iter(id_lens.into_iter()).unwrap();
+		let index = DataLookupV3::from_id_and_len_iter(id_lens.into_iter()).unwrap();
 		let dimensions = Dimensions::new(8, 4).unwrap();
 
 		app_specific_rows(&index, dimensions, AppId(id))
@@ -630,7 +763,7 @@ mod tests {
 	#[test_case(2 => Vec::<Position>::new() ; "App 2 has no cells")]
 	fn test_app_specific_cells(app_id: u32) -> Vec<Position> {
 		let id_lens: Vec<(u32, usize)> = vec![(0, 5), (1, 3)];
-		let index = DataLookup::from_id_and_len_iter(id_lens.into_iter()).unwrap();
+		let index = DataLookupV3::from_id_and_len_iter(id_lens.into_iter()).unwrap();
 		let dimensions = Dimensions::new(4, 4).unwrap();
 
 		app_specific_cells(&index, dimensions, AppId(app_id)).unwrap_or_default()
@@ -707,7 +840,7 @@ mod tests {
 	//
 	// Need for writing these test cases originates in a conversation
 	// with Prabal<https://github.com/prabal-banerjee> where we were discussing
-	// how to ensure input byte chunks to dusk-plonk's `BlsScalar::from_bytes()`
+	// how to ensure input byte chunks to dusk-plonk's `ArkScalar::from_bytes()`
 	// is always lesser than prime field modulus ( 255 bits wide ), because
 	// we'll get data bytes from arbitrary sources which will be concatenated into
 	// single large byte array & finally (multiple) field elements to be produced by chunking contiguous bytes,
@@ -728,7 +861,7 @@ mod tests {
 	//
 	// **Solution** So we decided to chunk contiguous 31 bytes from large input byte array and
 	// append zero byte(s) to each chunk for making 32 -bytes wide before inputting
-	// 256 -bit integer to `BlsScalar::from_bytes( ... )` function
+	// 256 -bit integer to `ArkScalar::from_bytes( ... )` function
 	//
 	// Note, this means, for each field element of 256 -bits, we've 6 -bits free to use
 	// and at this moment that's just set to zeros !

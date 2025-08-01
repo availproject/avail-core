@@ -49,7 +49,9 @@ pub mod data_proof;
 pub use data_proof::DataProof;
 
 pub mod data_lookup;
-pub use data_lookup::*;
+pub use data_lookup::v3 as V3DataLookup;
+pub use data_lookup::v4::*;
+pub use data_lookup::{v3_compact, v4_compact};
 
 pub mod app_extrinsic;
 pub use app_extrinsic::AppExtrinsic;

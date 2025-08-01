@@ -12,8 +12,8 @@ use thiserror_no_std::Error;
 use avail_core::{
 	const_generic_asserts::{USizeGreaterOrEq, USizeSafeCastToU32, UsizeEven, UsizeNonZero},
 	constants::kate::{DATA_CHUNK_SIZE, EXTENSION_FACTOR},
-	data_lookup::Error as DataLookupError,
-	ensure, AppExtrinsic, AppId, BlockLengthColumns, BlockLengthRows, DataLookup,
+	data_lookup::v3::{DataLookup as DataLookupV3, Error as DataLookupError},
+	ensure, AppExtrinsic, AppId, BlockLengthColumns, BlockLengthRows,
 };
 use codec::Encode;
 use derive_more::Constructor;
@@ -583,7 +583,7 @@ fn commit(
 #[cfg(feature = "std")]
 pub fn scalars_to_app_rows(
 	id: AppId,
-	lookup: &DataLookup,
+	lookup: &DataLookupV3,
 	dimensions: Dimensions,
 	matrix: &DMatrix<ArkScalar>,
 ) -> Vec<Option<Vec<u8>>> {
@@ -661,16 +661,21 @@ pub fn scalars_to_rows(
 
 #[cfg(test)]
 mod tests {
+	use crate::gridgen::core::AsBytes;
 	use avail_core::{
 		constants::kate::{CHUNK_SIZE, COMMITMENT_SIZE, DATA_CHUNK_SIZE},
 		DataLookup,
+		V3DataLookup::DataLookup as DataLookupV3,
 	};
+	use codec::{Compact, CompactLen, Decode};
+	use core::num::NonZeroU16;
 	use core::usize;
 	use hex_literal::hex;
+	use kate_recovery::proof::domain_points;
 	use kate_recovery::{
 		com::*,
 		commitments,
-		data::{self, DataCell},
+		data::{self, DataCell, SingleCell},
 		matrix::{Dimensions, Position},
 		proof,
 	};
@@ -686,8 +691,10 @@ mod tests {
 	use crate::{
 		com::{pad_iec_9797_1, par_extend_data_matrix, BlockDimensions},
 		couscous,
+		gridgen::core::{EvaluationGrid, Multiproof},
 		metrics::IgnoreMetrics,
 		padded_len,
+		pmp::{merlin::Transcript, traits::PolyMultiProofNoPrecomp, Commitment},
 	};
 
 	const TCHUNK_SIZE: usize = 32;
@@ -803,7 +810,7 @@ mod tests {
 
 		assert_eq!(dims, expected_dims, "Dimensions don't match the expected");
 		assert_eq!(data, expected_data, "Data doesn't match the expected data");
-		let lookup = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
+		let lookup = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
 
 		const_assert!((CHUNK_SIZE as u64) <= (u32::MAX as u64));
 		let data_lookup = lookup.projected_ranges(CHUNK_SIZE as u32).unwrap();
@@ -818,6 +825,24 @@ mod tests {
 			assert_eq!(id.0, *exp.app_id);
 			assert_eq!(data[0], exp.data);
 		}
+	}
+
+	// returns the random cell positions by respecting the max col_percent % per column
+	fn sampled_cells(dimensions: Dimensions, col_percent: u8) -> Vec<Position> {
+		let mut rng = rand::thread_rng();
+		let mut sampled_positions = vec![];
+		for col in 0..dimensions.cols().get() {
+			let total_cells = dimensions.rows().get();
+			let sample_size = (col_percent as u32 * total_cells as u32) / 100;
+
+			let col_positions: Vec<Position> = (0..total_cells)
+				.map(|row| Position::new(row as u32, col))
+				.choose_multiple(&mut rng, sample_size.try_into().unwrap());
+
+			sampled_positions.extend(col_positions);
+		}
+
+		sampled_positions
 	}
 
 	fn sample_cells_from_matrix(
@@ -914,7 +939,7 @@ mod tests {
 
 		let columns = sample_cells_from_matrix(&matrix, None);
 		let extended_dims = dims.try_into().unwrap();
-		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
+		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
 		let reconstructed = reconstruct_extrinsics(&index, extended_dims, columns).unwrap();
 		for ((app_id, data), xt) in reconstructed.iter().zip(xts) {
 			prop_assert_eq!(app_id.0, *xt.app_id);
@@ -951,7 +976,7 @@ mod tests {
 	fn test_commitments_verify(ref xts in app_extrinsics_strategy())  {
 		let (layout, commitments, dims, matrix) = par_build_commitments::<TCHUNK_SIZE,_>(BlockLengthRows(64), BlockLengthColumns(16), xts, Seed::default(), &IgnoreMetrics{}).unwrap();
 
-		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
+		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
 		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
 		let public_params = couscous::multiproof_params();
 		let extended_dims = dims.try_into().unwrap();
@@ -971,7 +996,7 @@ mod tests {
 	fn verify_commitments_missing_row(ref xts in app_extrinsics_strategy())  {
 		let (layout, commitments, dims, matrix) = par_build_commitments::<TCHUNK_SIZE,_>(BlockLengthRows(64), BlockLengthColumns(16), xts, Seed::default(), &IgnoreMetrics{}).unwrap();
 
-		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
+		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
 		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
 		let public_params = couscous::multiproof_params();
 		let extended_dims =  dims.try_into().unwrap();
@@ -984,6 +1009,530 @@ mod tests {
 			prop_assert!(!missing.is_empty());
 		}
 	}
+	}
+
+	#[test]
+	// To test extension of commitments directly from the commitment bytes
+	fn test_commitments_extension() {
+		// exact 4 rows
+		let tx_size: usize = 4 * 256 * 31 - 8;
+		let mut rng = ChaChaRng::from_seed([0u8; 32]);
+		let data: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
+
+		let grid = EvaluationGrid::from_extrinsics(
+			[AppExtrinsic::from(data)].to_vec(),
+			4,
+			256,
+			256,
+			Seed::default(),
+		)
+		.expect("Failed to create evaluation grid");
+
+		let poly_grid = grid
+			.make_polynomial_grid()
+			.map_err(|e| format!("Make polynomial grid failed: {e:?}"))
+			.unwrap();
+
+		let public_params = couscous::multiproof_params();
+
+		let poly_commitment = poly_grid.commitments(&public_params).unwrap();
+		let poly_extended_commitment =
+			poly_multiproof::Commitment::<Bls12_381>::extend_commitments(
+				&poly_commitment,
+				poly_commitment.len() * 2,
+			)
+			.unwrap();
+		let mut extended_commitment_bytes = Vec::new();
+		for c in poly_extended_commitment.iter() {
+			match c.to_bytes() {
+				Ok(bytes) => extended_commitment_bytes.extend(bytes),
+				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+			}
+		}
+
+		let mut commitment_bytes = Vec::new();
+		for c in poly_commitment.iter() {
+			match c.to_bytes() {
+				Ok(bytes) => commitment_bytes.extend(bytes),
+				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+			}
+		}
+		let commitments_vec =
+			commitments::from_slice(&commitment_bytes).expect("Failed to parse commitments");
+
+		// Now get back Vec<Commitment> from Vec<[u8; COMMITMENT_SIZE]>
+		let commitments: Vec<Commitment<Bls12_381>> = commitments_vec
+			.iter()
+			.map(|c| Commitment::from_bytes(c))
+			.collect::<Result<Vec<_>, _>>()
+			.expect("Failed to convert commitment bytes to commitment");
+
+		let extended_commitments = poly_multiproof::Commitment::<Bls12_381>::extend_commitments(
+			&commitments,
+			commitments.len() * 2,
+		)
+		.unwrap();
+
+		let mut commitments = Vec::new();
+		for c in extended_commitments.iter() {
+			match c.to_bytes() {
+				Ok(bytes) => commitments.extend(bytes),
+				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+			}
+		}
+		// println!("Directly Extended Commitment (hex): {}", hex::encode(&commitments));
+		assert_eq!(commitments, extended_commitment_bytes);
+	}
+
+	#[test]
+	fn test_row_padding_at_unified_grid() {
+		// exact 3 rows
+		let tx_size: usize = 3 * 256 * 31;
+		let mut rng = rand::thread_rng();
+		let data1: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
+		let grid1 = EvaluationGrid::from_data(data1, 256, 256, 256, Seed::default())
+			.expect("Failed to create evaluation grid");
+
+		let poly_grid1 = grid1
+			.make_polynomial_grid()
+			.map_err(|e| format!("Make polynomial grid failed: {e:?}"))
+			.unwrap();
+
+		// 3 * 256
+		println!("grid1 dims: {:?}", grid1.dims());
+		let public_params = couscous::multiproof_params();
+		let extended_grid = poly_grid1
+			.commitments(&public_params)
+			.map_err(|e| format!("Commitments generation failed: {e:?}"))
+			.unwrap();
+
+		let mut commitments = Vec::new();
+		for c in extended_grid.iter() {
+			match c.to_bytes() {
+				Ok(bytes) => commitments.extend(bytes),
+				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+			}
+		}
+		println!("Commitments1 (hex): {}", hex::encode(&commitments));
+
+		// exact 2 rows
+		let tx_size: usize = 2 * 256 * 31;
+		let data2: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
+		let grid2 = EvaluationGrid::from_data(data2, 256, 256, 256, Seed::default())
+			.expect("Failed to create evaluation grid");
+
+		let poly_grid2 = grid2
+			.make_polynomial_grid()
+			.map_err(|e| format!("Make polynomial grid failed: {e:?}"))
+			.unwrap();
+
+		// 2 * 256
+		println!("grid2 dims: {:?}", grid2.dims());
+		let extended_grid2 = poly_grid2
+			.commitments(&public_params)
+			.map_err(|e| format!("Commitments generation: {e:?}"))
+			.unwrap();
+
+		let mut commitments2 = Vec::new();
+		for c in extended_grid2.iter() {
+			match c.to_bytes() {
+				Ok(bytes) => commitments2.extend(bytes),
+				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+			}
+		}
+		println!("Commitments1 (hex): {}", hex::encode(&commitments2));
+		// let grid1 = grid1
+		// 	.extend_columns(NonZeroU16::new(2).expect("2>0"))
+		// 	.unwrap();
+		// let grid2 = grid2
+		// 	.extend_columns(NonZeroU16::new(2).expect("2>0"))
+		// 	.unwrap();
+		// merge the grids
+		let grids = vec![grid1, grid2];
+		let merged_grid = EvaluationGrid::merge_with_padding(grids).unwrap();
+		// 8 * 256
+		println!("merged grid dims: {:?}", merged_grid.dims());
+		// print 5th row of the merged grid
+		println!(
+			"merged grid row 5 {}",
+			hex::encode(
+				merged_grid
+					.row(5)
+					.unwrap()
+					.iter()
+					.map(|s| s.to_bytes().unwrap())
+					.collect::<Vec<_>>()
+					.concat()
+			)
+		);
+		println!(
+			"merged grid row 6 {}",
+			hex::encode(
+				merged_grid
+					.row(6)
+					.unwrap()
+					.iter()
+					.map(|s| s.to_bytes().unwrap())
+					.collect::<Vec<_>>()
+					.concat()
+			)
+		);
+	}
+
+	#[test]
+	fn test_pre_generated_row() {
+		// exact 3 rows
+		let tx_size: usize = 3 * 256 * 31;
+		let mut rng = rand::thread_rng();
+		let data1: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
+		let grid1 = EvaluationGrid::from_data(data1, 256, 256, 256, Seed::default())
+			.expect("Failed to create evaluation grid");
+
+		let poly_grid1 = grid1
+			.make_polynomial_grid()
+			.map_err(|e| format!("Make polynomial grid failed: {e:?}"))
+			.unwrap();
+
+		// 3 * 256
+		println!("grid1 dims: {:?}", grid1.dims());
+		let public_params = couscous::multiproof_params();
+		let comms = poly_grid1
+			.commitments(&public_params)
+			.map_err(|e| format!("Commitments generation failed: {e:?}"))
+			.unwrap();
+
+		let mut header_commitments = Vec::new();
+		for c in comms.iter() {
+			match c.to_bytes() {
+				Ok(bytes) => header_commitments.extend(bytes),
+				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+			}
+		}
+		// lets check & ensure the number of rows are in power  of 2
+		let original_rows = comms.len();
+		let padded_rows = original_rows.next_power_of_two();
+		if padded_rows > original_rows {
+			// we need to perform row padding using pregenrated rows
+			let (_padded_row, padded_row_commitment) =
+				crate::gridgen::core::get_pregenerated_row_and_commitment(256)
+					.expect("lets hope, it works :)");
+
+			header_commitments = header_commitments
+				.into_iter()
+				.chain(
+					std::iter::repeat(padded_row_commitment)
+						.take((padded_rows - original_rows) as usize)
+						.flat_map(|x| x),
+				)
+				.collect();
+		}
+
+		let grids = vec![grid1];
+		let uni_grid = EvaluationGrid::merge_with_padding(grids).unwrap();
+
+		let poly = uni_grid.make_polynomial_grid().unwrap();
+		let pol_comms = poly.commitments(&public_params).unwrap();
+		let mut proof_comms: Vec<u8> = Vec::new();
+		for c in pol_comms.iter() {
+			match c.to_bytes() {
+				Ok(bytes) => proof_comms.extend(bytes),
+				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+			}
+		}
+		assert_eq!(header_commitments, proof_comms);
+	}
+
+	#[test]
+	fn test_simple_build_and_verify() {
+		let original_data = br#"Testing Avail DA verification"#;
+		println!("Original data (hex): {}", hex::encode(original_data));
+
+		let grid = EvaluationGrid::from_extrinsics(
+			[AppExtrinsic::from(original_data.to_vec())].to_vec(),
+			4,
+			256,
+			256,
+			Seed::default(),
+		)
+		.expect("Failed to create evaluation grid");
+		// if we want to add erasure coding, we can do it here by extending the grid
+		// .extend_columns(NonZeroU16::new(2).expect("2>0")).expect("Failed to extend the grid");
+
+		let poly_grid = grid
+			.make_polynomial_grid()
+			.map_err(|e| format!("Make polynomial grid failed: {e:?}"))
+			.unwrap();
+
+		println!("grid dims: {:?}", grid.dims());
+		println!(
+			"grid row 0 {}",
+			hex::encode(
+				grid.row(0)
+					.unwrap()
+					.iter()
+					.map(|s| s.to_bytes().unwrap())
+					.collect::<Vec<_>>()
+					.concat()
+			)
+		);
+		let public_params = couscous::multiproof_params();
+
+		let extended_grid = poly_grid
+			.extended_commitments(&public_params, 2)
+			.map_err(|e| format!("Grid extension failed: {e:?}"))
+			.unwrap();
+
+		let mut commitments = Vec::new();
+		for c in extended_grid.iter() {
+			match c.to_bytes() {
+				Ok(bytes) => commitments.extend(bytes),
+				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+			}
+		}
+
+		let commitments_vec =
+			commitments::from_slice(&commitments).expect("Failed to parse commitments");
+
+		for col in 0..grid.dims().cols().get() {
+			// Checking only for a single row (first)
+			let row = 0u32;
+			let data = grid
+				.get(row as usize, col as usize)
+				.expect("Missing cell in grid")
+				.to_bytes()
+				.expect("Data serialization failed");
+
+			let cell = Cell::new(BlockLengthRows(row), BlockLengthColumns(col as u32));
+			let proof = poly_grid
+				.proof(&public_params, &cell)
+				.expect("Proof generation failed")
+				.to_bytes()
+				.expect("Proof serialization failed");
+
+			let cell_proof: [u8; 80] = {
+				let mut buffer = [0u8; 80];
+				buffer[..proof.len()].copy_from_slice(&proof);
+				buffer[proof.len()..].copy_from_slice(&data);
+				buffer
+			};
+
+			println!(
+				"Cell index: ({}, {}), Cell bytes (hex): {}",
+				row,
+				col,
+				hex::encode(&cell_proof)
+			);
+
+			let position = Position {
+				row,
+				col: col.try_into().expect("Column conversion failed"),
+			};
+
+			let cell = SingleCell {
+				position,
+				content: cell_proof,
+			};
+
+			let commitment = commitments_vec[row as usize];
+			let verification = proof::verify_v2(&public_params, grid.dims(), &commitment, &cell);
+			assert!(
+				verification.is_ok(),
+				"Verification failed for cell ({}, {}): {:?}",
+				row,
+				col,
+				verification.err()
+			);
+			assert!(
+				verification.unwrap(),
+				"Verification returned false for cell ({}, {})",
+				row,
+				col
+			);
+		}
+	}
+
+	#[test]
+	fn test_merge_grid() {
+		// single full row
+		let tx_size: usize = 256 * 32 - 256;
+		let mut rng = rand::thread_rng();
+		let data1: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
+		let grid1 = EvaluationGrid::from_data(data1, 256, 256, 256, Seed::default())
+			.expect("Failed to create evaluation grid");
+
+		let poly_grid1 = grid1
+			.make_polynomial_grid()
+			.map_err(|e| format!("Make polynomial grid failed: {e:?}"))
+			.unwrap();
+
+		println!("grid dims: {:?}", grid1.dims());
+		let public_params = couscous::multiproof_params();
+		let extended_grid = poly_grid1
+			.extended_commitments(&public_params, 2)
+			.map_err(|e| format!("Grid extension failed: {e:?}"))
+			.unwrap();
+
+		let mut commitments = Vec::new();
+		for c in extended_grid.iter() {
+			match c.to_bytes() {
+				Ok(bytes) => commitments.extend(bytes),
+				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+			}
+		}
+		println!("Commitments1 (hex): {}", hex::encode(&commitments));
+
+		let data2: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
+		let grid2 = EvaluationGrid::from_data(data2, 256, 256, 256, Seed::default())
+			.expect("Failed to create evaluation grid");
+
+		let poly_grid2 = grid2
+			.make_polynomial_grid()
+			.map_err(|e| format!("Make polynomial grid failed: {e:?}"))
+			.unwrap();
+
+		println!("grid dims: {:?}", grid2.dims());
+		let public_params = couscous::multiproof_params();
+		let extended_grid2 = poly_grid2
+			.extended_commitments(&public_params, 2)
+			.map_err(|e| format!("Grid extension failed: {e:?}"))
+			.unwrap();
+
+		let mut commitments2 = Vec::new();
+		for c in extended_grid2.iter() {
+			match c.to_bytes() {
+				Ok(bytes) => commitments2.extend(bytes),
+				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+			}
+		}
+		println!("Commitments1 (hex): {}", hex::encode(&commitments2));
+		let grid1 = grid1
+			.extend_columns(NonZeroU16::new(2).expect("2>0"))
+			.unwrap();
+		let grid2 = grid2
+			.extend_columns(NonZeroU16::new(2).expect("2>0"))
+			.unwrap();
+		// merge the grids
+		let grids = vec![grid1, grid2];
+		let merged_grid = EvaluationGrid::merge(grids).unwrap();
+		println!("merged grid dims: {:?}", merged_grid.dims());
+		commitments.extend(commitments2);
+		println!("merged commitments (hex): {}", hex::encode(&commitments));
+		let commitments_vec =
+			commitments::from_slice(&commitments).expect("Failed to parse commitments");
+
+		let extended_poly_grid = merged_grid
+			.make_polynomial_grid()
+			.map_err(|e| format!("Make polynomial grid failed: {e:?}"))
+			.unwrap();
+		println!("extended grid dims: {:?}", merged_grid.dims());
+		for col in 0..merged_grid.dims().cols().get() {
+			// Checking only for a single row
+			let row = 0u32;
+			let data = merged_grid
+				.get(row as usize, col as usize)
+				.expect("Missing cell in grid")
+				.to_bytes()
+				.expect("Data serialization failed");
+
+			let cell = Cell::new(BlockLengthRows(row), BlockLengthColumns(col as u32));
+			let proof = extended_poly_grid
+				.proof(&public_params, &cell)
+				.expect("Proof generation failed")
+				.to_bytes()
+				.expect("Proof serialization failed");
+
+			let cell_proof: [u8; 80] = {
+				let mut buffer = [0u8; 80];
+				buffer[..proof.len()].copy_from_slice(&proof);
+				buffer[proof.len()..].copy_from_slice(&data);
+				buffer
+			};
+
+			// println!(
+			// 	"Cell index: ({}, {}), Cell bytes (hex): {}",
+			// 	row,
+			// 	col,
+			// 	hex::encode(&cell_proof)
+			// );
+
+			let position = Position {
+				row,
+				col: col.try_into().expect("Column conversion failed"),
+			};
+
+			let cell = SingleCell {
+				position,
+				content: cell_proof,
+			};
+
+			let commitment = commitments_vec[row as usize];
+			let verification =
+				proof::verify_v2(&public_params, merged_grid.dims(), &commitment, &cell);
+			assert!(
+				verification.is_ok(),
+				"Verification failed for cell ({}, {}): {:?}",
+				row,
+				col,
+				verification.err()
+			);
+			assert!(
+				verification.unwrap(),
+				"Verification returned false for cell ({}, {})",
+				row,
+				col
+			);
+		}
+	}
+
+	#[test]
+	fn test_commitments_consistency() {
+		let tx_size: usize = 50 * 1024 * 32 - 1032;
+		let mut rng = rand::thread_rng();
+		let data: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
+		let app_extrinsics = vec![AppExtrinsic::from(data)];
+		let public_params = couscous::multiproof_params();
+		let start = Instant::now();
+		// Ensure pp used inside par_build_commitments is same as the one used in serial
+		let (_, commitments_bytes, _, _) = par_build_commitments::<CHUNK_SIZE, _>(
+			BlockLengthRows(1024),
+			BlockLengthColumns(1024),
+			&app_extrinsics,
+			Seed::default(),
+			&IgnoreMetrics {},
+		)
+		.unwrap();
+		println!("Time to build parallel commitments: {:?}", start.elapsed());
+		let start = Instant::now();
+		let grid = EvaluationGrid::from_extrinsics(app_extrinsics, 4, 1024, 1024, Seed::default())
+			.expect("Failed to create evaluation grid");
+
+		let poly_grid = grid
+			.make_polynomial_grid()
+			.expect("Failed to create polynomial grid");
+
+		let commitments_poly_grid = poly_grid
+			.extended_commitments(&public_params, 2)
+			.expect("Failed to generate commitments");
+		let mut commitments = Vec::new();
+		for c in commitments_poly_grid.iter() {
+			match c.to_bytes() {
+				Ok(bytes) => commitments.extend(bytes),
+				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+			}
+		}
+		println!(
+			"Time to build polynomial commitments: {:?}",
+			start.elapsed()
+		);
+		// println!("Serial Commitments (hex): {}", hex::encode(&commitments));
+		// println!(
+		// 	"Parallel Commitments (hex): {}",
+		// 	hex::encode(&commitments_bytes)
+		// );
+		assert_eq!(
+			commitments_bytes, commitments,
+			"Commitments generated using serial & parallel methods do not match"
+		);
 	}
 
 	#[test]
@@ -1038,7 +1587,7 @@ get erasure coded to ensure redundancy."#;
 
 		let extended_dims = dims.try_into()?;
 
-		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
+		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
 		let res_1 = reconstruct_app_extrinsics(&index, extended_dims, cols_1, AppId(1)).unwrap();
 		assert_eq!(res_1[0], app_id_1_data);
 
@@ -1074,7 +1623,7 @@ get erasure coded to ensure redundancy."#;
 		let matrix = par_extend_data_matrix(dims, &data[..], &IgnoreMetrics {})?;
 		let dimensions: Dimensions = dims.try_into()?;
 
-		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
+		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
 		for xt in xts {
 			let positions = app_specific_cells(&index, dimensions, xt.app_id).unwrap();
 			let cells = positions
@@ -1118,7 +1667,7 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 		let cols = sample_cells_from_matrix(&matrix, None);
 
 		let extended_dims = dims.try_into()?;
-		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
+		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
 		let res = reconstruct_extrinsics(&index, extended_dims, cols).unwrap();
 		let s = String::from_utf8_lossy(res[0].1[0].as_slice());
 
@@ -1150,7 +1699,7 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 		let cols = sample_cells_from_matrix(&matrix, None);
 		let extended_dims = dims.try_into().unwrap();
 
-		let index = DataLookup::from_id_and_len_iter(layout.into_iter()).unwrap();
+		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
 		let res = reconstruct_extrinsics(&index, extended_dims, cols).unwrap();
 
 		assert_eq!(res[0].1[0], xt1);
@@ -1248,7 +1797,6 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 	#[test_case( ([1,1,1,1]).to_vec(); "All values are non-zero but same")]
 	#[test_case( ([0,0,0,0]).to_vec(); "All values are zero")]
 	#[test_case( ([0,5,2,1]).to_vec(); "All values are different")]
-	// newapi done
 	fn test_zero_deg_poly_commit(row_values: Vec<u8>) {
 		// There are two main cases that generate a zero degree polynomial. One is for data that is non-zero, but the same.
 		// The other is for all-zero data. They differ, as the former yields a polynomial with one coefficient, and latter generates zero coefficients.
@@ -1333,5 +1881,138 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 		let (actual_row, actual_col) = cell.get_dimensions().unwrap();
 		assert_eq!(actual_row, expected_row);
 		assert_eq!(actual_col, expected_col);
+	}
+
+	#[test]
+	fn test_data_reconstruction() {
+		let mut rng = rand::thread_rng();
+
+		// 4 rows
+		let tx_size = 3 * 31 * 256;
+		let original_data: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
+
+		let seed = Seed::default();
+		let grid = EvaluationGrid::from_data(original_data.to_vec(), 4, 256, 256, seed)
+			.expect("Failed to create evaluation grids");
+		println!("orginal grid dims: {:?}", grid.dims());
+		let extended_grid = grid
+			.extend_columns(NonZeroU16::new(2).expect("2>0"))
+			.expect("Failed to extend columns");
+		println!("extended grid dims: {:?}", extended_grid.dims());
+		let mut app_rows: Vec<(AppId, usize)> = Vec::new();
+		app_rows.push((AppId(2), grid.dims().height()));
+		let lookup = DataLookup::from_id_and_len_iter(app_rows.into_iter()).unwrap();
+
+		// if any of the column has less than 50% of cells, that column wont be able to reconstructed
+		let sampled_cells = sampled_cells(extended_grid.dims(), 50);
+		println!("Got {} random cells", sampled_cells.len());
+		let data_cells: Vec<_> = sampled_cells
+			.iter()
+			.map(|position| {
+				let data = extended_grid
+					.get(position.row as usize, position.col)
+					.expect("Every valid cell position should have a data")
+					.to_bytes()
+					.expect("ArkScalar to byte conversion should work");
+				DataCell {
+					data,
+					position: *position,
+				}
+			})
+			.collect();
+
+		// OPTION 1
+		let rows = reconstruct_rows(grid.dims(), data_cells.clone()).unwrap();
+		// flatten the rows into vec<u8>
+		let padded_data: Vec<u8> = rows.concat();
+		let reconstructed_data = {
+			assert!(padded_data.len() % CHUNK_SIZE == 0, "corrupt data");
+			let encoded_data = padded_data
+				.chunks(CHUNK_SIZE)
+				.flat_map(|chunk| &chunk[0..DATA_CHUNK_SIZE])
+				.cloned()
+				.collect::<Vec<u8>>();
+			let mut encoded_slice = &encoded_data[..];
+			let decoded = Vec::<u8>::decode(&mut encoded_slice).unwrap();
+			decoded
+		};
+		assert_eq!(original_data, reconstructed_data);
+
+		// OPTION 2
+		let reconstruct =
+			reconstruct_extrinsics_data(&lookup, grid.dims(), data_cells.clone()).unwrap();
+		let (_app_id, reconstructed_data) = &reconstruct[0];
+		assert_eq!(original_data, reconstructed_data.concat());
+
+		// OPTION 3
+		let reconstructed_data =
+			reconstruct_app_extrinsic_data(AppId(2), &lookup, grid.dims(), data_cells).unwrap();
+		assert_eq!(original_data, reconstructed_data.concat());
+	}
+
+	fn compact_len(value: &u32) -> Option<u32> {
+		let len = Compact::<u32>::compact_len(value);
+		len.try_into().ok()
+	}
+
+	#[test]
+	fn test_multiproof_verification_from_data() {
+		let rows: u16 = 1;
+		let cols: u16 = 16;
+		let target_dims = Dimensions::new_from(1, 8).unwrap();
+
+		// Compute transaction size
+		let tx_size: u32 = rows as u32 * cols as u32 * 31;
+		let encoding_overhead = compact_len(&tx_size).unwrap();
+		let tx_size = tx_size.saturating_sub(encoding_overhead) as usize;
+
+		// Generate random data
+		let mut rng = rand::thread_rng();
+		let data: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
+		let seed = Seed::default();
+
+		let pp = crate::couscous::multiproof_params();
+
+		let points = domain_points(cols.into()).unwrap();
+		let grid =
+			EvaluationGrid::from_data(data, cols.into(), cols.into(), rows.into(), seed).unwrap();
+		println!("original grid dimension: {:#?}", grid.dims());
+		println!("target grid dimension: {:#?}", target_dims);
+		let polys = grid.make_polynomial_grid().unwrap();
+		let commitments = polys.commitments(&pp).unwrap();
+
+		for row in 0..target_dims.rows().get() {
+			for col in 0..target_dims.cols().get() {
+				println!("Testing multiproof for cell ({}, {})", row, col);
+				let Multiproof {
+					proof,
+					evals,
+					block,
+				} = polys
+					.multiproof(
+						&pp,
+						&Cell::new(BlockLengthRows(row.into()), BlockLengthColumns(col.into())),
+						&grid,
+						target_dims,
+					)
+					.unwrap();
+				println!("mp_block: {:#?}", block);
+				let verified = PolyMultiProofNoPrecomp::verify(
+					&pp,
+					&mut Transcript::new(b"avail-mp"),
+					&commitments,
+					&points[block.start_x..block.end_x],
+					&evals,
+					&proof,
+				)
+				.unwrap();
+
+				assert!(
+					verified,
+					"Multiproof verification failed for cell ({}, {})",
+					row, col
+				);
+			}
+		}
 	}
 }

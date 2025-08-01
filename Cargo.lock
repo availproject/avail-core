@@ -48,6 +48,17 @@ dependencies = [
 
 [[package]]
 name = "ahash"
+version = "0.7.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "891477e0c6a8957309ee5c45a6368af3ae14bb510732d2684ffa19af310920f9"
+dependencies = [
+ "getrandom",
+ "once_cell",
+ "version_check",
+]
+
+[[package]]
+name = "ahash"
 version = "0.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42cd52102d3df161c77a887b608d7a4897d7cc112886a9537b738a887a03aaff"
@@ -582,7 +593,7 @@ checksum = "8c3c1a368f70d6cf7302d78f8f7093da241fb8e8807c05cc9e51a125895a6d5b"
 [[package]]
 name = "binary-merkle-tree"
 version = "13.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "hash-db",
  "log",
@@ -1501,7 +1512,7 @@ dependencies = [
 [[package]]
 name = "frame-support"
 version = "28.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "aquamarine",
  "array-bytes",
@@ -1542,7 +1553,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural"
 version = "23.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "Inflector",
  "cfg-expr",
@@ -1561,7 +1572,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural-tools"
 version = "10.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "frame-support-procedural-tools-derive",
  "proc-macro-crate 3.1.0",
@@ -1573,7 +1584,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural-tools-derive"
 version = "11.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1790,6 +1801,9 @@ name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
+dependencies = [
+ "ahash 0.7.8",
+]
 
 [[package]]
 name = "hashbrown"
@@ -1797,7 +1811,7 @@ version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43a3c133739dddd0d2990f9a4bdf8eb4b21ef50e4851ca85ab661199821d510e"
 dependencies = [
- "ahash",
+ "ahash 0.8.8",
 ]
 
 [[package]]
@@ -1806,7 +1820,7 @@ version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "290f1a1d9242c78d09ce40a5e87e7554ee637af1351968159f4952f028f75604"
 dependencies = [
- "ahash",
+ "ahash 0.8.8",
  "allocator-api2",
 ]
 
@@ -2059,6 +2073,7 @@ dependencies = [
  "hex-literal",
  "kate-recovery",
  "log",
+ "lru",
  "nalgebra",
  "once_cell",
  "parity-scale-codec",
@@ -2201,6 +2216,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "lru"
+version = "0.7.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e999beba7b6e8345721bd280141ed958096a2e4abdf74f67ff4ce49b4b54e47a"
+dependencies = [
+ "hashbrown 0.12.3",
 ]
 
 [[package]]
@@ -3042,7 +3066,7 @@ version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "772575a524feeb803e5b0fcbc6dd9f367e579488197c94c6e4023aad2305774d"
 dependencies = [
- "ahash",
+ "ahash 0.8.8",
  "cfg-if",
  "hashbrown 0.13.2",
 ]
@@ -3285,7 +3309,7 @@ checksum = "e6ecd384b10a64542d77071bd64bd7b231f4ed5940fba55e98c3de13824cf3d7"
 [[package]]
 name = "sp-api"
 version = "26.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "hash-db",
  "log",
@@ -3306,7 +3330,7 @@ dependencies = [
 [[package]]
 name = "sp-api-proc-macro"
 version = "15.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "Inflector",
  "blake2",
@@ -3320,7 +3344,7 @@ dependencies = [
 [[package]]
 name = "sp-application-crypto"
 version = "30.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -3333,7 +3357,7 @@ dependencies = [
 [[package]]
 name = "sp-arithmetic"
 version = "23.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "integer-sqrt",
  "num-traits",
@@ -3365,7 +3389,7 @@ dependencies = [
 [[package]]
 name = "sp-core"
 version = "28.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "array-bytes",
  "bandersnatch_vrfs",
@@ -3411,7 +3435,7 @@ dependencies = [
 [[package]]
 name = "sp-crypto-ec-utils"
 version = "0.10.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "ark-bls12-377",
  "ark-bls12-377-ext",
@@ -3432,7 +3456,7 @@ dependencies = [
 [[package]]
 name = "sp-crypto-hashing"
 version = "0.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "blake2b_simd",
  "byteorder",
@@ -3445,7 +3469,7 @@ dependencies = [
 [[package]]
 name = "sp-crypto-hashing-proc-macro"
 version = "0.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "quote",
  "sp-crypto-hashing",
@@ -3455,7 +3479,7 @@ dependencies = [
 [[package]]
 name = "sp-debug-derive"
 version = "14.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3465,7 +3489,7 @@ dependencies = [
 [[package]]
 name = "sp-externalities"
 version = "0.25.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "environmental",
  "parity-scale-codec",
@@ -3476,7 +3500,7 @@ dependencies = [
 [[package]]
 name = "sp-genesis-builder"
 version = "0.7.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "serde_json",
  "sp-api",
@@ -3487,7 +3511,7 @@ dependencies = [
 [[package]]
 name = "sp-inherents"
 version = "26.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "async-trait",
  "impl-trait-for-tuples",
@@ -3501,7 +3525,7 @@ dependencies = [
 [[package]]
 name = "sp-io"
 version = "30.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "bytes",
  "ed25519-dalek",
@@ -3526,7 +3550,7 @@ dependencies = [
 [[package]]
 name = "sp-keystore"
 version = "0.34.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "parity-scale-codec",
  "parking_lot",
@@ -3538,7 +3562,7 @@ dependencies = [
 [[package]]
 name = "sp-metadata-ir"
 version = "0.6.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "frame-metadata",
  "parity-scale-codec",
@@ -3549,7 +3573,7 @@ dependencies = [
 [[package]]
 name = "sp-panic-handler"
 version = "13.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "backtrace",
  "lazy_static",
@@ -3559,7 +3583,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime"
 version = "31.0.1"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "docify",
  "either",
@@ -3583,7 +3607,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface"
 version = "24.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "bytes",
  "impl-trait-for-tuples",
@@ -3601,7 +3625,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface-proc-macro"
 version = "17.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "Inflector",
  "expander",
@@ -3614,7 +3638,7 @@ dependencies = [
 [[package]]
 name = "sp-staking"
 version = "26.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "impl-trait-for-tuples",
  "parity-scale-codec",
@@ -3628,7 +3652,7 @@ dependencies = [
 [[package]]
 name = "sp-state-machine"
 version = "0.35.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "hash-db",
  "log",
@@ -3649,12 +3673,12 @@ dependencies = [
 [[package]]
 name = "sp-std"
 version = "14.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 
 [[package]]
 name = "sp-storage"
 version = "19.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "impl-serde 0.4.0",
  "parity-scale-codec",
@@ -3667,7 +3691,7 @@ dependencies = [
 [[package]]
 name = "sp-tracing"
 version = "16.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "parity-scale-codec",
  "sp-std",
@@ -3679,9 +3703,9 @@ dependencies = [
 [[package]]
 name = "sp-trie"
 version = "29.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
- "ahash",
+ "ahash 0.8.8",
  "hash-db",
  "lazy_static",
  "memory-db",
@@ -3703,7 +3727,7 @@ dependencies = [
 [[package]]
 name = "sp-version"
 version = "29.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "impl-serde 0.4.0",
  "parity-scale-codec",
@@ -3720,7 +3744,7 @@ dependencies = [
 [[package]]
 name = "sp-version-proc-macro"
 version = "13.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "parity-scale-codec",
  "proc-macro2",
@@ -3731,7 +3755,7 @@ dependencies = [
 [[package]]
 name = "sp-wasm-interface"
 version = "20.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "anyhow",
  "impl-trait-for-tuples",
@@ -3744,7 +3768,7 @@ dependencies = [
 [[package]]
 name = "sp-weights"
 version = "27.0.0"
-source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
+source = "git+https://github.com/availproject/polkadot-sdk?branch=ghali/infinity-da-rpc#a5ce7c5376168084d43582eb1c915057d5910c4a"
 dependencies = [
  "bounded-collections",
  "parity-scale-codec",

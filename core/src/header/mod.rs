@@ -293,7 +293,7 @@ mod tests {
 	use test_case::test_case;
 
 	use super::*;
-	use crate::{kate_commitment::v3, AppId, DataLookup};
+	use crate::{kate_commitment::v3, AppId, V3DataLookup::DataLookup};
 
 	type THeader = Header<u32, BlakeTwo256>;
 
@@ -441,6 +441,9 @@ mod tests {
 			extension::HeaderExtension::V3(ref mut ext) => {
 				ext.commitment.commitment = b"invalid commitment v3".to_vec();
 			},
+			extension::HeaderExtension::V4(ref mut ext) => {
+				ext.commitment.commitment = b"invalid commitment v4".to_vec();
+			},
 		};
 
 		(header, hash)
@@ -451,6 +454,9 @@ mod tests {
 
 		match header.extension {
 			extension::HeaderExtension::V3(ref mut ext) => {
+				ext.commitment.data_root = H256::repeat_byte(2u8);
+			},
+			extension::HeaderExtension::V4(ref mut ext) => {
 				ext.commitment.data_root = H256::repeat_byte(2u8);
 			},
 		};
@@ -465,6 +471,9 @@ mod tests {
 			extension::HeaderExtension::V3(ref mut ext) => {
 				ext.commitment.cols += 2;
 			},
+			extension::HeaderExtension::V4(ref mut ext) => {
+				ext.commitment.cols += 2;
+			},
 		};
 
 		(header, hash)
@@ -475,6 +484,9 @@ mod tests {
 
 		match header.extension {
 			extension::HeaderExtension::V3(ref mut ext) => {
+				ext.commitment.rows += 2;
+			},
+			extension::HeaderExtension::V4(ref mut ext) => {
 				ext.commitment.rows += 2;
 			},
 		};

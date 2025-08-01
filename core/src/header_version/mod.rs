@@ -7,4 +7,5 @@ use sp_runtime_interface::pass_by::PassByCodec;
 #[cfg_attr(feature = "runtime", derive(PassByCodec))]
 pub enum HeaderVersion {
 	V3 = 2, // Current one
+	V4 = 3, // Next version
 }
