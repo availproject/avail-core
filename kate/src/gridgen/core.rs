@@ -358,6 +358,46 @@ impl EvaluationGrid {
 		})
 	}
 
+	// TODO: benchmark this against `extend_columns` to see if parallelization is worth it in all cases.
+	/// extend the columns of the evaluation grid in parallel.
+	pub fn extend_columns_par(&self, row_factor: NonZeroU16) -> Result<Self, Error> {
+		let dims = self.dims();
+		let (new_rows, new_cols): (usize, usize) = dims
+			.extend(row_factor, unsafe { NonZeroU16::new_unchecked(1) })
+			.ok_or(Error::CellLengthExceeded)?
+			.into();
+		let (rows, _cols): (usize, usize) = dims.into();
+
+		let domain =
+			GeneralEvaluationDomain::<ArkScalar>::new(rows).ok_or(Error::DomainSizeInvalid)?;
+		let domain_new =
+			GeneralEvaluationDomain::<ArkScalar>::new(new_rows).ok_or(Error::DomainSizeInvalid)?;
+		ensure!(domain_new.size() == new_rows, Error::DomainSizeInvalid);
+
+		// Parallelize over columns
+		let col_vecs: Vec<Vec<ArkScalar>> = self
+			.evals
+			.column_iter()
+			.par_bridge() // parallelize over column iter
+			.map(|col| {
+				let mut col = col.iter().cloned().collect::<Vec<_>>();
+				domain.ifft_in_place(&mut col);
+				domain_new.fft_in_place(&mut col);
+				col
+			})
+			.collect();
+
+		// Flatten the result
+		let new_data = col_vecs.into_iter().flatten();
+
+		let row_major_evals = DMatrix::from_iterator(new_rows, new_cols, new_data);
+		debug_assert!(row_major_evals.shape() == (new_rows, new_cols));
+		Ok(Self {
+			lookup: self.lookup.clone(),
+			evals: row_major_evals,
+		})
+	}
+
 	pub fn make_polynomial_grid(&self) -> Result<PolynomialGrid, Error> {
 		let (_rows, cols): (usize, usize) = self.evals.shape();
 		let domain =
