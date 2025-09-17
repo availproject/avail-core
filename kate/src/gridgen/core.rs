@@ -137,7 +137,7 @@ impl EvaluationGrid {
 	/// From the data, create a data grid of Scalars
 	/// The number of rows in this grid is not guaranteed to be a power of 2.
 	pub fn from_data(
-		data: Vec<u8>,
+		data: &[u8],
 		min_width: usize,
 		max_width: usize,
 		max_height: usize,
@@ -359,6 +359,27 @@ impl EvaluationGrid {
 	}
 
 	pub fn make_polynomial_grid(&self) -> Result<PolynomialGrid, Error> {
+		let (_rows, cols): (usize, usize) = self.evals.shape();
+		let domain =
+			GeneralEvaluationDomain::<ArkScalar>::new(cols).ok_or(Error::DomainSizeInvalid)?;
+
+		let inner = self
+			.evals
+			.row_iter()
+			.map(|view| {
+				let row = view.iter().cloned().collect::<Vec<_>>();
+				domain.ifft(&row)
+			})
+			.collect::<Vec<_>>();
+
+		Ok(PolynomialGrid {
+			dims: self.dims(),
+			points: domain.elements().collect(),
+			inner,
+		})
+	}
+
+	pub fn into_polynomial_grid(self) -> Result<PolynomialGrid, Error> {
 		let (_rows, cols): (usize, usize) = self.evals.shape();
 		let domain =
 			GeneralEvaluationDomain::<ArkScalar>::new(cols).ok_or(Error::DomainSizeInvalid)?;
