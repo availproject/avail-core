@@ -9,14 +9,14 @@ bounded-collections = { version = "0.2", default-features = false }
 scale-info = { version = "2", default-features = false, features = ["derive"] }
 
 # Polkadot SDK
-binary-merkle-tree = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "c656953dd6619bc8335058289155c7ddf2063348", default-features = false }
-sp-std = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "c656953dd6619bc8335058289155c7ddf2063348", default-features = false }
-sp-trie = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "c656953dd6619bc8335058289155c7ddf2063348", default-features = false }
-sp-runtime = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "c656953dd6619bc8335058289155c7ddf2063348", default-features = false }
-frame-support = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "c656953dd6619bc8335058289155c7ddf2063348", default-features = false }
-sp-runtime-interface = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "c656953dd6619bc8335058289155c7ddf2063348", default-features = false }
-sp-storage = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "c656953dd6619bc8335058289155c7ddf2063348", default-features = false }
-sp-debug-derive = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "c656953dd6619bc8335058289155c7ddf2063348", default-features = false }
+binary-merkle-tree = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "e26f549bfa2396d4a24196797b0a9db219e2f036", default-features = false }
+sp-std = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "e26f549bfa2396d4a24196797b0a9db219e2f036", default-features = false }
+sp-trie = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "e26f549bfa2396d4a24196797b0a9db219e2f036", default-features = false }
+sp-runtime = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "e26f549bfa2396d4a24196797b0a9db219e2f036", default-features = false }
+frame-support = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "e26f549bfa2396d4a24196797b0a9db219e2f036", default-features = false }
+sp-runtime-interface = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "e26f549bfa2396d4a24196797b0a9db219e2f036", default-features = false }
+sp-storage = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "e26f549bfa2396d4a24196797b0a9db219e2f036", default-features = false }
+sp-debug-derive = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "e26f549bfa2396d4a24196797b0a9db219e2f036", default-features = false }
 
 primitive-types = { version = "0.12.2",  default-features = false, features = ["codec", "scale-info"] }
 
@@ -60,7 +60,7 @@ num-traits = { version = "0.2.18", default-features = false }
 ethabi-decode = { git = "https://github.com/Snowfork/ethabi-decode.git", branch = "master", default-features = false }
 
 [patch."https://github.com/paritytech/polkadot-sdk"]
-sp-crypto-ec-utils = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "c656953dd6619bc8335058289155c7ddf2063348" }
+sp-crypto-ec-utils = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "e26f549bfa2396d4a24196797b0a9db219e2f036" }
 
 [profile.dev.package]
 nalgebra = { opt-level = 3 }
