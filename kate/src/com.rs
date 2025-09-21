@@ -1090,7 +1090,7 @@ mod tests {
 		let tx_size: usize = 3 * 256 * 31;
 		let mut rng = rand::thread_rng();
 		let data1: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
-		let grid1 = EvaluationGrid::from_data(data1, 256, 256, 256, Seed::default())
+		let grid1 = EvaluationGrid::from_data(&data1, 256, 256, 256, Seed::default())
 			.expect("Failed to create evaluation grid");
 
 		let poly_grid1 = grid1
@@ -1118,7 +1118,7 @@ mod tests {
 		// exact 2 rows
 		let tx_size: usize = 2 * 256 * 31;
 		let data2: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
-		let grid2 = EvaluationGrid::from_data(data2, 256, 256, 256, Seed::default())
+		let grid2 = EvaluationGrid::from_data(&data2, 256, 256, 256, Seed::default())
 			.expect("Failed to create evaluation grid");
 
 		let poly_grid2 = grid2
@@ -1185,7 +1185,7 @@ mod tests {
 		let tx_size: usize = 3 * 256 * 31;
 		let mut rng = rand::thread_rng();
 		let data1: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
-		let grid1 = EvaluationGrid::from_data(data1, 256, 256, 256, Seed::default())
+		let grid1 = EvaluationGrid::from_data(&data1, 256, 256, 256, Seed::default())
 			.expect("Failed to create evaluation grid");
 
 		let poly_grid1 = grid1
@@ -1357,7 +1357,7 @@ mod tests {
 		let tx_size: usize = 256 * 32 - 256;
 		let mut rng = rand::thread_rng();
 		let data1: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
-		let grid1 = EvaluationGrid::from_data(data1, 256, 256, 256, Seed::default())
+		let grid1 = EvaluationGrid::from_data(&data1, 256, 256, 256, Seed::default())
 			.expect("Failed to create evaluation grid");
 
 		let poly_grid1 = grid1
@@ -1382,7 +1382,7 @@ mod tests {
 		println!("Commitments1 (hex): {}", hex::encode(&commitments));
 
 		let data2: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
-		let grid2 = EvaluationGrid::from_data(data2, 256, 256, 256, Seed::default())
+		let grid2 = EvaluationGrid::from_data(&data2, 256, 256, 256, Seed::default())
 			.expect("Failed to create evaluation grid");
 
 		let poly_grid2 = grid2
@@ -1892,7 +1892,7 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 		let original_data: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
 
 		let seed = Seed::default();
-		let grid = EvaluationGrid::from_data(original_data.to_vec(), 4, 256, 256, seed)
+		let grid = EvaluationGrid::from_data(&original_data, 4, 256, 256, seed)
 			.expect("Failed to create evaluation grids");
 		println!("orginal grid dims: {:?}", grid.dims());
 		let extended_grid = grid
@@ -1975,7 +1975,7 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 
 		let points = domain_points(cols.into()).unwrap();
 		let grid =
-			EvaluationGrid::from_data(data, cols.into(), cols.into(), rows.into(), seed).unwrap();
+			EvaluationGrid::from_data(&data, cols.into(), cols.into(), rows.into(), seed).unwrap();
 		println!("original grid dimension: {:#?}", grid.dims());
 		println!("target grid dimension: {:#?}", target_dims);
 		let polys = grid.make_polynomial_grid().unwrap();
