@@ -380,7 +380,7 @@ pub fn unflatten_padded_data(
 ) -> Result<Vec<(AppId, AppData)>, UnflattenError> {
 	ensure!(data.len() % CHUNK_SIZE == 0, UnflattenError::InvalidLen);
 
-	fn extract_encoded_extrinsic(range_data: &[u8]) -> SparseSliceRead {
+	fn extract_encoded_extrinsic<'a>(range_data: &'a[u8]) -> SparseSliceRead<'a> {
 		const_assert_ne!(CHUNK_SIZE, 0);
 		const_assert_ne!(DATA_CHUNK_SIZE, 0);
 

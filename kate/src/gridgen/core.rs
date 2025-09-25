@@ -459,6 +459,7 @@ pub fn get_pregenerated_row_and_commitment(
 	Ok((random_row, commitment_bytes))
 }
 
+#[derive(Clone)]
 pub struct PolynomialGrid {
 	pub(crate) inner: Vec<Vec<ArkScalar>>,
 	pub(crate) points: Vec<ArkScalar>,
