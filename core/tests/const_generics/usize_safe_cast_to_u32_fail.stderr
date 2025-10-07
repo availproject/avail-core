@@ -1,4 +1,4 @@
-error[E0080]: evaluation of `avail_core::const_generic_asserts::USizeSafeCastToU32::<4294967296>::OK` failed
+error[E0080]: evaluation panicked: must be safe to cast to u32
  --> src/const_generic_asserts.rs
   |
   |       pub const OK: () = assert!(
@@ -6,9 +6,13 @@ error[E0080]: evaluation of `avail_core::const_generic_asserts::USizeSafeCastToU
   | |         size_of::<usize>() <= size_of::<u32>() || N <= u32::MAX as usize,
   | |         "must be safe to cast to u32"
   | |     );
-  | |_____^ the evaluated program panicked at 'must be safe to cast to u32', $DIR/src/const_generic_asserts.rs:18:24
+  | |_____^ evaluation of `avail_core::const_generic_asserts::USizeSafeCastToU32::<4294967296>::OK` failed here
+
+note: erroneous constant encountered
+ --> tests/const_generics/usize_safe_cast_to_u32_fail.rs:4:11
   |
-  = note: this error originates in the macro `$crate::panic::panic_2021` which comes from the expansion of the macro `assert` (in Nightly builds, run with -Z macro-backtrace for more info)
+4 |     let () = USizeSafeCastToU32::<N>::OK;
+  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 note: the above error was encountered while instantiating `fn const_generic_safe_cast_to_u32::<4294967296>`
  --> tests/const_generics/usize_safe_cast_to_u32_fail.rs:8:2

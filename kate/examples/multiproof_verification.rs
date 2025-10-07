@@ -14,6 +14,7 @@ use poly_multiproof::msm::blst::BlstMSMEngine;
 use poly_multiproof::traits::AsBytes;
 use thiserror_no_std::Error;
 
+#[allow(dead_code)]
 #[derive(Error, Debug)]
 enum AppError {
 	Kate(#[from] kate::com::Error),

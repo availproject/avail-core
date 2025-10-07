@@ -60,7 +60,8 @@ fn sample_cells(grid: &EvaluationGrid, columns: Option<Vec<usize>>) -> Vec<DataC
 						.evals
 						.get((y, *x))
 						.and_then(|s: &ArkScalar| s.to_bytes().ok())
-						.unwrap();
+						.unwrap()
+						.to_vec();
 					// SAFETY: `y` and `x` can be casted safetly becasue `x < g_cols (u16)` and `y
 					// < g_rows(u16)`
 					let position = Position::from((y as u32, *x as u16));

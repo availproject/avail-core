@@ -883,7 +883,7 @@ mod tests {
 						let position = Position::new(row_pos, col_idx);
 						debug_assert!(*row_idx < col_view.len());
 						let data = col_view[*row_idx].to_bytes();
-						DataCell::new(position, data.unwrap())
+						DataCell::new(position, data.unwrap().to_vec())
 					})
 					.collect::<Vec<_>>()
 			})
@@ -1632,7 +1632,7 @@ get erasure coded to ensure redundancy."#;
 					let col: usize = position.col.into();
 					let row = usize::try_from(position.row).unwrap();
 					let data = matrix.get((row, col)).map(ArkScalar::to_bytes).unwrap();
-					DataCell::new(position, data.unwrap())
+					DataCell::new(position, data.unwrap().to_vec())
 				})
 				.collect::<Vec<_>>();
 			let data = &decode_app_extrinsics(&index, dimensions, cells, xt.app_id).unwrap()[0];
@@ -1913,7 +1913,8 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 					.get(position.row as usize, position.col)
 					.expect("Every valid cell position should have a data")
 					.to_bytes()
-					.expect("ArkScalar to byte conversion should work");
+					.expect("ArkScalar to byte conversion should work")
+					.to_vec();
 				DataCell {
 					data,
 					position: *position,

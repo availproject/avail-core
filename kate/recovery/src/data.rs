@@ -15,10 +15,10 @@ use alloc::string::String;
 /// Position and data of a cell in extended matrix
 #[derive(Default, Debug, Clone, Constructor)]
 pub struct DataCell {
-	/// SingleCell's position
+	/// Cell's position
 	pub position: Position,
-	/// SingleCell's data
-	pub data: [u8; 32],
+	/// Cell's data
+	pub data: Vec<u8>,
 }
 
 /// Position and content of a cell in extended matrix
@@ -281,28 +281,52 @@ impl TryFrom<Cell> for SingleCell {
 
 /// Merges cells data per row.
 /// Cells are sorted before merge.
-pub fn rows(dimensions: Dimensions, cells: &[&SingleCell]) -> Vec<(RowIndex, Vec<u8>)> {
+pub fn rows(dimensions: Dimensions, cells: &[&Cell]) -> Vec<(RowIndex, Vec<u8>)> {
 	let mut sorted_cells = cells.to_vec();
 
-	sorted_cells
-		.sort_by(|a, b| (a.position.row, a.position.col).cmp(&(b.position.row, b.position.col)));
+	sorted_cells.sort_by(|a, b| {
+		(a.position().row, a.position().col).cmp(&(b.position().row, b.position().col))
+	});
 
 	let mut rows = BTreeMap::new();
 	for cell in sorted_cells {
-		rows.entry(RowIndex(cell.position.row))
-			.or_insert_with(Vec::default)
+		let row_index = RowIndex(cell.position().row);
+		rows.entry(row_index)
+			.or_insert_with(Vec::new)
 			.extend(cell.data());
 	}
 
 	rows.retain(|_, row| row.len() == dimensions.row_byte_size());
-	rows.into_iter().collect::<Vec<(_, _)>>()
+	rows.into_iter().collect()
 }
 
+/// Converts a `SingleCell` into a `DataCell`.`position` here refers
+/// to the index of a cell in the main grid.
 impl From<SingleCell> for DataCell {
 	fn from(cell: SingleCell) -> Self {
 		DataCell {
 			position: cell.position,
+			data: cell.data().to_vec(),
+		}
+	}
+}
+
+/// Converts a `MultiProofCell` into a `DataCell`.`position` here refers
+/// to the index of a multiproof cell on the target multiproof grid.
+impl From<MultiProofCell> for DataCell {
+	fn from(cell: MultiProofCell) -> Self {
+		DataCell {
+			position: cell.position,
 			data: cell.data(),
+		}
+	}
+}
+
+impl From<Cell> for DataCell {
+	fn from(cell: Cell) -> Self {
+		match cell {
+			Cell::SingleCell(sc) => DataCell::from(sc),
+			Cell::MultiProofCell(mc) => DataCell::from(mc),
 		}
 	}
 }
@@ -336,13 +360,13 @@ mod tests {
 		let dimensions = Dimensions::new(1, 2).unwrap();
 
 		let cell_variants = vec![
-			cell(position(1, 1), content([3; 32])).into(),
-			cell(position(1, 0), content([2; 32])).into(),
-			cell(position(0, 0), content([0; 32])).into(),
-			cell(position(0, 1), content([1; 32])).into(),
+			Cell::from(cell(position(1, 1), content([3; 32]))),
+			Cell::from(cell(position(1, 0), content([2; 32]))),
+			Cell::from(cell(position(0, 0), content([0; 32]))),
+			Cell::from(cell(position(0, 1), content([1; 32]))),
 		];
 
-		let cells: Vec<&SingleCell> = cell_variants.iter().collect();
+		let cells: Vec<&Cell> = cell_variants.iter().collect();
 		let mut rows = rows(dimensions, &cells);
 		rows.sort_by_key(|(key, _)| key.0);
 
@@ -363,12 +387,12 @@ mod tests {
 		let dimensions = Dimensions::new(1, 2).unwrap();
 
 		let cell_variants = vec![
-			cell(position(1, 1), content([3; 32])).into(),
-			cell(position(0, 0), content([0; 32])).into(),
-			cell(position(0, 1), content([1; 32])).into(),
+			Cell::from(cell(position(1, 1), content([3; 32]))),
+			Cell::from(cell(position(0, 0), content([0; 32]))),
+			Cell::from(cell(position(0, 1), content([1; 32]))),
 		];
 
-		let cells: Vec<&SingleCell> = cell_variants.iter().collect();
+		let cells: Vec<&Cell> = cell_variants.iter().collect();
 		let mut rows = rows(dimensions, &cells);
 		rows.sort_by_key(|(key, _)| key.0);
 
