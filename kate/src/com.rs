@@ -1957,9 +1957,9 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 
 	#[test]
 	fn test_multiproof_verification_from_data() {
-		let rows: u16 = 1;
-		let cols: u16 = 16;
-		let target_dims = Dimensions::new_from(1, 8).unwrap();
+		let rows: u16 = 8;
+		let cols: u16 = 8;
+		let target_dims = Dimensions::new_from(4, 4).unwrap();
 
 		// Compute transaction size
 		let tx_size: u32 = rows as u32 * cols as u32 * 31;
@@ -2000,7 +2000,7 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 				let verified = PolyMultiProofNoPrecomp::verify(
 					&pp,
 					&mut Transcript::new(b"avail-mp"),
-					&commitments,
+					&commitments[block.start_y..block.end_y],
 					&points[block.start_x..block.end_x],
 					&evals,
 					&proof,

@@ -42,6 +42,7 @@ criterion.workspace = true
 proptest.workspace = true
 serde_json.workspace = true
 test-case.workspace = true
+divan = { version = "0.1" }
 
 [features]
 default = [ "std" ]
@@ -70,4 +71,8 @@ maximum-block-size = []
 
 [[bench]]
 name = "reconstruct"
+harness = false
+
+[[bench]]
+name = "multiproof"
 harness = false
