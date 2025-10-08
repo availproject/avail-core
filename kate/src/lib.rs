@@ -32,10 +32,10 @@ pub type M1NoPrecomp =
 pub type ArkScalar = Fr;
 pub mod config {
 	use super::{BlockLengthColumns, BlockLengthRows};
-	use core::num::NonZeroU16;
+	use core::num::{NonZeroU16, NonZeroU32};
 
 	pub const SCALAR_SIZE: usize = 32;
-	pub const ROW_EXTENSION: NonZeroU16 = unsafe { NonZeroU16::new_unchecked(2) };
+	pub const ROW_EXTENSION: NonZeroU32 = unsafe { NonZeroU32::new_unchecked(2) };
 	pub const COL_EXTENSION: NonZeroU16 = NonZeroU16::MIN;
 	pub const PROVER_KEY_SIZE: u32 = 48;
 	pub const PROOF_SIZE: usize = 48;

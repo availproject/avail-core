@@ -1,5 +1,4 @@
 use avail_core::{AppExtrinsic, AppId, BlockLengthColumns, BlockLengthRows};
-use core::num::NonZeroU16;
 use hex_literal::hex;
 use kate::{
 	couscous::multiproof_params,
@@ -12,6 +11,7 @@ use poly_multiproof::ark_bls12_381::Bls12_381;
 use poly_multiproof::method1::M1NoPrecomp;
 use poly_multiproof::msm::blst::BlstMSMEngine;
 use poly_multiproof::traits::AsBytes;
+use std::num::NonZeroU32;
 use thiserror_no_std::Error;
 
 #[derive(Error, Debug)]
@@ -46,7 +46,7 @@ fn multiproof_verification() -> Result<bool, AppError> {
 			.collect::<Vec<_>>();
 		let seed = Seed::default();
 		let grid = EvaluationGrid::from_extrinsics(exts, 4, 256, 256, seed)?
-			.extend_columns(unsafe { NonZeroU16::new_unchecked(2) })?;
+			.extend_columns(unsafe { NonZeroU32::new_unchecked(2) })?;
 
 		// Setup, serializing as bytes
 		let polys = grid.make_polynomial_grid()?;

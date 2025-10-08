@@ -5,7 +5,7 @@ use crate::{
 	Seed,
 };
 use avail_core::{AppExtrinsic, AppId, BlockLengthColumns, BlockLengthRows};
-use core::num::NonZeroU16;
+use core::num::NonZeroU32;
 use kate_recovery::{
 	com::{reconstruct_app_extrinsics, reconstruct_extrinsics},
 	data::SingleCell as DCell,
@@ -28,11 +28,11 @@ fn test_multiple_extrinsics_for_same_app_id() {
 	let hash = Seed::default();
 	let ev = EvaluationGrid::from_extrinsics(xts, 4, 128, 2, hash)
 		.unwrap()
-		.extend_columns(unsafe { NonZeroU16::new_unchecked(2) })
+		.extend_columns(unsafe { NonZeroU32::new_unchecked(2) })
 		.unwrap();
 
 	let cells = sample_cells(&ev, None);
-	let (rows, cols): (u16, u16) = ev.dims().into();
+	let (rows, cols): (u32, u16) = ev.dims().into();
 	let bdims = Dimensions::new_from(rows, cols).unwrap();
 	let res = reconstruct_extrinsics(&ev.lookup, bdims, cells).unwrap();
 
@@ -44,8 +44,8 @@ proptest! {
 #![proptest_config(ProptestConfig::with_cases(5))]
 #[test]
 fn test_build_and_reconstruct(exts in super::app_extrinsics_strategy())  {
-	let grid = EvaluationGrid::from_extrinsics(exts.clone(), 4, 256, 256, Seed::default()).unwrap().extend_columns(unsafe { NonZeroU16::new_unchecked(2)}).unwrap();
-	let (rows, cols) :(usize,usize)= grid.dims().into();
+	let grid = EvaluationGrid::from_extrinsics(exts.clone(), 4, 256, 256, Seed::default()).unwrap().extend_columns(unsafe { NonZeroU32::new_unchecked(2)}).unwrap();
+	let (rows, cols) :(usize,usize)= grid.dims().as_usize();
 	//let (layout, commitments, dims, matrix) = par_build_commitments(
 	//	BlockLengthRows(64), BlockLengthColumns(16), 32, xts, Seed::default()).unwrap();
 	const RNG_SEED: Seed = [42u8; 32];
@@ -100,7 +100,7 @@ get erasure coded to ensure redundancy."#;
 
 	let grid = EvaluationGrid::from_extrinsics(xts, 4, 4, 32, Seed::default())
 		.unwrap()
-		.extend_columns(unsafe { NonZeroU16::new_unchecked(2) })
+		.extend_columns(unsafe { NonZeroU32::new_unchecked(2) })
 		.unwrap();
 
 	let cols_1 = sample_cells(&grid, Some(vec![0, 1, 2, 3]));

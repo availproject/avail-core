@@ -2,7 +2,7 @@ use avail_core::constants::kate::{CHUNK_SIZE, EXTENSION_FACTOR};
 use core::{
 	convert::TryInto,
 	fmt::{Display, Formatter, Result},
-	num::NonZeroU16,
+	num::{NonZeroU16, NonZeroU32},
 	ops::{Mul, Range},
 };
 use derive_more::Constructor;
@@ -95,21 +95,21 @@ impl RowIndex {
 ///
 /// # Example of 2x4 matrix
 ///
-/// Data: [1,2,3,4,5,6,7,8]  
-/// Data rows: [1,2,3,4], [5,6,7,8]  
-/// Columns: [1,5], [2,6], [3,7], [4,8]  
-/// Extended columns (EC is erasure code): [1,EC,5,EC], [2,EC,6,EC], [3,EC,7,EC], [4,EC,8,EC]  
-/// Matrix representation: [1,5,2,6,3,7,4,8]  
+/// Data: [1,2,3,4,5,6,7,8]
+/// Data rows: [1,2,3,4], [5,6,7,8]
+/// Columns: [1,5], [2,6], [3,7], [4,8]
+/// Extended columns (EC is erasure code): [1,EC,5,EC], [2,EC,6,EC], [3,EC,7,EC], [4,EC,8,EC]
+/// Matrix representation: [1,5,2,6,3,7,4,8]
 /// Extended matrix representation: [1,EC,5,EC,2,EC,6,EC,3,EC,7,EC,4,EC,8,EC]
 #[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub struct Dimensions {
-	rows: NonZeroU16,
+	rows: NonZeroU32,
 	cols: NonZeroU16,
 }
 
 impl<R, C> From<(R, C)> for Dimensions
 where
-	R: Into<NonZeroU16>,
+	R: Into<NonZeroU32>,
 	C: Into<NonZeroU16>,
 {
 	fn from(rows_cols: (R, C)) -> Self {
@@ -123,7 +123,7 @@ where
 
 impl<R, C> From<Dimensions> for (R, C)
 where
-	R: From<u16>,
+	R: From<u32>,
 	C: From<u16>,
 {
 	fn from(d: Dimensions) -> Self {
@@ -132,15 +132,15 @@ where
 }
 
 impl Dimensions {
-	pub fn new<R: TryInto<NonZeroU16>, C: TryInto<NonZeroU16>>(rows: R, cols: C) -> Option<Self> {
+	pub fn new<R: TryInto<NonZeroU32>, C: TryInto<NonZeroU16>>(rows: R, cols: C) -> Option<Self> {
 		let rows = rows.try_into().ok()?;
 		let cols = cols.try_into().ok()?;
 
 		Some(Self { rows, cols })
 	}
 
-	pub fn new_from<R: TryInto<u16>, C: TryInto<u16>>(rows: R, cols: C) -> Option<Self> {
-		let rows: u16 = rows.try_into().ok()?;
+	pub fn new_from<R: TryInto<u32>, C: TryInto<u16>>(rows: R, cols: C) -> Option<Self> {
+		let rows: u32 = rows.try_into().ok()?;
 		let cols: u16 = cols.try_into().ok()?;
 
 		Self::new(rows, cols)
@@ -151,16 +151,16 @@ impl Dimensions {
 	///
 	/// # Safety
 	/// Parameters `rows` and `cols` must not be zero.
-	pub const unsafe fn new_unchecked(rows: u16, cols: u16) -> Self {
+	pub const unsafe fn new_unchecked(rows: u32, cols: u16) -> Self {
 		Self {
-			rows: NonZeroU16::new_unchecked(rows),
+			rows: NonZeroU32::new_unchecked(rows),
 			cols: NonZeroU16::new_unchecked(cols),
 		}
 	}
 
 	/// Returns number of rows
 	#[inline]
-	pub fn rows(&self) -> NonZeroU16 {
+	pub fn rows(&self) -> NonZeroU32 {
 		self.rows
 	}
 
@@ -170,7 +170,7 @@ impl Dimensions {
 	/// As internal member is `NonZeroU16`, this always returns greater than zero.
 	#[inline]
 	pub fn height(&self) -> usize {
-		NonZeroU16::get(self.rows).into()
+		NonZeroU32::get(self.rows) as usize
 	}
 
 	/// Returns number of columns
@@ -189,16 +189,16 @@ impl Dimensions {
 	}
 
 	/// Matrix size.
-	pub fn size<T: From<u16> + Mul<Output = T>>(&self) -> T {
+	pub fn size<T: From<u32> + From<u16> + Mul<Output = T>>(&self) -> T {
 		T::from(self.rows.get()) * T::from(self.cols.get())
 	}
 
 	pub fn divides(&self, other: &Self) -> bool {
-		other.cols.get() % self.cols == 0u16 && other.rows.get() % self.rows == 0u16
+		other.cols.get() % self.cols == 0u16 && other.rows.get() % self.rows == 0u32
 	}
 
 	/// Extends rows by `row_factor` and cols by `col_factor`.
-	pub fn extend(&self, row_factor: NonZeroU16, col_factor: NonZeroU16) -> Option<Self> {
+	pub fn extend(&self, row_factor: NonZeroU32, col_factor: NonZeroU16) -> Option<Self> {
 		let rows = self.rows.checked_mul(row_factor)?;
 		let cols = self.cols.checked_mul(col_factor)?;
 
@@ -358,11 +358,18 @@ impl Dimensions {
 		})
 	}
 
-	pub fn transpose(self) -> Self {
-		Self {
-			rows: self.cols,
-			cols: self.rows,
-		}
+	pub fn as_usize(&self) -> (usize, usize) {
+		(self.rows.get() as usize, self.cols.get() as usize)
+	}
+
+	// This function has potentiial data loss if rows > u16::MAX, but its only being used in tests
+	pub fn transpose(self) -> Option<Self> {
+		let cols_u16: u16 = self.rows.get().try_into().ok()?;
+		let cols = NonZeroU16::new(cols_u16)?;
+		Some(Self {
+			rows: self.cols.into(),
+			cols,
+		})
 	}
 }
 
@@ -383,7 +390,7 @@ mod tests {
 	}
 
 	#[test_case(2, 4, vec![(0, 0), (0, 1), (0, 2), (0, 3), (1, 0), (1, 1), (1, 2), (1, 3)] ; "2*4 matrix data iteration")]
-	fn iter_data(rows: u16, cols: u16, expected: Vec<(usize, usize)>) {
+	fn iter_data(rows: u32, cols: u16, expected: Vec<(usize, usize)>) {
 		let dimensions = Dimensions::new(rows, cols).unwrap();
 		let cells = dimensions.iter_data().collect::<Vec<_>>();
 		assert_eq!(cells, expected);

@@ -1,7 +1,7 @@
 use super::*;
 use crate::{com::Cell, couscous, gridgen::core::*, Seed};
 use avail_core::{AppExtrinsic, BlockLengthColumns, BlockLengthRows};
-use core::num::NonZeroU16;
+use core::num::NonZeroU32;
 use hex_literal::hex;
 use kate_recovery::{
 	commitments::verify_equality,
@@ -30,7 +30,7 @@ fn test_build_commitments_simple_commitment_check() {
 	)
 	.unwrap();
 	let ext_evals = evals
-		.extend_columns(unsafe { NonZeroU16::new_unchecked(2) })
+		.extend_columns(unsafe { NonZeroU32::new_unchecked(2) })
 		.unwrap();
 	let polys = ext_evals.make_polynomial_grid().unwrap();
 	let commits = polys
@@ -63,7 +63,7 @@ fn par_build_commitments_row_wise_constant_row() {
 
 	let evals = EvaluationGrid::from_extrinsics(xts, 4, 4, 4, hash).unwrap();
 	let evals = evals
-		.extend_columns(unsafe { NonZeroU16::new_unchecked(2) })
+		.extend_columns(unsafe { NonZeroU32::new_unchecked(2) })
 		.unwrap();
 	let polys = evals.make_polynomial_grid().unwrap();
 	polys.commitments(&*PMP).unwrap();
@@ -75,8 +75,8 @@ proptest! {
 	fn commitments_verify(ref exts in app_extrinsics_strategy())  {
 		//let (layout, commitments, dims, matrix) = par_build_commitments(BlockLengthRows(64), BlockLengthColumns(16), 32, xts, Seed::default()).unwrap();
 		let grid = EvaluationGrid::from_extrinsics(exts.clone(), 4, 16, 64, Seed::default()).unwrap();
-		let grid = grid.extend_columns( unsafe { NonZeroU16::new_unchecked(2)}).unwrap();
-		let (g_rows, g_cols) :(u16,u16) = grid.dims().into();
+		let grid = grid.extend_columns( unsafe { NonZeroU32::new_unchecked(2)}).unwrap();
+		let (g_rows, g_cols) :(u32,u16) = grid.dims().into();
 		let orig_dims = Dimensions::new(g_rows / 2, g_cols).unwrap();
 		let polys = grid.make_polynomial_grid().unwrap();
 		let commits = polys.commitments(&*PMP)
@@ -90,7 +90,7 @@ proptest! {
 		for xt in exts.iter() {
 			let rows = grid.app_rows(xt.app_id, Some(orig_dims)).unwrap().unwrap();
 			// Have to put the rows we find in this funky data structure
-			let mut app_rows = vec![None; g_rows.into()];
+			let mut app_rows = vec![None; g_rows as usize];
 			for (row_i, row) in rows {
 				app_rows[row_i] = Some(row.iter().flat_map(|s| s.to_bytes().unwrap()).collect());
 			}
@@ -102,8 +102,8 @@ proptest! {
 	}
 
 	fn verify_commitments_missing_row(ref xts in app_extrinsics_strategy())  {
-		let grid = EvaluationGrid::from_extrinsics(xts.clone(), 4, 16, 64, Seed::default()).unwrap().extend_columns( unsafe { NonZeroU16::new_unchecked(2) }).unwrap();
-		let (g_rows, g_cols):(u16,u16) = grid.dims().into();
+		let grid = EvaluationGrid::from_extrinsics(xts.clone(), 4, 16, 64, Seed::default()).unwrap().extend_columns( unsafe { NonZeroU32::new_unchecked(2) }).unwrap();
+		let (g_rows, g_cols):(u32,u16) = grid.dims().into();
 		let orig_dims = Dimensions::new_from(g_rows / 2, g_cols).unwrap();
 		let polys = grid.make_polynomial_grid().unwrap();
 		let commits = polys.commitments(&*PMP)
@@ -116,14 +116,14 @@ proptest! {
 
 		for xt in xts {
 			let rows = grid.app_rows(xt.app_id, Some(orig_dims)).unwrap().unwrap();
-			let mut row_elems = vec![None; g_rows.into()];
+			let mut row_elems = vec![None; g_rows as usize];
 			for (i, data) in &rows {
 				row_elems[*i] = Some(data.iter().flat_map(|s| s.to_bytes().unwrap()).collect());
 			}
 			let first_index = rows.iter().map(|(i, _)| *i).min().unwrap();
 			row_elems.remove(first_index);
 
-			let extended_dims = orig_dims.transpose();
+			let extended_dims = orig_dims.transpose().unwrap();
 			let (_, missing) = verify_equality(&public_params, &commits, &row_elems,&grid.lookup,extended_dims,xt.app_id).unwrap();
 			prop_assert!(!missing.is_empty());
 		}

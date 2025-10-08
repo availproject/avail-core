@@ -51,8 +51,11 @@ impl HeaderExtension {
 		}
 	}
 
-	pub fn rows(&self) -> u16 {
-		forward_to_version!(self, rows)
+	pub fn rows(&self) -> u32 {
+		match self {
+			HeaderExtension::V3(ext) => ext.rows() as u32,
+			HeaderExtension::V4(ext) => ext.rows(),
+		}
 	}
 
 	pub fn cols(&self) -> u16 {

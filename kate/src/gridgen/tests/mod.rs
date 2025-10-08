@@ -47,7 +47,7 @@ fn sample_unique(rng: &mut impl Rng, n_samples: usize, n: usize) -> Vec<usize> {
 
 fn sample_cells(grid: &EvaluationGrid, columns: Option<Vec<usize>>) -> Vec<DataCell> {
 	let mut rng = ChaChaRng::from_seed([42u8; 32]);
-	let (g_rows, g_cols): (usize, usize) = grid.dims().into();
+	let (g_rows, g_cols): (usize, usize) = grid.dims().as_usize();
 	let cols = columns.unwrap_or_else(|| (0..g_cols).collect());
 
 	cols.iter()

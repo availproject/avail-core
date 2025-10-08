@@ -1,4 +1,4 @@
-use crate::{data_lookup::v4::DataLookup, v3::KateCommitment};
+use crate::{data_lookup::v4::DataLookup, v4::KateCommitment};
 use codec::{Decode, Encode};
 use primitive_types::H256;
 use scale_info::TypeInfo;
@@ -15,7 +15,7 @@ use sp_debug_derive::RuntimeDebug;
 #[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
 pub struct HeaderExtension {
 	pub app_lookup: DataLookup,
-	// Using KateCommitment from v3 since it is the same structure, although the data_root contruction has changed
+	// Using KateCommitment from v4 as datatype for rows is u32
 	pub commitment: KateCommitment,
 }
 
@@ -28,7 +28,7 @@ impl HeaderExtension {
 		&self.app_lookup
 	}
 
-	pub fn rows(&self) -> u16 {
+	pub fn rows(&self) -> u32 {
 		self.commitment.rows
 	}
 

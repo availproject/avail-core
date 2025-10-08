@@ -331,8 +331,8 @@ pub fn par_extend_data_matrix<M: Metrics>(
 	let (ext_rows, _): (usize, usize) = dims
 		.extend(ROW_EXTENSION, COL_EXTENSION)
 		.ok_or(Error::InvalidDimensionExtension)?
-		.into();
-	let (rows, cols) = dims.into();
+		.as_usize();
+	let (rows, cols) = dims.as_usize();
 
 	// simple length with mod check would work...
 	let chunk_size =
@@ -385,8 +385,8 @@ pub fn build_proof<M: Metrics>(
 	let (ext_rows, ext_cols): (usize, usize) = dims
 		.extend(ROW_EXTENSION, COL_EXTENSION)
 		.ok_or(Error::InvalidDimensionExtension)?
-		.into();
-	let (_, cols): (usize, usize) = dims.into();
+		.as_usize();
+	let (_, cols): (usize, usize) = dims.as_usize();
 
 	const SPROOF_SIZE: usize = PROOF_SIZE + SCALAR_SIZE;
 
@@ -668,7 +668,6 @@ mod tests {
 		V3DataLookup::DataLookup as DataLookupV3,
 	};
 	use codec::{Compact, CompactLen, Decode};
-	use core::num::NonZeroU16;
 	use core::usize;
 	use hex_literal::hex;
 	use kate_recovery::proof::domain_points;
@@ -1406,10 +1405,10 @@ mod tests {
 		}
 		println!("Commitments1 (hex): {}", hex::encode(&commitments2));
 		let grid1 = grid1
-			.extend_columns(NonZeroU16::new(2).expect("2>0"))
+			.extend_columns(NonZeroU32::new(2).expect("2>0"))
 			.unwrap();
 		let grid2 = grid2
-			.extend_columns(NonZeroU16::new(2).expect("2>0"))
+			.extend_columns(NonZeroU32::new(2).expect("2>0"))
 			.unwrap();
 		// merge the grids
 		let grids = vec![grid1, grid2];
@@ -1482,6 +1481,93 @@ mod tests {
 				col
 			);
 		}
+	}
+
+	#[test]
+	fn test_large_grid() {
+		// 32 MB single tx
+		const TX_SIZE: usize = 31 * 1024 * 1024 - 200;
+
+		let data1: Vec<u8> = [8u8; TX_SIZE].to_vec();
+		let grids = vec![
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+			EvaluationGrid::from_data(&data1, 1024, 1024, 1024, Seed::default()).unwrap(),
+		];
+		let block_grid = EvaluationGrid::merge_with_padding(grids).unwrap();
+		// println!("grid dims: {:?}", block_grid.dims());
+		let poly_grid1 = block_grid
+			.make_polynomial_grid()
+			.map_err(|e| format!("Make polynomial grid failed: {e:?}"))
+			.unwrap();
+
+		let public_params = couscous::multiproof_params();
+		let commitments = poly_grid1
+			.extended_commitments(&public_params, 2)
+			.map_err(|e| format!("Grid extension failed: {e:?}"))
+			.unwrap();
+		println!("Number of commitments: {}", commitments.len());
 	}
 
 	#[test]
@@ -1896,7 +1982,7 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 			.expect("Failed to create evaluation grids");
 		println!("orginal grid dims: {:?}", grid.dims());
 		let extended_grid = grid
-			.extend_columns(NonZeroU16::new(2).expect("2>0"))
+			.extend_columns(NonZeroU32::new(2).expect("2>0"))
 			.expect("Failed to extend columns");
 		println!("extended grid dims: {:?}", extended_grid.dims());
 		let mut app_rows: Vec<(AppId, usize)> = Vec::new();

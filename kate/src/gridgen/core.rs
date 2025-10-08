@@ -14,7 +14,7 @@ use codec::Encode;
 use core::{
 	cmp::{max, min},
 	iter,
-	num::NonZeroU16,
+	num::{NonZeroU16, NonZeroU32},
 };
 use kate_recovery::matrix::Dimensions;
 use nalgebra::base::DMatrix;
@@ -114,7 +114,7 @@ impl EvaluationGrid {
 		let lookup = DataLookup::from_id_and_len_iter(len_by_app)?;
 		let grid_size = usize::try_from(lookup.len())?;
 		let (rows, cols): (usize, usize) =
-			get_block_dims(grid_size, min_width, max_width, max_height)?.into();
+			get_block_dims(grid_size, min_width, max_width, max_height)?.as_usize();
 
 		let mut rng = ChaChaRng::from_seed(rng_seed);
 		// Flatten the grid
@@ -153,7 +153,7 @@ impl EvaluationGrid {
 
 		let grid_size = scalars.len();
 		let (rows, cols): (usize, usize) =
-			get_tx_dims(grid_size, min_width, max_width, max_height)?.into();
+			get_tx_dims(grid_size, min_width, max_width, max_height)?.as_usize();
 
 		let mut rng = ChaChaRng::from_seed(rng_seed);
 		// Flatten the grid
@@ -261,8 +261,8 @@ impl EvaluationGrid {
 	pub fn dims(&self) -> Dimensions {
 		let (rows, cols) = self.evals.shape();
 		// SAFETY: We cannot construct an `EvaluationGrid` with any dimension `< 1` or `> u16::MAX`
-		debug_assert!(rows <= usize::from(u16::MAX) && cols <= usize::from(u16::MAX));
-		unsafe { Dimensions::new_unchecked(rows as u16, cols as u16) }
+		debug_assert!(rows <= u32::MAX as usize && cols <= usize::from(u16::MAX));
+		unsafe { Dimensions::new_unchecked(rows as u32, cols as u16) }
 	}
 
 	#[inline]
@@ -283,7 +283,7 @@ impl EvaluationGrid {
 		maybe_orig_dims: Option<Dimensions>,
 	) -> Result<Option<Vec<(usize, Vec<ArkScalar>)>>, AppRowError> {
 		let dims = self.dims();
-		let (rows, _cols): (usize, usize) = dims.into();
+		let (rows, _cols): (usize, usize) = dims.as_usize();
 
 		// Ensure `origin_dims` is divisible by `dims` if some.
 		let orig_dims = match maybe_orig_dims {
@@ -298,7 +298,7 @@ impl EvaluationGrid {
 		// Compiler checks that `Dimensions::rows()` returns a `NonZeroU16` using the expression
 		// `NonZeroU16::get(x)` instead of `x.get()`.
 		#[allow(clippy::arithmetic_side_effects)]
-		let h_mul: usize = rows / usize::from(NonZeroU16::get(orig_dims.rows()));
+		let h_mul: usize = rows / orig_dims.rows().get() as usize;
 		#[allow(clippy::arithmetic_side_effects)]
 		let row_from_lineal_index = |cols, lineal_index| {
 			let lineal_index =
@@ -329,13 +329,13 @@ impl EvaluationGrid {
 		Ok(app_rows)
 	}
 
-	pub fn extend_columns(&self, row_factor: NonZeroU16) -> Result<Self, Error> {
+	pub fn extend_columns(&self, row_factor: NonZeroU32) -> Result<Self, Error> {
 		let dims = self.dims();
 		let (new_rows, new_cols): (usize, usize) = dims
 			.extend(row_factor, unsafe { NonZeroU16::new_unchecked(1) })
 			.ok_or(Error::CellLengthExceeded)?
-			.into();
-		let (rows, _cols): (usize, usize) = dims.into();
+			.as_usize();
+		let (rows, _cols): (usize, usize) = dims.as_usize();
 
 		let domain =
 			GeneralEvaluationDomain::<ArkScalar>::new(rows).ok_or(Error::DomainSizeInvalid)?;
@@ -599,14 +599,14 @@ pub fn multiproof_block(
 	target: Dimensions,
 ) -> Option<CellBlock> {
 	let mp_grid_dims = multiproof_dims(grid, target)?;
-	let (g_rows, g_cols): (usize, usize) = grid.into();
+	let (g_rows, g_cols): (usize, usize) = grid.as_usize();
 	if x >= mp_grid_dims.width() || y >= mp_grid_dims.height() {
 		return None;
 	}
 
 	// SAFETY: Division is safe because `cols() != 0 && rows() != 0`.
 	let block_width = g_cols / usize::from(NonZeroU16::get(mp_grid_dims.cols()));
-	let block_height = g_rows / usize::from(NonZeroU16::get(mp_grid_dims.rows()));
+	let block_height = g_rows / mp_grid_dims.rows().get() as usize;
 
 	// SAFETY: values never overflow since `x` and `y` are always less than grid_dims.{width,height}().
 	// This is because x,y < mp_grid_dims.{width, height} and block width is the quotient of
@@ -648,7 +648,7 @@ pub fn get_block_dims(
 				.ok_or(Error::BlockTooBig)?,
 			min_width,
 		);
-		let height = unsafe { NonZeroU16::new_unchecked(1) };
+		let height = unsafe { NonZeroU32::new_unchecked(1) };
 
 		Dimensions::new_from(height, width).ok_or(Error::ZeroDimension)
 	} else {
@@ -684,7 +684,7 @@ pub fn get_tx_dims(
 				.ok_or(Error::BlockTooBig)?,
 			min_width,
 		);
-		let height = unsafe { NonZeroU16::new_unchecked(1) };
+		let height = unsafe { NonZeroU32::new_unchecked(1) };
 
 		Dimensions::new_from(height, width).ok_or(Error::ZeroDimension)
 	} else {
@@ -756,15 +756,15 @@ mod unit_tests {
 	#[test_case(256,   8,  32,  32 => Some((32, 8)))]
 	#[test_case(4  ,   1,  32,  32 => Some((4, 1)))]
 	fn test_multiproof_dims(
-		grid_w: u16,
+		grid_w: u32,
 		grid_h: u16,
-		target_w: u16,
+		target_w: u32,
 		target_h: u16,
 	) -> Option<(usize, usize)> {
 		let grid = unsafe { Dimensions::new_unchecked(grid_w, grid_h) };
 		let target = unsafe { Dimensions::new_unchecked(target_w, target_h) };
 
-		multiproof_dims(grid, target).map(Into::into)
+		multiproof_dims(grid, target).map(|d| d.as_usize())
 	}
 
 	use proptest::prelude::*;
@@ -792,7 +792,7 @@ mod unit_tests {
 		i.next_power_of_two()
 	}
 
-	fn new_dim(rows: u16, cols: u16) -> Result<Dimensions, Error> {
+	fn new_dim(rows: u32, cols: u16) -> Result<Dimensions, Error> {
 		Dimensions::new(rows, cols).ok_or(Error::BlockTooBig)
 	}
 

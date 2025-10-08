@@ -14,7 +14,7 @@ use crate::{
 	gridgen::{core::EvaluationGrid, tests::sample_cells},
 	ArkScalar, Seed,
 };
-use core::num::NonZeroU16;
+use core::num::NonZeroU32;
 
 #[test]
 fn newapi_test_flatten_block() {
@@ -92,7 +92,7 @@ fn newapi_test_extend_data_matrix() {
 		evals: DMatrix::from_row_iterator(2, 4, scalars),
 	};
 	let extend = grid
-		.extend_columns(unsafe { NonZeroU16::new_unchecked(2) })
+		.extend_columns(unsafe { NonZeroU32::new_unchecked(2) })
 		.unwrap();
 
 	assert_eq!(extend.evals, expected_result);
@@ -100,7 +100,7 @@ fn newapi_test_extend_data_matrix() {
 
 #[test]
 fn test_decode_app_extrinsics() {
-	let app_id_1_data = br#""This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns 
+	let app_id_1_data = br#""This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns
 get erasure coded to ensure redundancy."#;
 
 	let app_id_2_data =
@@ -116,7 +116,7 @@ get erasure coded to ensure redundancy."#;
 
 	let grid = EvaluationGrid::from_extrinsics(xts.clone(), 4, 32, 4, hash)
 		.unwrap()
-		.extend_columns(unsafe { NonZeroU16::new_unchecked(2) })
+		.extend_columns(unsafe { NonZeroU32::new_unchecked(2) })
 		.unwrap();
 
 	let bdims = grid.dims();
@@ -146,7 +146,7 @@ get erasure coded to ensure redundancy."#;
 
 #[test]
 fn test_extend_mock_data() {
-	let orig_data = br#"This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns 
+	let orig_data = br#"This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns
 get erasure coded to ensure redundancy.
 Let's see how this gets encoded and then reconstructed by sampling only some data."#;
 	let exts = vec![AppExtrinsic::from(orig_data.to_vec())];
@@ -155,7 +155,7 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 	let hash = Seed::default();
 	let grid = EvaluationGrid::from_extrinsics(exts.clone(), 4, 128, 2, hash)
 		.unwrap()
-		.extend_columns(unsafe { NonZeroU16::new_unchecked(2) })
+		.extend_columns(unsafe { NonZeroU32::new_unchecked(2) })
 		.unwrap();
 
 	let cols = sample_cells(&grid, None);
