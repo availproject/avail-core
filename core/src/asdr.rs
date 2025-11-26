@@ -16,10 +16,7 @@
 // limitations under the License.
 
 //! Generic implementation of an unchecked (pre-verification) extrinsic.
-use crate::{
-	traits::{GetAppId, MaybeCaller},
-	AppId, OpaqueExtrinsic,
-};
+use crate::{traits::MaybeCaller, OpaqueExtrinsic};
 
 use crate::from_substrate::blake2_256;
 use codec::{Codec, Compact, Decode, Encode, EncodeLike, Error, Input};
@@ -473,21 +470,6 @@ where
 	}
 }
 
-impl<A, C, S, E> GetAppId for AppUncheckedExtrinsic<A, C, S, E>
-where
-	A: Codec,
-	S: Codec,
-	C: Codec,
-	E: SignedExtension + GetAppId,
-{
-	fn app_id(&self) -> AppId {
-		self.signature
-			.as_ref()
-			.map(|(_address, _signature, extra)| extra.app_id())
-			.unwrap_or_default()
-	}
-}
-
 #[cfg(feature = "runtime")]
 impl<A, C, S, E> ExtrinsicCall for AppUncheckedExtrinsic<A, C, S, E>
 where
@@ -590,11 +572,6 @@ mod tests {
 		}
 	}
 
-	impl GetAppId for TestExtra {
-		fn app_id(&self) -> AppId {
-			Default::default()
-		}
-	}
 
 	type Ex = AppUncheckedExtrinsic<TestAccountId, TestCall, TestSig, TestExtra>;
 	type CEx = CheckedExtrinsic<TestAccountId, TestCall, TestExtra>;
