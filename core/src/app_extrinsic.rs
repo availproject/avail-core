@@ -71,7 +71,7 @@ where
 {
 	fn from(app_ext: &AppUncheckedExtrinsic<A, C, S, E>) -> Self {
 		Self {
-			app_id: app_ext.app_id(),
+			app_id: <_>::default(),
 			data: app_ext.encode(),
 		}
 	}
@@ -87,7 +87,7 @@ where
 {
 	fn from(app_ext: AppUncheckedExtrinsic<A, C, S, E>) -> Self {
 		Self {
-			app_id: app_ext.app_id(),
+			app_id: <_>::default(),
 			data: app_ext.encode(),
 		}
 	}
