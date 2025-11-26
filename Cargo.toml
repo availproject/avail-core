@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["core", "kate/recovery", "kate"]
+members = ["core", "kate/recovery", "kate", "fri"]
 
 [workspace.dependencies]
 # Parity
@@ -49,6 +49,13 @@ sha3 = { version = "0.10.0", default-features = false }
 
 poly-multiproof = { git = "https://github.com/availproject/poly-multiproof", rev="c2794e32ca040e6b2544abde18b7187af3e66feb", default-features = false, features = ["ark-bls12-381", "blst"]}
 hash-db = { version = "0.16.0",  default-features = false }
+
+# fri
+binius-prover = { git = "https://github.com/binius-zk/binius64.git", rev = "fe3e14a87dd59de1baf68505f98dc9cf7bf8595c" }
+binius-verifier = { git = "https://github.com/binius-zk/binius64.git", rev = "fe3e14a87dd59de1baf68505f98dc9cf7bf8595c" }
+binius-math = { git = "https://github.com/binius-zk/binius64.git", rev = "fe3e14a87dd59de1baf68505f98dc9cf7bf8595c" }
+binius-field = { git = "https://github.com/binius-zk/binius64.git", rev = "fe3e14a87dd59de1baf68505f98dc9cf7bf8595c" }
+binius-transcript = { git = "https://github.com/binius-zk/binius64.git", rev = "fe3e14a87dd59de1baf68505f98dc9cf7bf8595c" }
 
 # Others
 rayon = "1.5.2"

@@ -1,0 +1,30 @@
+[package]
+name = "fri"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+binius-prover = { workspace = true }
+binius-verifier = { workspace = true }
+binius-math = { workspace = true }
+binius-field = { workspace = true }
+binius-transcript = { workspace = true }
+
+rayon = { version = "1.10", optional = true }
+log = { workspace = true, optional = true }
+
+[dev-dependencies]
+rand = { version = "0.9.1", default-features = false, features = ["std", "std_rng"] }
+
+[features]
+default = ["std"]
+
+# This crate is node-side only currently
+std = [
+    "log",
+]
+
+# Enable rayon-based parallel code paths
+parallel = ["std", "rayon"]
+
+testing = []
