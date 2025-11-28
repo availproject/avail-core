@@ -13,7 +13,7 @@ use avail_core::{
 	const_generic_asserts::{USizeGreaterOrEq, USizeSafeCastToU32, UsizeEven, UsizeNonZero},
 	constants::kate::{DATA_CHUNK_SIZE, EXTENSION_FACTOR},
 	data_lookup::v3::{DataLookup as DataLookupV3, Error as DataLookupError},
-	ensure, AppExtrinsic, AppId, BlockLengthColumns, BlockLengthRows,
+	ensure, AppId, BlockLengthColumns, BlockLengthRows,
 };
 use codec::Encode;
 use derive_more::Constructor;
@@ -123,92 +123,92 @@ pub type XtsLayout = Vec<(AppId, u32)>;
 type FlatData = Vec<u8>;
 type DataChunk = [u8; DATA_CHUNK_SIZE];
 
-/// Helper which groups extrinsics data that share the same app_id.
-/// We assume the input extrinsics are already sorted by app_id, i.e. extrinsics with the same app_id are consecutive.
-/// This function does the same thing as group_by (unstable), just less general.
-fn app_extrinsics_group_by_app_id(extrinsics: &[AppExtrinsic]) -> Vec<(AppId, Vec<Vec<u8>>)> {
-	extrinsics.iter().fold(vec![], |mut acc, e| {
-		match acc.last_mut() {
-			Some((app_id, data)) if e.app_id == *app_id => data.push(e.data.clone()),
-			None | Some(_) => acc.push((e.app_id, vec![e.data.clone()])),
-		}
-		acc
-	})
-}
+// /// Helper which groups extrinsics data that share the same app_id.
+// /// We assume the input extrinsics are already sorted by app_id, i.e. extrinsics with the same app_id are consecutive.
+// /// This function does the same thing as group_by (unstable), just less general.
+// fn app_extrinsics_group_by_app_id(extrinsics: &[AppExtrinsic]) -> Vec<(AppId, Vec<Vec<u8>>)> {
+// 	extrinsics.iter().fold(vec![], |mut acc, e| {
+// 		match acc.last_mut() {
+// 			Some((app_id, data)) if e.app_id == *app_id => data.push(e.data.clone()),
+// 			None | Some(_) => acc.push((e.app_id, vec![e.data.clone()])),
+// 		}
+// 		acc
+// 	})
+// }
 
-pub fn flatten_and_pad_block<const CHUNK_SIZE: usize>(
-	max_rows: BlockLengthRows,
-	max_cols: BlockLengthColumns,
-	extrinsics: &[AppExtrinsic],
-	rng_seed: Seed,
-) -> Result<(XtsLayout, FlatData, BlockDimensions), Error> {
-	// First, sort the extrinsics by their app_id
-	let mut extrinsics = extrinsics.to_vec();
-	extrinsics.sort_by(|a, b| a.app_id.cmp(&b.app_id));
+// pub fn flatten_and_pad_block<const CHUNK_SIZE: usize>(
+// 	max_rows: BlockLengthRows,
+// 	max_cols: BlockLengthColumns,
+// 	extrinsics: &[AppExtrinsic],
+// 	rng_seed: Seed,
+// ) -> Result<(XtsLayout, FlatData, BlockDimensions), Error> {
+// 	// First, sort the extrinsics by their app_id
+// 	let mut extrinsics = extrinsics.to_vec();
+// 	extrinsics.sort_by(|a, b| a.app_id.cmp(&b.app_id));
 
-	// Pad data before determining exact block size
-	// Padding occurs both inside a single chunk and with additional chunk (if needed)
-	let (tx_layout, padded_chunks): (Vec<_>, Vec<_>) = app_extrinsics_group_by_app_id(&extrinsics)
-		.iter()
-		.map(|(app_id, opaques)| {
-			let data = opaques.encode();
-			let chunks = pad_iec_9797_1(data);
-			let chunks_len = u32::try_from(chunks.len()).map_err(|_| Error::BlockTooBig)?;
-			Ok(((*app_id, chunks_len), chunks))
-		})
-		.collect::<Result<Vec<_>, Error>>()?
-		.into_iter()
-		.unzip();
+// 	// Pad data before determining exact block size
+// 	// Padding occurs both inside a single chunk and with additional chunk (if needed)
+// 	let (tx_layout, padded_chunks): (Vec<_>, Vec<_>) = app_extrinsics_group_by_app_id(&extrinsics)
+// 		.iter()
+// 		.map(|(app_id, opaques)| {
+// 			let data = opaques.encode();
+// 			let chunks = pad_iec_9797_1(data);
+// 			let chunks_len = u32::try_from(chunks.len()).map_err(|_| Error::BlockTooBig)?;
+// 			Ok(((*app_id, chunks_len), chunks))
+// 		})
+// 		.collect::<Result<Vec<_>, Error>>()?
+// 		.into_iter()
+// 		.unzip();
 
-	let mut padded_block = padded_chunks
-		.into_iter()
-		.flat_map(|e| {
-			e.into_iter()
-				.flat_map(pad_to_chunk::<CHUNK_SIZE>)
-				.collect::<Vec<_>>()
-		})
-		.collect::<Vec<_>>();
-	let padded_block_len: u32 = padded_block
-		.len()
-		.try_into()
-		.map_err(|_| Error::BlockTooBig)?;
+// 	let mut padded_block = padded_chunks
+// 		.into_iter()
+// 		.flat_map(|e| {
+// 			e.into_iter()
+// 				.flat_map(pad_to_chunk::<CHUNK_SIZE>)
+// 				.collect::<Vec<_>>()
+// 		})
+// 		.collect::<Vec<_>>();
+// 	let padded_block_len: u32 = padded_block
+// 		.len()
+// 		.try_into()
+// 		.map_err(|_| Error::BlockTooBig)?;
 
-	// Determine the block size after padding
-	let block_dims = get_block_dimensions::<CHUNK_SIZE>(padded_block_len, max_rows, max_cols)?;
+// 	// Determine the block size after padding
+// 	let block_dims = get_block_dimensions::<CHUNK_SIZE>(padded_block_len, max_rows, max_cols)?;
 
-	let block_dims_size = block_dims.size();
-	ensure!(padded_block.len() <= block_dims_size, Error::BlockTooBig);
+// 	let block_dims_size = block_dims.size();
+// 	ensure!(padded_block.len() <= block_dims_size, Error::BlockTooBig);
 
-	let mut rng = ChaChaRng::from_seed(rng_seed);
+// 	let mut rng = ChaChaRng::from_seed(rng_seed);
 
-	// SAFETY: `padded_block.len() <= block_dims.size()` checked some lines above.
-	if cfg!(debug_assertions) {
-		let dims_sub_pad = block_dims_size
-			.checked_sub(padded_block.len())
-			.expect("`padded_block.len() <= block_dims.size() .qed");
+// 	// SAFETY: `padded_block.len() <= block_dims.size()` checked some lines above.
+// 	if cfg!(debug_assertions) {
+// 		let dims_sub_pad = block_dims_size
+// 			.checked_sub(padded_block.len())
+// 			.expect("`padded_block.len() <= block_dims.size() .qed");
 
-		// Static Assert that `CHUNK_SIZE` is non-zero.
-		#[allow(clippy::let_unit_value)]
-		let () = UsizeNonZero::<CHUNK_SIZE>::OK;
-		#[allow(clippy::arithmetic_side_effects)]
-		let rem = dims_sub_pad % CHUNK_SIZE;
+// 		// Static Assert that `CHUNK_SIZE` is non-zero.
+// 		#[allow(clippy::let_unit_value)]
+// 		let () = UsizeNonZero::<CHUNK_SIZE>::OK;
+// 		#[allow(clippy::arithmetic_side_effects)]
+// 		let rem = dims_sub_pad % CHUNK_SIZE;
 
-		assert_eq!(rem, 0);
-	}
+// 		assert_eq!(rem, 0);
+// 	}
 
-	#[allow(clippy::let_unit_value)]
-	let () = UsizeNonZero::<CHUNK_SIZE>::OK;
-	// SAFETY: `chunk_size` is non-zero, checked above.
-	#[allow(clippy::arithmetic_side_effects)]
-	let last = block_dims_size.saturating_sub(padded_block.len()) / CHUNK_SIZE;
+// 	#[allow(clippy::let_unit_value)]
+// 	let () = UsizeNonZero::<CHUNK_SIZE>::OK;
+// 	// SAFETY: `chunk_size` is non-zero, checked above.
+// 	#[allow(clippy::arithmetic_side_effects)]
+// 	let last = block_dims_size.saturating_sub(padded_block.len()) / CHUNK_SIZE;
 
-	for _ in 0..last {
-		let rnd_values: [u8; SCALAR_SIZE - 1] = rng.gen();
-		padded_block.append(&mut pad_with_zeroes(rnd_values.to_vec(), CHUNK_SIZE));
-	}
+// 	for _ in 0..last {
+// 		let rnd_values: [u8; SCALAR_SIZE - 1] = rng.gen();
+// 		padded_block.append(&mut pad_with_zeroes(rnd_values.to_vec(), CHUNK_SIZE));
+// 	}
 
-	Ok((tx_layout, padded_block, block_dims))
-}
+// 	Ok((tx_layout, padded_block, block_dims))
+// }
 
 pub fn get_block_dimensions<const CHUNK_SIZE: usize>(
 	block_size: u32,
@@ -507,62 +507,62 @@ pub fn build_proof<M: Metrics>(
 	Ok(result_bytes)
 }
 
-#[cfg(feature = "std")]
-pub fn par_build_commitments<const CHUNK_SIZE: usize, M: Metrics>(
-	rows: BlockLengthRows,
-	cols: BlockLengthColumns,
-	extrinsics_by_key: &[AppExtrinsic],
-	rng_seed: Seed,
-	metrics: &M,
-) -> Result<(XtsLayout, Vec<u8>, BlockDimensions, DMatrix<ArkScalar>), Error> {
-	use crate::couscous;
+// #[cfg(feature = "std")]
+// pub fn par_build_commitments<const CHUNK_SIZE: usize, M: Metrics>(
+// 	rows: BlockLengthRows,
+// 	cols: BlockLengthColumns,
+// 	extrinsics_by_key: &[AppExtrinsic],
+// 	rng_seed: Seed,
+// 	metrics: &M,
+// ) -> Result<(XtsLayout, Vec<u8>, BlockDimensions, DMatrix<ArkScalar>), Error> {
+// 	use crate::couscous;
 
-	let start = Instant::now();
+// 	let start = Instant::now();
 
-	// generate data matrix first
-	let (tx_layout, block, block_dims) =
-		flatten_and_pad_block::<CHUNK_SIZE>(rows, cols, extrinsics_by_key, rng_seed)?;
+// 	// generate data matrix first
+// 	let (tx_layout, block, block_dims) =
+// 		flatten_and_pad_block::<CHUNK_SIZE>(rows, cols, extrinsics_by_key, rng_seed)?;
 
-	let block_len = u32::try_from(block.len()).unwrap_or(u32::MAX);
-	metrics.block_dims_and_size(block_dims, block_len);
+// 	let block_len = u32::try_from(block.len()).unwrap_or(u32::MAX);
+// 	metrics.block_dims_and_size(block_dims, block_len);
 
-	let ext_matrix = par_extend_data_matrix(block_dims, &block, metrics)?;
+// 	let ext_matrix = par_extend_data_matrix(block_dims, &block, metrics)?;
 
-	let block_dims_cols = usize::try_from(block_dims.cols.0)?;
-	let block_dims_rows = usize::try_from(block_dims.rows.0)?;
-	let extended_rows = block_dims_rows
-		.checked_mul(EXTENSION_FACTOR as usize)
-		.ok_or(Error::BlockTooBig)?;
+// 	let block_dims_cols = usize::try_from(block_dims.cols.0)?;
+// 	let block_dims_rows = usize::try_from(block_dims.rows.0)?;
+// 	let extended_rows = block_dims_rows
+// 		.checked_mul(EXTENSION_FACTOR as usize)
+// 		.ok_or(Error::BlockTooBig)?;
 
-	metrics.preparation_block_time(start.elapsed());
+// 	metrics.preparation_block_time(start.elapsed());
 
-	let public_params = couscous::multiproof_params();
-	let row_eval_domain =
-		ArkEvaluationDomain::new(block_dims_cols).ok_or(Error::DomainSizeInvalid)?;
+// 	let public_params = couscous::multiproof_params();
+// 	let row_eval_domain =
+// 		ArkEvaluationDomain::new(block_dims_cols).ok_or(Error::DomainSizeInvalid)?;
 
-	let start = Instant::now();
-	let mut commitments =
-		Vec::with_capacity(extended_rows.checked_add(1).ok_or(Error::BlockTooBig)?);
-	(0..extended_rows)
-		.into_par_iter()
-		.map(|row_idx| {
-			let ext_row = get_row(&ext_matrix, row_idx);
-			commit(&public_params, row_eval_domain, ext_row)
-		})
-		.collect_into_vec(&mut commitments);
+// 	let start = Instant::now();
+// 	let mut commitments =
+// 		Vec::with_capacity(extended_rows.checked_add(1).ok_or(Error::BlockTooBig)?);
+// 	(0..extended_rows)
+// 		.into_par_iter()
+// 		.map(|row_idx| {
+// 			let ext_row = get_row(&ext_matrix, row_idx);
+// 			commit(&public_params, row_eval_domain, ext_row)
+// 		})
+// 		.collect_into_vec(&mut commitments);
 
-	let commitments = commitments.into_iter().collect::<Result<Vec<_>, _>>()?;
-	let commitments_bytes = commitments
-		.into_par_iter()
-		.map(|c| c.to_bytes().map(|b| b.to_vec()))
-		.collect::<Result<Vec<_>, _>>()? // propagate the first error
-		.into_iter()
-		.flatten()
-		.collect::<Vec<u8>>();
-	metrics.commitment_build_time(start.elapsed());
+// 	let commitments = commitments.into_iter().collect::<Result<Vec<_>, _>>()?;
+// 	let commitments_bytes = commitments
+// 		.into_par_iter()
+// 		.map(|c| c.to_bytes().map(|b| b.to_vec()))
+// 		.collect::<Result<Vec<_>, _>>()? // propagate the first error
+// 		.into_iter()
+// 		.flatten()
+// 		.collect::<Vec<u8>>();
+// 	metrics.commitment_build_time(start.elapsed());
 
-	Ok((tx_layout, commitments_bytes, block_dims, ext_matrix))
-}
+// 	Ok((tx_layout, commitments_bytes, block_dims, ext_matrix))
+// }
 
 #[cfg(feature = "std")]
 fn get_row(m: &DMatrix<ArkScalar>, row_idx: usize) -> Vec<ArkScalar> {
@@ -780,52 +780,52 @@ mod tests {
 		hex::encode(padded)
 	}
 
-	// newapi done
-	#[test]
-	#[cfg(not(feature = "maximum-block-size"))]
-	fn test_flatten_block() {
-		use static_assertions::const_assert;
+	// // newapi done
+	// #[test]
+	// #[cfg(not(feature = "maximum-block-size"))]
+	// fn test_flatten_block() {
+	// 	use static_assertions::const_assert;
 
-		let extrinsics: Vec<AppExtrinsic> = vec![
-			AppExtrinsic::new(AppId(0), (1..=30).collect()),
-			AppExtrinsic::new(AppId(1), (1..=31).collect()),
-			AppExtrinsic::new(AppId(2), (1..=32).collect()),
-			AppExtrinsic::new(AppId(3), (1..=61).collect()),
-		];
+	// 	let extrinsics: Vec<AppExtrinsic> = vec![
+	// 		AppExtrinsic::new(AppId(0), (1..=30).collect()),
+	// 		AppExtrinsic::new(AppId(1), (1..=31).collect()),
+	// 		AppExtrinsic::new(AppId(2), (1..=32).collect()),
+	// 		AppExtrinsic::new(AppId(3), (1..=61).collect()),
+	// 	];
 
-		let expected_dims =
-			BlockDimensions::new(BlockLengthRows(1), BlockLengthColumns(16), TCHUNK).unwrap();
-		let (layout, data, dims) = flatten_and_pad_block::<TCHUNK_SIZE>(
-			BlockLengthRows(128),
-			BlockLengthColumns(256),
-			extrinsics.as_slice(),
-			Seed::default(),
-		)
-		.unwrap();
+	// 	let expected_dims =
+	// 		BlockDimensions::new(BlockLengthRows(1), BlockLengthColumns(16), TCHUNK).unwrap();
+	// 	let (layout, data, dims) = flatten_and_pad_block::<TCHUNK_SIZE>(
+	// 		BlockLengthRows(128),
+	// 		BlockLengthColumns(256),
+	// 		extrinsics.as_slice(),
+	// 		Seed::default(),
+	// 	)
+	// 	.unwrap();
 
-		let expected_layout = vec![(AppId(0), 2), (AppId(1), 2), (AppId(2), 2), (AppId(3), 3)];
-		assert_eq!(layout, expected_layout, "The layouts don't match");
+	// 	let expected_layout = vec![(AppId(0), 2), (AppId(1), 2), (AppId(2), 2), (AppId(3), 3)];
+	// 	assert_eq!(layout, expected_layout, "The layouts don't match");
 
-		let expected_data = hex!("04780102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d001e00000000000000000000000000000000000000000000000000000000000000047c0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d001e1f00000000000000000000000000000000000000000000000000000000000004800102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d001e1f20000000000000000000000000000000000000000000000000000000000004f40102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d001e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c003d0000000000000000000000000000000000000000000000000000000000000076a04053bda0a88bda5177b86a15c3b29f559873cb481232299cd5743151ac004b2d63ae198e7bb0a9011f28e473c95f4013d7d53ec5fbc3b42df8ed101f6d00e831e52bfb76e51cca8b4e9016838657edfae09cb9a71eb219025c4c87a67c004aaa86f20ac0aa792bc121ee42e2c326127061eda15599cb5db3db870bea5a00ecf353161c3cb528b0c5d98050c4570bfc942d8b19ed7b0cbba5725e03e5f000b7e30db36b6df82ac151f668f5f80a5e2a9cac7c64991dd6a6ce21c060175800edb9260d2a86c836efc05f17e5c59525e404c6a93d051651fe2e4eefae281300");
+	// 	let expected_data = hex!("04780102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d001e00000000000000000000000000000000000000000000000000000000000000047c0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d001e1f00000000000000000000000000000000000000000000000000000000000004800102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d001e1f20000000000000000000000000000000000000000000000000000000000004f40102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d001e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c003d0000000000000000000000000000000000000000000000000000000000000076a04053bda0a88bda5177b86a15c3b29f559873cb481232299cd5743151ac004b2d63ae198e7bb0a9011f28e473c95f4013d7d53ec5fbc3b42df8ed101f6d00e831e52bfb76e51cca8b4e9016838657edfae09cb9a71eb219025c4c87a67c004aaa86f20ac0aa792bc121ee42e2c326127061eda15599cb5db3db870bea5a00ecf353161c3cb528b0c5d98050c4570bfc942d8b19ed7b0cbba5725e03e5f000b7e30db36b6df82ac151f668f5f80a5e2a9cac7c64991dd6a6ce21c060175800edb9260d2a86c836efc05f17e5c59525e404c6a93d051651fe2e4eefae281300");
 
-		assert_eq!(dims, expected_dims, "Dimensions don't match the expected");
-		assert_eq!(data, expected_data, "Data doesn't match the expected data");
-		let lookup = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
+	// 	assert_eq!(dims, expected_dims, "Dimensions don't match the expected");
+	// 	assert_eq!(data, expected_data, "Data doesn't match the expected data");
+	// 	let lookup = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
 
-		const_assert!((CHUNK_SIZE as u64) <= (u32::MAX as u64));
-		let data_lookup = lookup.projected_ranges(CHUNK_SIZE as u32).unwrap();
-		let res = unflatten_padded_data(data_lookup, data).unwrap();
-		assert_eq!(
-			res.len(),
-			extrinsics.len(),
-			"Number of extrinsics is not as expected."
-		);
+	// 	const_assert!((CHUNK_SIZE as u64) <= (u32::MAX as u64));
+	// 	let data_lookup = lookup.projected_ranges(CHUNK_SIZE as u32).unwrap();
+	// 	let res = unflatten_padded_data(data_lookup, data).unwrap();
+	// 	assert_eq!(
+	// 		res.len(),
+	// 		extrinsics.len(),
+	// 		"Number of extrinsics is not as expected."
+	// 	);
 
-		for ((id, data), exp) in res.iter().zip(extrinsics.iter()) {
-			assert_eq!(id.0, *exp.app_id);
-			assert_eq!(data[0], exp.data);
-		}
-	}
+	// 	for ((id, data), exp) in res.iter().zip(extrinsics.iter()) {
+	// 		assert_eq!(id.0, *exp.app_id);
+	// 		assert_eq!(data[0], exp.data);
+	// 	}
+	// }
 
 	// returns the random cell positions by respecting the max col_percent % per column
 	fn sampled_cells(dimensions: Dimensions, col_percent: u8) -> Vec<Position> {
@@ -890,24 +890,24 @@ mod tests {
 			.collect()
 	}
 
-	fn app_extrinsic_strategy() -> impl Strategy<Value = AppExtrinsic> {
-		(
-			any::<u32>(),
-			any_with::<Vec<u8>>(size_range(1..2048).lift()),
-		)
-			.prop_map(|(app_id, data)| AppExtrinsic {
-				app_id: AppId(app_id),
-				data,
-			})
-	}
+	// fn app_extrinsic_strategy() -> impl Strategy<Value = AppExtrinsic> {
+	// 	(
+	// 		any::<u32>(),
+	// 		any_with::<Vec<u8>>(size_range(1..2048).lift()),
+	// 	)
+	// 		.prop_map(|(app_id, data)| AppExtrinsic {
+	// 			app_id: AppId(app_id),
+	// 			data,
+	// 		})
+	// }
 
-	fn app_extrinsics_strategy() -> impl Strategy<Value = Vec<AppExtrinsic>> {
-		collection::vec(app_extrinsic_strategy(), size_range(1..16)).prop_map(|xts| {
-			let mut new_xts = xts;
-			new_xts.sort_by(|a1, a2| a1.app_id.cmp(&a2.app_id));
-			new_xts
-		})
-	}
+	// fn app_extrinsics_strategy() -> impl Strategy<Value = Vec<AppExtrinsic>> {
+	// 	collection::vec(app_extrinsic_strategy(), size_range(1..16)).prop_map(|xts| {
+	// 		let mut new_xts = xts;
+	// 		new_xts.sort_by(|a1, a2| a1.app_id.cmp(&a2.app_id));
+	// 		new_xts
+	// 	})
+	// }
 
 	fn random_cells(
 		max_cols: BlockLengthColumns,
@@ -929,160 +929,160 @@ mod tests {
 			.choose_multiple(rng, amount)
 	}
 
-	proptest! {
-	#![proptest_config(ProptestConfig::with_cases(10))]
-	#[test]
-	// newapi done
-	fn test_build_and_reconstruct(ref xts in app_extrinsics_strategy())  {
-		let metrics = IgnoreMetrics {};
-		let (layout, commitments, dims, matrix) = par_build_commitments::<TCHUNK_SIZE,_>( BlockLengthRows(64), BlockLengthColumns(16), xts, Seed::default(), &metrics).unwrap();
+	// proptest! {
+	// #![proptest_config(ProptestConfig::with_cases(10))]
+	// #[test]
+	// // newapi done
+	// fn test_build_and_reconstruct(ref xts in app_extrinsics_strategy())  {
+	// 	let metrics = IgnoreMetrics {};
+	// 	let (layout, commitments, dims, matrix) = par_build_commitments::<TCHUNK_SIZE,_>( BlockLengthRows(64), BlockLengthColumns(16), xts, Seed::default(), &metrics).unwrap();
 
-		let columns = sample_cells_from_matrix(&matrix, None);
-		let extended_dims = dims.try_into().unwrap();
-		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
-		let reconstructed = reconstruct_extrinsics(&index, extended_dims, columns).unwrap();
-		for ((app_id, data), xt) in reconstructed.iter().zip(xts) {
-			prop_assert_eq!(app_id.0, *xt.app_id);
-			prop_assert_eq!(data[0].as_slice(), &xt.data);
-		}
+	// 	let columns = sample_cells_from_matrix(&matrix, None);
+	// 	let extended_dims = dims.try_into().unwrap();
+	// 	let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
+	// 	let reconstructed = reconstruct_extrinsics(&index, extended_dims, columns).unwrap();
+	// 	for ((app_id, data), xt) in reconstructed.iter().zip(xts) {
+	// 		prop_assert_eq!(app_id.0, *xt.app_id);
+	// 		prop_assert_eq!(data[0].as_slice(), &xt.data);
+	// 	}
 
-		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
-		// let public_params = testnet::public_params(dims_cols);
-		let public_params = couscous::multiproof_params();
-		for cell in random_cells(dims.cols, dims.rows, 100 ) {
-			let row = usize::try_from(cell.row.0).unwrap();
+	// 	// let dims_cols = usize::try_from(dims.cols.0).unwrap();
+	// 	// let public_params = testnet::public_params(dims_cols);
+	// 	let public_params = couscous::multiproof_params();
+	// 	for cell in random_cells(dims.cols, dims.rows, 100 ) {
+	// 		let row = usize::try_from(cell.row.0).unwrap();
 
-			let proof = build_proof(&public_params, dims, &matrix, &[cell], &metrics).unwrap();
-			prop_assert!(proof.len() == 80);
+	// 		let proof = build_proof(&public_params, dims, &matrix, &[cell], &metrics).unwrap();
+	// 		prop_assert!(proof.len() == 80);
 
-			let col: u16 = cell.col.0.try_into().expect("`random_cells` function generates a valid `u16` for columns");
-			let position = Position { row: cell.row.0, col};
-			let cell = data::SingleCell { position,  content: proof.try_into().unwrap() };
+	// 		let col: u16 = cell.col.0.try_into().expect("`random_cells` function generates a valid `u16` for columns");
+	// 		let position = Position { row: cell.row.0, col};
+	// 		let cell = data::SingleCell { position,  content: proof.try_into().unwrap() };
 
-			let extended_dims = dims.try_into().unwrap();
-			let commitment = commitments::from_slice(&commitments).unwrap()[row];
-			// let verification =  proof::verify(&public_params, extended_dims, &commitment,  &cell);
-			let verification =  proof::verify_v2(&public_params, extended_dims, &commitment,  &cell);
-			prop_assert!(verification.is_ok());
-			prop_assert!(verification.unwrap());
-		}
-	}
-	}
+	// 		let extended_dims = dims.try_into().unwrap();
+	// 		let commitment = commitments::from_slice(&commitments).unwrap()[row];
+	// 		// let verification =  proof::verify(&public_params, extended_dims, &commitment,  &cell);
+	// 		let verification =  proof::verify_v2(&public_params, extended_dims, &commitment,  &cell);
+	// 		prop_assert!(verification.is_ok());
+	// 		prop_assert!(verification.unwrap());
+	// 	}
+	// }
+	// }
 
-	proptest! {
-	#![proptest_config(ProptestConfig::with_cases(20))]
-	#[test]
-	// newapi done
-	fn test_commitments_verify(ref xts in app_extrinsics_strategy())  {
-		let (layout, commitments, dims, matrix) = par_build_commitments::<TCHUNK_SIZE,_>(BlockLengthRows(64), BlockLengthColumns(16), xts, Seed::default(), &IgnoreMetrics{}).unwrap();
+	// proptest! {
+	// #![proptest_config(ProptestConfig::with_cases(20))]
+	// #[test]
+	// // newapi done
+	// fn test_commitments_verify(ref xts in app_extrinsics_strategy())  {
+	// 	let (layout, commitments, dims, matrix) = par_build_commitments::<TCHUNK_SIZE,_>(BlockLengthRows(64), BlockLengthColumns(16), xts, Seed::default(), &IgnoreMetrics{}).unwrap();
 
-		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
-		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
-		let public_params = couscous::multiproof_params();
-		let extended_dims = dims.try_into().unwrap();
-		let commitments = commitments::from_slice(&commitments).unwrap();
-		for xt in xts {
-			let rows = scalars_to_app_rows(xt.app_id, &index, extended_dims, &matrix);
-			let (_, missing) = commitments::verify_equality(&public_params, &commitments, rows.as_slice(), &index, extended_dims, xt.app_id).unwrap();
-			prop_assert!(missing.is_empty());
-		}
-	}
-	}
+	// 	let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
+	// 	// let dims_cols = usize::try_from(dims.cols.0).unwrap();
+	// 	let public_params = couscous::multiproof_params();
+	// 	let extended_dims = dims.try_into().unwrap();
+	// 	let commitments = commitments::from_slice(&commitments).unwrap();
+	// 	for xt in xts {
+	// 		let rows = scalars_to_app_rows(xt.app_id, &index, extended_dims, &matrix);
+	// 		let (_, missing) = commitments::verify_equality(&public_params, &commitments, rows.as_slice(), &index, extended_dims, xt.app_id).unwrap();
+	// 		prop_assert!(missing.is_empty());
+	// 	}
+	// }
+	// }
 
-	proptest! {
-	#![proptest_config(ProptestConfig::with_cases(20))]
-	#[test]
-	// newapi done
-	fn verify_commitments_missing_row(ref xts in app_extrinsics_strategy())  {
-		let (layout, commitments, dims, matrix) = par_build_commitments::<TCHUNK_SIZE,_>(BlockLengthRows(64), BlockLengthColumns(16), xts, Seed::default(), &IgnoreMetrics{}).unwrap();
+	// proptest! {
+	// #![proptest_config(ProptestConfig::with_cases(20))]
+	// #[test]
+	// // newapi done
+	// fn verify_commitments_missing_row(ref xts in app_extrinsics_strategy())  {
+	// 	let (layout, commitments, dims, matrix) = par_build_commitments::<TCHUNK_SIZE,_>(BlockLengthRows(64), BlockLengthColumns(16), xts, Seed::default(), &IgnoreMetrics{}).unwrap();
 
-		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
-		// let dims_cols = usize::try_from(dims.cols.0).unwrap();
-		let public_params = couscous::multiproof_params();
-		let extended_dims =  dims.try_into().unwrap();
-		let commitments = commitments::from_slice(&commitments).unwrap();
-		for xt in xts {
-			let mut rows = scalars_to_app_rows(xt.app_id, &index, extended_dims, &matrix);
-			let app_row_index = rows.iter().position(Option::is_some).unwrap();
-			rows.remove(app_row_index);
-			let (_, missing) = commitments::verify_equality(&public_params, &commitments, &rows,&index, extended_dims,xt.app_id).unwrap();
-			prop_assert!(!missing.is_empty());
-		}
-	}
-	}
+	// 	let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
+	// 	// let dims_cols = usize::try_from(dims.cols.0).unwrap();
+	// 	let public_params = couscous::multiproof_params();
+	// 	let extended_dims =  dims.try_into().unwrap();
+	// 	let commitments = commitments::from_slice(&commitments).unwrap();
+	// 	for xt in xts {
+	// 		let mut rows = scalars_to_app_rows(xt.app_id, &index, extended_dims, &matrix);
+	// 		let app_row_index = rows.iter().position(Option::is_some).unwrap();
+	// 		rows.remove(app_row_index);
+	// 		let (_, missing) = commitments::verify_equality(&public_params, &commitments, &rows,&index, extended_dims,xt.app_id).unwrap();
+	// 		prop_assert!(!missing.is_empty());
+	// 	}
+	// }
+	// }
 
-	#[test]
-	// To test extension of commitments directly from the commitment bytes
-	fn test_commitments_extension() {
-		// exact 4 rows
-		let tx_size: usize = 4 * 256 * 31 - 8;
-		let mut rng = ChaChaRng::from_seed([0u8; 32]);
-		let data: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
+	// #[test]
+	// // To test extension of commitments directly from the commitment bytes
+	// fn test_commitments_extension() {
+	// 	// exact 4 rows
+	// 	let tx_size: usize = 4 * 256 * 31 - 8;
+	// 	let mut rng = ChaChaRng::from_seed([0u8; 32]);
+	// 	let data: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
 
-		let grid = EvaluationGrid::from_extrinsics(
-			[AppExtrinsic::from(data)].to_vec(),
-			4,
-			256,
-			256,
-			Seed::default(),
-		)
-		.expect("Failed to create evaluation grid");
+	// 	let grid = EvaluationGrid::from_extrinsics(
+	// 		[AppExtrinsic::from(data)].to_vec(),
+	// 		4,
+	// 		256,
+	// 		256,
+	// 		Seed::default(),
+	// 	)
+	// 	.expect("Failed to create evaluation grid");
 
-		let poly_grid = grid
-			.make_polynomial_grid()
-			.map_err(|e| format!("Make polynomial grid failed: {e:?}"))
-			.unwrap();
+	// 	let poly_grid = grid
+	// 		.make_polynomial_grid()
+	// 		.map_err(|e| format!("Make polynomial grid failed: {e:?}"))
+	// 		.unwrap();
 
-		let public_params = couscous::multiproof_params();
+	// 	let public_params = couscous::multiproof_params();
 
-		let poly_commitment = poly_grid.commitments(&public_params).unwrap();
-		let poly_extended_commitment =
-			poly_multiproof::Commitment::<Bls12_381>::extend_commitments(
-				&poly_commitment,
-				poly_commitment.len() * 2,
-			)
-			.unwrap();
-		let mut extended_commitment_bytes = Vec::new();
-		for c in poly_extended_commitment.iter() {
-			match c.to_bytes() {
-				Ok(bytes) => extended_commitment_bytes.extend(bytes),
-				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
-			}
-		}
+	// 	let poly_commitment = poly_grid.commitments(&public_params).unwrap();
+	// 	let poly_extended_commitment =
+	// 		poly_multiproof::Commitment::<Bls12_381>::extend_commitments(
+	// 			&poly_commitment,
+	// 			poly_commitment.len() * 2,
+	// 		)
+	// 		.unwrap();
+	// 	let mut extended_commitment_bytes = Vec::new();
+	// 	for c in poly_extended_commitment.iter() {
+	// 		match c.to_bytes() {
+	// 			Ok(bytes) => extended_commitment_bytes.extend(bytes),
+	// 			Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+	// 		}
+	// 	}
 
-		let mut commitment_bytes = Vec::new();
-		for c in poly_commitment.iter() {
-			match c.to_bytes() {
-				Ok(bytes) => commitment_bytes.extend(bytes),
-				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
-			}
-		}
-		let commitments_vec =
-			commitments::from_slice(&commitment_bytes).expect("Failed to parse commitments");
+	// 	let mut commitment_bytes = Vec::new();
+	// 	for c in poly_commitment.iter() {
+	// 		match c.to_bytes() {
+	// 			Ok(bytes) => commitment_bytes.extend(bytes),
+	// 			Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+	// 		}
+	// 	}
+	// 	let commitments_vec =
+	// 		commitments::from_slice(&commitment_bytes).expect("Failed to parse commitments");
 
-		// Now get back Vec<Commitment> from Vec<[u8; COMMITMENT_SIZE]>
-		let commitments: Vec<Commitment<Bls12_381>> = commitments_vec
-			.iter()
-			.map(|c| Commitment::from_bytes(c))
-			.collect::<Result<Vec<_>, _>>()
-			.expect("Failed to convert commitment bytes to commitment");
+	// 	// Now get back Vec<Commitment> from Vec<[u8; COMMITMENT_SIZE]>
+	// 	let commitments: Vec<Commitment<Bls12_381>> = commitments_vec
+	// 		.iter()
+	// 		.map(|c| Commitment::from_bytes(c))
+	// 		.collect::<Result<Vec<_>, _>>()
+	// 		.expect("Failed to convert commitment bytes to commitment");
 
-		let extended_commitments = poly_multiproof::Commitment::<Bls12_381>::extend_commitments(
-			&commitments,
-			commitments.len() * 2,
-		)
-		.unwrap();
+	// 	let extended_commitments = poly_multiproof::Commitment::<Bls12_381>::extend_commitments(
+	// 		&commitments,
+	// 		commitments.len() * 2,
+	// 	)
+	// 	.unwrap();
 
-		let mut commitments = Vec::new();
-		for c in extended_commitments.iter() {
-			match c.to_bytes() {
-				Ok(bytes) => commitments.extend(bytes),
-				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
-			}
-		}
-		// println!("Directly Extended Commitment (hex): {}", hex::encode(&commitments));
-		assert_eq!(commitments, extended_commitment_bytes);
-	}
+	// 	let mut commitments = Vec::new();
+	// 	for c in extended_commitments.iter() {
+	// 		match c.to_bytes() {
+	// 			Ok(bytes) => commitments.extend(bytes),
+	// 			Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+	// 		}
+	// 	}
+	// 	// println!("Directly Extended Commitment (hex): {}", hex::encode(&commitments));
+	// 	assert_eq!(commitments, extended_commitment_bytes);
+	// }
 
 	#[test]
 	fn test_row_padding_at_unified_grid() {
@@ -1242,114 +1242,114 @@ mod tests {
 		assert_eq!(header_commitments, proof_comms);
 	}
 
-	#[test]
-	fn test_simple_build_and_verify() {
-		let original_data = br#"Testing Avail DA verification"#;
-		println!("Original data (hex): {}", hex::encode(original_data));
+	// #[test]
+	// fn test_simple_build_and_verify() {
+	// 	let original_data = br#"Testing Avail DA verification"#;
+	// 	println!("Original data (hex): {}", hex::encode(original_data));
 
-		let grid = EvaluationGrid::from_extrinsics(
-			[AppExtrinsic::from(original_data.to_vec())].to_vec(),
-			4,
-			256,
-			256,
-			Seed::default(),
-		)
-		.expect("Failed to create evaluation grid");
-		// if we want to add erasure coding, we can do it here by extending the grid
-		// .extend_columns(NonZeroU16::new(2).expect("2>0")).expect("Failed to extend the grid");
+	// 	let grid = EvaluationGrid::from_extrinsics(
+	// 		[AppExtrinsic::from(original_data.to_vec())].to_vec(),
+	// 		4,
+	// 		256,
+	// 		256,
+	// 		Seed::default(),
+	// 	)
+	// 	.expect("Failed to create evaluation grid");
+	// 	// if we want to add erasure coding, we can do it here by extending the grid
+	// 	// .extend_columns(NonZeroU16::new(2).expect("2>0")).expect("Failed to extend the grid");
 
-		let poly_grid = grid
-			.make_polynomial_grid()
-			.map_err(|e| format!("Make polynomial grid failed: {e:?}"))
-			.unwrap();
+	// 	let poly_grid = grid
+	// 		.make_polynomial_grid()
+	// 		.map_err(|e| format!("Make polynomial grid failed: {e:?}"))
+	// 		.unwrap();
 
-		println!("grid dims: {:?}", grid.dims());
-		println!(
-			"grid row 0 {}",
-			hex::encode(
-				grid.row(0)
-					.unwrap()
-					.iter()
-					.map(|s| s.to_bytes().unwrap())
-					.collect::<Vec<_>>()
-					.concat()
-			)
-		);
-		let public_params = couscous::multiproof_params();
+	// 	println!("grid dims: {:?}", grid.dims());
+	// 	println!(
+	// 		"grid row 0 {}",
+	// 		hex::encode(
+	// 			grid.row(0)
+	// 				.unwrap()
+	// 				.iter()
+	// 				.map(|s| s.to_bytes().unwrap())
+	// 				.collect::<Vec<_>>()
+	// 				.concat()
+	// 		)
+	// 	);
+	// 	let public_params = couscous::multiproof_params();
 
-		let extended_grid = poly_grid
-			.extended_commitments(&public_params, 2)
-			.map_err(|e| format!("Grid extension failed: {e:?}"))
-			.unwrap();
+	// 	let extended_grid = poly_grid
+	// 		.extended_commitments(&public_params, 2)
+	// 		.map_err(|e| format!("Grid extension failed: {e:?}"))
+	// 		.unwrap();
 
-		let mut commitments = Vec::new();
-		for c in extended_grid.iter() {
-			match c.to_bytes() {
-				Ok(bytes) => commitments.extend(bytes),
-				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
-			}
-		}
+	// 	let mut commitments = Vec::new();
+	// 	for c in extended_grid.iter() {
+	// 		match c.to_bytes() {
+	// 			Ok(bytes) => commitments.extend(bytes),
+	// 			Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+	// 		}
+	// 	}
 
-		let commitments_vec =
-			commitments::from_slice(&commitments).expect("Failed to parse commitments");
+	// 	let commitments_vec =
+	// 		commitments::from_slice(&commitments).expect("Failed to parse commitments");
 
-		for col in 0..grid.dims().cols().get() {
-			// Checking only for a single row (first)
-			let row = 0u32;
-			let data = grid
-				.get(row as usize, col as usize)
-				.expect("Missing cell in grid")
-				.to_bytes()
-				.expect("Data serialization failed");
+	// 	for col in 0..grid.dims().cols().get() {
+	// 		// Checking only for a single row (first)
+	// 		let row = 0u32;
+	// 		let data = grid
+	// 			.get(row as usize, col as usize)
+	// 			.expect("Missing cell in grid")
+	// 			.to_bytes()
+	// 			.expect("Data serialization failed");
 
-			let cell = Cell::new(BlockLengthRows(row), BlockLengthColumns(col as u32));
-			let proof = poly_grid
-				.proof(&public_params, &cell)
-				.expect("Proof generation failed")
-				.to_bytes()
-				.expect("Proof serialization failed");
+	// 		let cell = Cell::new(BlockLengthRows(row), BlockLengthColumns(col as u32));
+	// 		let proof = poly_grid
+	// 			.proof(&public_params, &cell)
+	// 			.expect("Proof generation failed")
+	// 			.to_bytes()
+	// 			.expect("Proof serialization failed");
 
-			let cell_proof: [u8; 80] = {
-				let mut buffer = [0u8; 80];
-				buffer[..proof.len()].copy_from_slice(&proof);
-				buffer[proof.len()..].copy_from_slice(&data);
-				buffer
-			};
+	// 		let cell_proof: [u8; 80] = {
+	// 			let mut buffer = [0u8; 80];
+	// 			buffer[..proof.len()].copy_from_slice(&proof);
+	// 			buffer[proof.len()..].copy_from_slice(&data);
+	// 			buffer
+	// 		};
 
-			println!(
-				"Cell index: ({}, {}), Cell bytes (hex): {}",
-				row,
-				col,
-				hex::encode(&cell_proof)
-			);
+	// 		println!(
+	// 			"Cell index: ({}, {}), Cell bytes (hex): {}",
+	// 			row,
+	// 			col,
+	// 			hex::encode(&cell_proof)
+	// 		);
 
-			let position = Position {
-				row,
-				col: col.try_into().expect("Column conversion failed"),
-			};
+	// 		let position = Position {
+	// 			row,
+	// 			col: col.try_into().expect("Column conversion failed"),
+	// 		};
 
-			let cell = SingleCell {
-				position,
-				content: cell_proof,
-			};
+	// 		let cell = SingleCell {
+	// 			position,
+	// 			content: cell_proof,
+	// 		};
 
-			let commitment = commitments_vec[row as usize];
-			let verification = proof::verify_v2(&public_params, grid.dims(), &commitment, &cell);
-			assert!(
-				verification.is_ok(),
-				"Verification failed for cell ({}, {}): {:?}",
-				row,
-				col,
-				verification.err()
-			);
-			assert!(
-				verification.unwrap(),
-				"Verification returned false for cell ({}, {})",
-				row,
-				col
-			);
-		}
-	}
+	// 		let commitment = commitments_vec[row as usize];
+	// 		let verification = proof::verify_v2(&public_params, grid.dims(), &commitment, &cell);
+	// 		assert!(
+	// 			verification.is_ok(),
+	// 			"Verification failed for cell ({}, {}): {:?}",
+	// 			row,
+	// 			col,
+	// 			verification.err()
+	// 		);
+	// 		assert!(
+	// 			verification.unwrap(),
+	// 			"Verification returned false for cell ({}, {})",
+	// 			row,
+	// 			col
+	// 		);
+	// 	}
+	// }
 
 	#[test]
 	fn test_merge_grid() {
@@ -1484,253 +1484,253 @@ mod tests {
 		}
 	}
 
-	#[test]
-	fn test_commitments_consistency() {
-		let tx_size: usize = 50 * 1024 * 32 - 1032;
-		let mut rng = rand::thread_rng();
-		let data: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
-		let app_extrinsics = vec![AppExtrinsic::from(data)];
-		let public_params = couscous::multiproof_params();
-		let start = Instant::now();
-		// Ensure pp used inside par_build_commitments is same as the one used in serial
-		let (_, commitments_bytes, _, _) = par_build_commitments::<CHUNK_SIZE, _>(
-			BlockLengthRows(1024),
-			BlockLengthColumns(1024),
-			&app_extrinsics,
-			Seed::default(),
-			&IgnoreMetrics {},
-		)
-		.unwrap();
-		println!("Time to build parallel commitments: {:?}", start.elapsed());
-		let start = Instant::now();
-		let grid = EvaluationGrid::from_extrinsics(app_extrinsics, 4, 1024, 1024, Seed::default())
-			.expect("Failed to create evaluation grid");
+	// #[test]
+	// fn test_commitments_consistency() {
+	// 	let tx_size: usize = 50 * 1024 * 32 - 1032;
+	// 	let mut rng = rand::thread_rng();
+	// 	let data: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
+	// 	let app_extrinsics = vec![AppExtrinsic::from(data)];
+	// 	let public_params = couscous::multiproof_params();
+	// 	let start = Instant::now();
+	// 	// Ensure pp used inside par_build_commitments is same as the one used in serial
+	// 	let (_, commitments_bytes, _, _) = par_build_commitments::<CHUNK_SIZE, _>(
+	// 		BlockLengthRows(1024),
+	// 		BlockLengthColumns(1024),
+	// 		&app_extrinsics,
+	// 		Seed::default(),
+	// 		&IgnoreMetrics {},
+	// 	)
+	// 	.unwrap();
+	// 	println!("Time to build parallel commitments: {:?}", start.elapsed());
+	// 	let start = Instant::now();
+	// 	let grid = EvaluationGrid::from_extrinsics(app_extrinsics, 4, 1024, 1024, Seed::default())
+	// 		.expect("Failed to create evaluation grid");
 
-		let poly_grid = grid
-			.make_polynomial_grid()
-			.expect("Failed to create polynomial grid");
+	// 	let poly_grid = grid
+	// 		.make_polynomial_grid()
+	// 		.expect("Failed to create polynomial grid");
 
-		let commitments_poly_grid = poly_grid
-			.extended_commitments(&public_params, 2)
-			.expect("Failed to generate commitments");
-		let mut commitments = Vec::new();
-		for c in commitments_poly_grid.iter() {
-			match c.to_bytes() {
-				Ok(bytes) => commitments.extend(bytes),
-				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
-			}
-		}
-		println!(
-			"Time to build polynomial commitments: {:?}",
-			start.elapsed()
-		);
-		// println!("Serial Commitments (hex): {}", hex::encode(&commitments));
-		// println!(
-		// 	"Parallel Commitments (hex): {}",
-		// 	hex::encode(&commitments_bytes)
-		// );
-		assert_eq!(
-			commitments_bytes, commitments,
-			"Commitments generated using serial & parallel methods do not match"
-		);
-	}
+	// 	let commitments_poly_grid = poly_grid
+	// 		.extended_commitments(&public_params, 2)
+	// 		.expect("Failed to generate commitments");
+	// 	let mut commitments = Vec::new();
+	// 	for c in commitments_poly_grid.iter() {
+	// 		match c.to_bytes() {
+	// 			Ok(bytes) => commitments.extend(bytes),
+	// 			Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
+	// 		}
+	// 	}
+	// 	println!(
+	// 		"Time to build polynomial commitments: {:?}",
+	// 		start.elapsed()
+	// 	);
+	// 	// println!("Serial Commitments (hex): {}", hex::encode(&commitments));
+	// 	// println!(
+	// 	// 	"Parallel Commitments (hex): {}",
+	// 	// 	hex::encode(&commitments_bytes)
+	// 	// );
+	// 	assert_eq!(
+	// 		commitments_bytes, commitments,
+	// 		"Commitments generated using serial & parallel methods do not match"
+	// 	);
+	// }
 
-	#[test]
-	#[cfg(not(feature = "maximum-block-size"))]
-	fn test_build_commitments_simple_commitment_check() {
-		let block_rows = BlockLengthRows(256);
-		let block_cols = BlockLengthColumns(256);
-		let original_data = br#"test"#;
-		let hash: Seed = hex!("4c29ae91bb0c61204b6f95d1f3c3a50aa6ac2f29da18d4423e05bbbf81056903");
+	// #[test]
+	// #[cfg(not(feature = "maximum-block-size"))]
+	// fn test_build_commitments_simple_commitment_check() {
+	// 	let block_rows = BlockLengthRows(256);
+	// 	let block_cols = BlockLengthColumns(256);
+	// 	let original_data = br#"test"#;
+	// 	let hash: Seed = hex!("4c29ae91bb0c61204b6f95d1f3c3a50aa6ac2f29da18d4423e05bbbf81056903");
 
-		let (_, commitments, dimensions, _) = par_build_commitments::<TCHUNK_SIZE, _>(
-			block_rows,
-			block_cols,
-			&[AppExtrinsic::from(original_data.to_vec())],
-			hash,
-			&IgnoreMetrics {},
-		)
-		.unwrap();
+	// 	let (_, commitments, dimensions, _) = par_build_commitments::<TCHUNK_SIZE, _>(
+	// 		block_rows,
+	// 		block_cols,
+	// 		&[AppExtrinsic::from(original_data.to_vec())],
+	// 		hash,
+	// 		&IgnoreMetrics {},
+	// 	)
+	// 	.unwrap();
 
-		assert_eq!(
-			dimensions,
-			BlockDimensions::new(BlockLengthRows(1), BlockLengthColumns(4), TCHUNK).unwrap(),
-		);
-		let expected_commitments = hex!("a065fed16fecd58caa55232c60f91efe5e6ad351a3c9707ee279b35936abe74bcb992aaaf8b8b316649d6fe2f0a68802a065fed16fecd58caa55232c60f91efe5e6ad351a3c9707ee279b35936abe74bcb992aaaf8b8b316649d6fe2f0a68802");
-		assert_eq!(commitments, expected_commitments);
-	}
+	// 	assert_eq!(
+	// 		dimensions,
+	// 		BlockDimensions::new(BlockLengthRows(1), BlockLengthColumns(4), TCHUNK).unwrap(),
+	// 	);
+	// 	let expected_commitments = hex!("a065fed16fecd58caa55232c60f91efe5e6ad351a3c9707ee279b35936abe74bcb992aaaf8b8b316649d6fe2f0a68802a065fed16fecd58caa55232c60f91efe5e6ad351a3c9707ee279b35936abe74bcb992aaaf8b8b316649d6fe2f0a68802");
+	// 	assert_eq!(commitments, expected_commitments);
+	// }
 
-	#[test]
-	// newapi wip
-	fn test_reconstruct_app_extrinsics_with_app_id() -> Result<(), Error> {
-		let app_id_1_data = br#""This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns
-get erasure coded to ensure redundancy."#;
+// 	#[test]
+// 	// newapi wip
+// 	fn test_reconstruct_app_extrinsics_with_app_id() -> Result<(), Error> {
+// 		let app_id_1_data = br#""This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns
+// get erasure coded to ensure redundancy."#;
 
-		let app_id_2_data = br#""Let's see how this gets encoded and then reconstructed by sampling only some data."#;
+// 		let app_id_2_data = br#""Let's see how this gets encoded and then reconstructed by sampling only some data."#;
 
-		let hash = Seed::default();
-		let xts = vec![
-			AppExtrinsic::new(AppId(0), vec![0]),
-			AppExtrinsic::new(AppId(1), app_id_1_data.to_vec()),
-			AppExtrinsic::new(AppId(2), app_id_2_data.to_vec()),
-		];
+// 		let hash = Seed::default();
+// 		let xts = vec![
+// 			AppExtrinsic::new(AppId(0), vec![0]),
+// 			AppExtrinsic::new(AppId(1), app_id_1_data.to_vec()),
+// 			AppExtrinsic::new(AppId(2), app_id_2_data.to_vec()),
+// 		];
 
-		let (layout, data, dims) = flatten_and_pad_block::<TCHUNK_SIZE>(
-			BlockLengthRows(32),
-			BlockLengthColumns(4),
-			&xts,
-			hash,
-		)?;
-		let matrix = par_extend_data_matrix(dims, &data[..], &IgnoreMetrics {})?;
+// 		let (layout, data, dims) = flatten_and_pad_block::<TCHUNK_SIZE>(
+// 			BlockLengthRows(32),
+// 			BlockLengthColumns(4),
+// 			&xts,
+// 			hash,
+// 		)?;
+// 		let matrix = par_extend_data_matrix(dims, &data[..], &IgnoreMetrics {})?;
 
-		let cols_1 = sample_cells_from_matrix(&matrix, Some(&[0, 1, 2, 3]));
+// 		let cols_1 = sample_cells_from_matrix(&matrix, Some(&[0, 1, 2, 3]));
 
-		let extended_dims = dims.try_into()?;
+// 		let extended_dims = dims.try_into()?;
 
-		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
-		let res_1 = reconstruct_app_extrinsics(&index, extended_dims, cols_1, AppId(1)).unwrap();
-		assert_eq!(res_1[0], app_id_1_data);
+// 		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
+// 		let res_1 = reconstruct_app_extrinsics(&index, extended_dims, cols_1, AppId(1)).unwrap();
+// 		assert_eq!(res_1[0], app_id_1_data);
 
-		let cols_2 = sample_cells_from_matrix(&matrix, Some(&[0, 2, 3]));
+// 		let cols_2 = sample_cells_from_matrix(&matrix, Some(&[0, 2, 3]));
 
-		let res_2 = reconstruct_app_extrinsics(&index, extended_dims, cols_2, AppId(2)).unwrap();
-		assert_eq!(res_2[0], app_id_2_data);
-		Ok(())
-	}
+// 		let res_2 = reconstruct_app_extrinsics(&index, extended_dims, cols_2, AppId(2)).unwrap();
+// 		assert_eq!(res_2[0], app_id_2_data);
+// 		Ok(())
+// 	}
 
-	#[test]
-	// newapi done
-	fn test_decode_app_extrinsics() -> Result<(), Error> {
-		let app_id_1_data = br#""This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns
-get erasure coded to ensure redundancy."#;
+// 	#[test]
+// 	// newapi done
+// 	fn test_decode_app_extrinsics() -> Result<(), Error> {
+// 		let app_id_1_data = br#""This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns
+// get erasure coded to ensure redundancy."#;
 
-		let app_id_2_data = br#""Let's see how this gets encoded and then reconstructed by sampling only some data."#;
+// 		let app_id_2_data = br#""Let's see how this gets encoded and then reconstructed by sampling only some data."#;
 
-		let data = [vec![0], app_id_1_data.to_vec(), app_id_2_data.to_vec()];
+// 		let data = [vec![0], app_id_1_data.to_vec(), app_id_2_data.to_vec()];
 
-		let hash = Seed::default();
-		let xts = (0..=2)
-			.zip(data)
-			.map(|(app_id, data)| AppExtrinsic::new(AppId(app_id), data))
-			.collect::<Vec<_>>();
+// 		let hash = Seed::default();
+// 		let xts = (0..=2)
+// 			.zip(data)
+// 			.map(|(app_id, data)| AppExtrinsic::new(AppId(app_id), data))
+// 			.collect::<Vec<_>>();
 
-		let (layout, data, dims) = flatten_and_pad_block::<TCHUNK_SIZE>(
-			BlockLengthRows(32),
-			BlockLengthColumns(4),
-			&xts,
-			hash,
-		)?;
-		let matrix = par_extend_data_matrix(dims, &data[..], &IgnoreMetrics {})?;
-		let dimensions: Dimensions = dims.try_into()?;
+// 		let (layout, data, dims) = flatten_and_pad_block::<TCHUNK_SIZE>(
+// 			BlockLengthRows(32),
+// 			BlockLengthColumns(4),
+// 			&xts,
+// 			hash,
+// 		)?;
+// 		let matrix = par_extend_data_matrix(dims, &data[..], &IgnoreMetrics {})?;
+// 		let dimensions: Dimensions = dims.try_into()?;
 
-		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
-		for xt in xts {
-			let positions = app_specific_cells(&index, dimensions, xt.app_id).unwrap();
-			let cells = positions
-				.into_iter()
-				.map(|position| {
-					let col: usize = position.col.into();
-					let row = usize::try_from(position.row).unwrap();
-					let data = matrix.get((row, col)).map(ArkScalar::to_bytes).unwrap();
-					DataCell::new(position, data.unwrap().to_vec())
-				})
-				.collect::<Vec<_>>();
-			let data = &decode_app_extrinsics(&index, dimensions, cells, xt.app_id).unwrap()[0];
-			assert_eq!(data, &xt.data);
-		}
+// 		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
+// 		for xt in xts {
+// 			let positions = app_specific_cells(&index, dimensions, xt.app_id).unwrap();
+// 			let cells = positions
+// 				.into_iter()
+// 				.map(|position| {
+// 					let col: usize = position.col.into();
+// 					let row = usize::try_from(position.row).unwrap();
+// 					let data = matrix.get((row, col)).map(ArkScalar::to_bytes).unwrap();
+// 					DataCell::new(position, data.unwrap().to_vec())
+// 				})
+// 				.collect::<Vec<_>>();
+// 			let data = &decode_app_extrinsics(&index, dimensions, cells, xt.app_id).unwrap()[0];
+// 			assert_eq!(data, &xt.data);
+// 		}
 
-		assert!(matches!(
-			decode_app_extrinsics(&index, dimensions, vec![], AppId(0)),
-			Err(ReconstructionError::MissingCell { .. })
-		));
-		Ok(())
-	}
+// 		assert!(matches!(
+// 			decode_app_extrinsics(&index, dimensions, vec![], AppId(0)),
+// 			Err(ReconstructionError::MissingCell { .. })
+// 		));
+// 		Ok(())
+// 	}
 
-	#[test]
-	// newapi done
-	fn test_extend_mock_data() -> Result<(), Error> {
-		let orig_data = br#"This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns
-get erasure coded to ensure redundancy.
-Let's see how this gets encoded and then reconstructed by sampling only some data."#;
+// 	#[test]
+// 	// newapi done
+// 	fn test_extend_mock_data() -> Result<(), Error> {
+// 		let orig_data = br#"This is mocked test data. It will be formatted as a matrix of BLS scalar cells and then individual columns
+// get erasure coded to ensure redundancy.
+// Let's see how this gets encoded and then reconstructed by sampling only some data."#;
 
-		// The hash is used for seed for padding the block to next power of two value
-		let hash = Seed::default();
-		let (layout, data, dims) = flatten_and_pad_block::<TCHUNK_SIZE>(
-			BlockLengthRows(128),
-			BlockLengthColumns(2),
-			&[AppExtrinsic::from(orig_data.to_vec())],
-			hash,
-		)?;
+// 		// The hash is used for seed for padding the block to next power of two value
+// 		let hash = Seed::default();
+// 		let (layout, data, dims) = flatten_and_pad_block::<TCHUNK_SIZE>(
+// 			BlockLengthRows(128),
+// 			BlockLengthColumns(2),
+// 			&[AppExtrinsic::from(orig_data.to_vec())],
+// 			hash,
+// 		)?;
 
-		let matrix = par_extend_data_matrix(dims, &data[..], &IgnoreMetrics {})?;
+// 		let matrix = par_extend_data_matrix(dims, &data[..], &IgnoreMetrics {})?;
 
-		let cols = sample_cells_from_matrix(&matrix, None);
+// 		let cols = sample_cells_from_matrix(&matrix, None);
 
-		let extended_dims = dims.try_into()?;
-		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
-		let res = reconstruct_extrinsics(&index, extended_dims, cols).unwrap();
-		let s = String::from_utf8_lossy(res[0].1[0].as_slice());
+// 		let extended_dims = dims.try_into()?;
+// 		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
+// 		let res = reconstruct_extrinsics(&index, extended_dims, cols).unwrap();
+// 		let s = String::from_utf8_lossy(res[0].1[0].as_slice());
 
-		assert_eq!(res[0].1[0], orig_data);
-		eprintln!("Decoded: {}", s);
-		Ok(())
-	}
+// 		assert_eq!(res[0].1[0], orig_data);
+// 		eprintln!("Decoded: {}", s);
+// 		Ok(())
+// 	}
 
-	#[test]
-	// newapi done
-	fn test_multiple_extrinsics_for_same_app_id() -> Result<(), Error> {
-		let xt1 = vec![5, 5];
-		let xt2 = vec![6, 6];
-		let xts = [
-			AppExtrinsic::new(AppId(1), xt1.clone()),
-			AppExtrinsic::new(AppId(1), xt2.clone()),
-		];
-		// The hash is used for seed for padding the block to next power of two value
-		let hash = Seed::default();
-		let (layout, data, dims) = flatten_and_pad_block::<TCHUNK_SIZE>(
-			BlockLengthRows(128),
-			BlockLengthColumns(2),
-			&xts,
-			hash,
-		)?;
+// 	#[test]
+// 	// newapi done
+// 	fn test_multiple_extrinsics_for_same_app_id() -> Result<(), Error> {
+// 		let xt1 = vec![5, 5];
+// 		let xt2 = vec![6, 6];
+// 		let xts = [
+// 			AppExtrinsic::new(AppId(1), xt1.clone()),
+// 			AppExtrinsic::new(AppId(1), xt2.clone()),
+// 		];
+// 		// The hash is used for seed for padding the block to next power of two value
+// 		let hash = Seed::default();
+// 		let (layout, data, dims) = flatten_and_pad_block::<TCHUNK_SIZE>(
+// 			BlockLengthRows(128),
+// 			BlockLengthColumns(2),
+// 			&xts,
+// 			hash,
+// 		)?;
 
-		let matrix = par_extend_data_matrix(dims, &data[..], &IgnoreMetrics {})?;
+// 		let matrix = par_extend_data_matrix(dims, &data[..], &IgnoreMetrics {})?;
 
-		let cols = sample_cells_from_matrix(&matrix, None);
-		let extended_dims = dims.try_into().unwrap();
+// 		let cols = sample_cells_from_matrix(&matrix, None);
+// 		let extended_dims = dims.try_into().unwrap();
 
-		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
-		let res = reconstruct_extrinsics(&index, extended_dims, cols).unwrap();
+// 		let index = DataLookupV3::from_id_and_len_iter(layout.into_iter()).unwrap();
+// 		let res = reconstruct_extrinsics(&index, extended_dims, cols).unwrap();
 
-		assert_eq!(res[0].1[0], xt1);
-		assert_eq!(res[0].1[1], xt2);
-		Ok(())
-	}
+// 		assert_eq!(res[0].1[0], xt1);
+// 		assert_eq!(res[0].1[1], xt2);
+// 		Ok(())
+// 	}
 
-	#[test]
-	// newapi ignore
-	fn test_extrinsics_grouping() {
-		let xt1 = vec![5, 5];
-		let xt2 = vec![6, 6];
-		let xt3 = vec![7];
-		let xt4 = vec![];
-		let xts = [
-			AppExtrinsic::new(AppId(1), xt1.clone()),
-			AppExtrinsic::new(AppId(1), xt2.clone()),
-			AppExtrinsic::new(AppId(2), xt3.clone()),
-			AppExtrinsic::new(AppId(3), xt4.clone()),
-		];
+// 	#[test]
+// 	// newapi ignore
+// 	fn test_extrinsics_grouping() {
+// 		let xt1 = vec![5, 5];
+// 		let xt2 = vec![6, 6];
+// 		let xt3 = vec![7];
+// 		let xt4 = vec![];
+// 		let xts = [
+// 			AppExtrinsic::new(AppId(1), xt1.clone()),
+// 			AppExtrinsic::new(AppId(1), xt2.clone()),
+// 			AppExtrinsic::new(AppId(2), xt3.clone()),
+// 			AppExtrinsic::new(AppId(3), xt4.clone()),
+// 		];
 
-		let expected = vec![
-			(AppId(1), vec![xt1, xt2]),
-			(AppId(2), vec![xt3]),
-			(AppId(3), vec![xt4]),
-		];
-		let rez = app_extrinsics_group_by_app_id(&xts);
-		println!("{:?}", rez);
+// 		let expected = vec![
+// 			(AppId(1), vec![xt1, xt2]),
+// 			(AppId(2), vec![xt3]),
+// 			(AppId(3), vec![xt4]),
+// 		];
+// 		let rez = app_extrinsics_group_by_app_id(&xts);
+// 		println!("{:?}", rez);
 
-		assert_eq!(rez, expected);
-	}
+// 		assert_eq!(rez, expected);
+// 	}
 
 	fn build_extrinsics(lens: &[usize]) -> Vec<Vec<u8>> {
 		lens.iter()
@@ -1757,43 +1757,43 @@ Let's see how this gets encoded and then reconstructed by sampling only some dat
 		u32::try_from(sum).unwrap_or(u32::MAX)
 	}
 
-	#[test]
-	// newapi ignore
-	fn par_build_commitments_column_wise_constant_row() {
-		// This test will fail once we switch to row-wise orientation.
-		// We should move `should_panic` to next test, until constant line issue is fixed.
-		// After the fix, should_panic should be removed.
-		let hash = Seed::default();
-		let data = (0..3).flat_map(|i| vec![i; 31]).collect::<Vec<_>>();
-		let xts = (0..4)
-			.map(|app_id| AppExtrinsic::new(AppId(app_id), data.clone()))
-			.collect::<Vec<_>>();
-		par_build_commitments::<TCHUNK_SIZE, _>(
-			BlockLengthRows(4),
-			BlockLengthColumns(4),
-			&xts,
-			hash,
-			&IgnoreMetrics {},
-		)
-		.unwrap();
-	}
+	// #[test]
+	// // newapi ignore
+	// fn par_build_commitments_column_wise_constant_row() {
+	// 	// This test will fail once we switch to row-wise orientation.
+	// 	// We should move `should_panic` to next test, until constant line issue is fixed.
+	// 	// After the fix, should_panic should be removed.
+	// 	let hash = Seed::default();
+	// 	let data = (0..3).flat_map(|i| vec![i; 31]).collect::<Vec<_>>();
+	// 	let xts = (0..4)
+	// 		.map(|app_id| AppExtrinsic::new(AppId(app_id), data.clone()))
+	// 		.collect::<Vec<_>>();
+	// 	par_build_commitments::<TCHUNK_SIZE, _>(
+	// 		BlockLengthRows(4),
+	// 		BlockLengthColumns(4),
+	// 		&xts,
+	// 		hash,
+	// 		&IgnoreMetrics {},
+	// 	)
+	// 	.unwrap();
+	// }
 
-	#[test]
-	// newapi done
-	fn par_build_commitments_row_wise_constant_row() {
-		// Due to scale encoding, first line is not constant.
-		// We will use second line to ensure constant row.
-		let hash = Seed::default();
-		let xts = vec![AppExtrinsic::from(vec![0u8; 31 * 8])];
-		par_build_commitments::<TCHUNK_SIZE, _>(
-			BlockLengthRows(4),
-			BlockLengthColumns(4),
-			&xts,
-			hash,
-			&IgnoreMetrics {},
-		)
-		.unwrap();
-	}
+	// #[test]
+	// // newapi done
+	// fn par_build_commitments_row_wise_constant_row() {
+	// 	// Due to scale encoding, first line is not constant.
+	// 	// We will use second line to ensure constant row.
+	// 	let hash = Seed::default();
+	// 	let xts = vec![AppExtrinsic::from(vec![0u8; 31 * 8])];
+	// 	par_build_commitments::<TCHUNK_SIZE, _>(
+	// 		BlockLengthRows(4),
+	// 		BlockLengthColumns(4),
+	// 		&xts,
+	// 		hash,
+	// 		&IgnoreMetrics {},
+	// 	)
+	// 	.unwrap();
+	// }
 	#[test_case( ([1,1,1,1]).to_vec(); "All values are non-zero but same")]
 	#[test_case( ([0,0,0,0]).to_vec(); "All values are zero")]
 	#[test_case( ([0,5,2,1]).to_vec(); "All values are different")]

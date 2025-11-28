@@ -1,6 +1,6 @@
 use super::BoundedData;
 
-use codec::{Decode, Encode};
+use codec::{Decode, DecodeWithMemTracking, Encode};
 use derive_more::{Constructor, From};
 use primitive_types::H256;
 use scale_info::TypeInfo;
@@ -11,7 +11,7 @@ use ethabi_decode::{encode, Token, U256};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Encode, Decode, PartialEq, Eq, TypeInfo)]
+#[derive(Debug, Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub enum MessageType {
@@ -20,7 +20,7 @@ pub enum MessageType {
 }
 
 /// Possible types of Messages allowed by Avail to bridge to other chains.
-#[derive(Debug, Clone, Encode, Decode, PartialEq, Eq, From, TypeInfo)]
+#[derive(Debug, Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, Eq, From, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub enum Message {
@@ -56,7 +56,7 @@ impl Message {
 }
 
 /// Message type used to bridge between Avail & other chains
-#[derive(Debug, Clone, Encode, Decode, PartialEq, Eq, Constructor, TypeInfo)]
+#[derive(Debug, Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, Eq, Constructor, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct AddressedMessage {

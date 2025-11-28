@@ -1,5 +1,5 @@
 use ark_bls12_381::Bls12_381;
-use avail_core::{AppExtrinsic, AppId};
+use avail_core::{AppId};
 use kate_recovery::{data::DataCell, matrix::Position, testnet};
 use once_cell::sync::Lazy;
 use poly_multiproof::{ark_bls12_381, msm::blst::BlstMSMEngine};
@@ -10,28 +10,28 @@ use rand_chacha::ChaChaRng;
 
 use crate::{gridgen::core::EvaluationGrid, ArkScalar};
 
-mod commitments;
-mod formatting;
-mod reconstruction;
+// mod commitments;
+// mod formatting;
+// mod reconstruction;
 
 pub static PMP: Lazy<M1NoPrecomp<Bls12_381, BlstMSMEngine>> =
 	Lazy::new(|| testnet::multiproof_params(256, 256));
 
-fn app_extrinsic_strategy() -> impl Strategy<Value = AppExtrinsic> {
-	(
-		any::<u32>(),
-		any_with::<Vec<u8>>(size_range(1..2048).lift()),
-	)
-		.prop_map(|(app_id, data)| AppExtrinsic::new(AppId(app_id), data))
-}
+// fn app_extrinsic_strategy() -> impl Strategy<Value = AppExtrinsic> {
+// 	(
+// 		any::<u32>(),
+// 		any_with::<Vec<u8>>(size_range(1..2048).lift()),
+// 	)
+// 		.prop_map(|(app_id, data)| AppExtrinsic::new(AppId(app_id), data))
+// }
 
-fn app_extrinsics_strategy() -> impl Strategy<Value = Vec<AppExtrinsic>> {
-	collection::vec(app_extrinsic_strategy(), size_range(1..16)).prop_map(|xts| {
-		let mut new_xts = xts;
-		new_xts.sort_by(|a1, a2| a1.app_id.cmp(&a2.app_id));
-		new_xts
-	})
-}
+// fn app_extrinsics_strategy() -> impl Strategy<Value = Vec<AppExtrinsic>> {
+// 	collection::vec(app_extrinsic_strategy(), size_range(1..16)).prop_map(|xts| {
+// 		let mut new_xts = xts;
+// 		new_xts.sort_by(|a1, a2| a1.app_id.cmp(&a2.app_id));
+// 		new_xts
+// 	})
+// }
 
 fn sample_unique(rng: &mut impl Rng, n_samples: usize, n: usize) -> Vec<usize> {
 	let mut sampled = vec![];

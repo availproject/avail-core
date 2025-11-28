@@ -7,7 +7,7 @@ use crate::pmp::{
 	Pairing,
 };
 use avail_core::{
-	app_extrinsic::AppExtrinsic, constants::kate::DATA_CHUNK_SIZE, ensure, AppId,
+	constants::kate::DATA_CHUNK_SIZE, ensure, AppId,
 	V3DataLookup::DataLookup,
 };
 use codec::Encode;
@@ -77,62 +77,62 @@ pub enum AppRowError {
 
 impl EvaluationGrid {
 	/// From the app extrinsics, create a data grid of Scalars
-	pub fn from_extrinsics(
-		extrinsics: Vec<AppExtrinsic>,
-		min_width: usize,
-		max_width: usize,
-		max_height: usize,
-		rng_seed: Seed,
-	) -> Result<Self, Error> {
-		// Group extrinsics by app id, also sorted by app id.
-		// Using a BTreeMap here will still iter in sorted order. Sweet!
-		let grouped = extrinsics.iter().fold::<BTreeMap<AppId, Vec<&[u8]>>, _>(
-			BTreeMap::default(),
-			|mut acc, e| {
-				acc.entry(e.app_id).or_default().push(e.data.as_slice());
-				acc
-			},
-		);
+	// pub fn from_extrinsics(
+	// 	extrinsics: Vec<AppExtrinsic>,
+	// 	min_width: usize,
+	// 	max_width: usize,
+	// 	max_height: usize,
+	// 	rng_seed: Seed,
+	// ) -> Result<Self, Error> {
+	// 	// Group extrinsics by app id, also sorted by app id.
+	// 	// Using a BTreeMap here will still iter in sorted order. Sweet!
+	// 	let grouped = extrinsics.iter().fold::<BTreeMap<AppId, Vec<&[u8]>>, _>(
+	// 		BTreeMap::default(),
+	// 		|mut acc, e| {
+	// 			acc.entry(e.app_id).or_default().push(e.data.as_slice());
+	// 			acc
+	// 		},
+	// 	);
 
-		// Convert each group of extrinsics into scalars
-		let scalars_by_app = grouped
-			.into_iter()
-			.map(|(id, datas)| {
-				let enc = datas.encode();
-				enc.chunks(DATA_CHUNK_SIZE)
-					.map(pad_to_bls_scalar)
-					.collect::<Result<Vec<_>, _>>()
-					.map(|scalars| (id, scalars))
-			})
-			.collect::<Result<Vec<_>, _>>()?;
+	// 	// Convert each group of extrinsics into scalars
+	// 	let scalars_by_app = grouped
+	// 		.into_iter()
+	// 		.map(|(id, datas)| {
+	// 			let enc = datas.encode();
+	// 			enc.chunks(DATA_CHUNK_SIZE)
+	// 				.map(pad_to_bls_scalar)
+	// 				.collect::<Result<Vec<_>, _>>()
+	// 				.map(|scalars| (id, scalars))
+	// 		})
+	// 		.collect::<Result<Vec<_>, _>>()?;
 
-		let len_by_app = scalars_by_app
-			.iter()
-			.map(|(app, scalars)| (*app, scalars.len()));
+	// 	let len_by_app = scalars_by_app
+	// 		.iter()
+	// 		.map(|(app, scalars)| (*app, scalars.len()));
 
-		// make the index of app info
-		let lookup = DataLookup::from_id_and_len_iter(len_by_app)?;
-		let grid_size = usize::try_from(lookup.len())?;
-		let (rows, cols): (usize, usize) =
-			get_block_dims(grid_size, min_width, max_width, max_height)?.into();
+	// 	// make the index of app info
+	// 	let lookup = DataLookup::from_id_and_len_iter(len_by_app)?;
+	// 	let grid_size = usize::try_from(lookup.len())?;
+	// 	let (rows, cols): (usize, usize) =
+	// 		get_block_dims(grid_size, min_width, max_width, max_height)?.into();
 
-		let mut rng = ChaChaRng::from_seed(rng_seed);
-		// Flatten the grid
-		let grid = scalars_by_app
-			.into_iter()
-			.flat_map(|(_, scalars)| scalars)
-			.chain(iter::repeat(0).map(|_| {
-				let rnd_values: [u8; SCALAR_SIZE - 1] = rng.gen();
-				pad_to_bls_scalar(rnd_values).expect("less than SCALAR_SIZE values, can't fail")
-			}));
+	// 	let mut rng = ChaChaRng::from_seed(rng_seed);
+	// 	// Flatten the grid
+	// 	let grid = scalars_by_app
+	// 		.into_iter()
+	// 		.flat_map(|(_, scalars)| scalars)
+	// 		.chain(iter::repeat(0).map(|_| {
+	// 			let rnd_values: [u8; SCALAR_SIZE - 1] = rng.gen();
+	// 			pad_to_bls_scalar(rnd_values).expect("less than SCALAR_SIZE values, can't fail")
+	// 		}));
 
-		let row_major_evals = DMatrix::from_row_iterator(rows, cols, grid);
+	// 	let row_major_evals = DMatrix::from_row_iterator(rows, cols, grid);
 
-		Ok(EvaluationGrid {
-			lookup,
-			evals: row_major_evals,
-		})
-	}
+	// 	Ok(EvaluationGrid {
+	// 		lookup,
+	// 		evals: row_major_evals,
+	// 	})
+	// }
 
 	/// From the data, create a data grid of Scalars
 	/// The number of rows in this grid is not guaranteed to be a power of 2.
