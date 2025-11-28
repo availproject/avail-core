@@ -15,7 +15,7 @@ pub use encoding::{BytesEncoder, PackedMLE};
 pub use error::FriBiniusError;
 #[cfg(feature = "testing")]
 pub use sampling::reconstruct_codeword_naive;
-pub use transcript::{VerifierTr, transcript_from_bytes, transcript_to_bytes};
+pub use transcript::{transcript_from_bytes, transcript_to_bytes, VerifierTr};
 
 #[cfg(test)]
 pub mod e2e_helpers {

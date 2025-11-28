@@ -4,18 +4,18 @@ use crate::transcript::{Challenger, VerifierTr};
 
 use binius_field::{ExtensionField, Field, PackedExtension, PackedField};
 use binius_math::{
-	BinarySubspace, FieldBuffer, ReedSolomonCode,
 	inner_product::inner_product,
 	multilinear::eq::eq_ind_partial_eval,
 	ntt::{
-		NeighborsLastMultiThread,
 		domain_context::{self, GenericPreExpanded},
+		NeighborsLastMultiThread,
 	},
+	BinarySubspace, FieldBuffer, ReedSolomonCode,
 };
 use binius_prover::{
 	fri::CommitOutput,
 	hash::parallel_compression::ParallelCompressionAdaptor,
-	merkle_tree::{MerkleTreeProver, prover::BinaryMerkleTreeProver},
+	merkle_tree::{prover::BinaryMerkleTreeProver, MerkleTreeProver},
 	pcs::OneBitPCSProver,
 };
 use binius_transcript::ProverTranscript;
@@ -28,9 +28,9 @@ use binius_verifier::{
 };
 
 #[cfg(test)]
-use rand::{CryptoRng, RngCore};
-#[cfg(test)]
 use binius_field::Random;
+#[cfg(test)]
+use rand::{CryptoRng, RngCore};
 
 // Concrete merkle prover type we’ll use everywhere.
 pub type DefaultMerkleProver =
@@ -118,7 +118,7 @@ impl FriBiniusPCS {
 		Ok(FriContext { fri_params, ntt })
 	}
 
-    #[cfg(test)]
+	#[cfg(test)]
 	pub fn sample_evaluation_point<R: RngCore + CryptoRng>(&self, rng: &mut R) -> Vec<B128> {
 		let mut point = Vec::with_capacity(self.cfg.n_vars);
 		for _ in 0..self.cfg.n_vars {
