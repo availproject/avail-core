@@ -5,7 +5,7 @@ use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "runtime")]
-use sp_debug_derive::RuntimeDebug;
+use {sp_debug_derive::RuntimeDebug, sp_runtime_interface::pass_by::PassByCodec};
 
 pub mod fri_v1;
 // basically only supported kzg header currently
@@ -120,7 +120,7 @@ pub mod fri_header {
 /// header extension: *which PCS + which version inside*.
 #[derive(PartialEq, Eq, Clone, Encode, Decode, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
+#[cfg_attr(feature = "runtime", derive(PassByCodec, RuntimeDebug))]
 #[cfg_attr(not(feature = "runtime"), derive(Debug))]
 pub enum HeaderExtension {
 	Kzg(kzg::KzgHeader),
