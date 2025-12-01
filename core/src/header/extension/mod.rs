@@ -1,4 +1,3 @@
-use crate::{DataLookup, HeaderVersion};
 use codec::{Decode, Encode};
 use primitive_types::H256;
 use scale_info::TypeInfo;
@@ -6,97 +5,163 @@ use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "runtime")]
-use {sp_debug_derive::RuntimeDebug, sp_runtime_interface::pass_by::PassByCodec};
+use sp_debug_derive::RuntimeDebug;
 
-pub mod v3;
+pub mod fri_v1;
+// basically only supported kzg header currently
 pub mod v4;
 
-/// Header extension data.
-#[derive(PartialEq, Eq, Clone, Encode, Decode, TypeInfo)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "runtime", derive(PassByCodec, RuntimeDebug))]
-#[repr(u8)]
-pub enum HeaderExtension {
-	V3(v3::HeaderExtension) = 2,
-	V4(v4::HeaderExtension) = 3,
+pub mod kzg {
+	use super::*;
+
+	/// Versioning for KZG header formats.
+	#[derive(Clone, Copy, PartialEq, Eq, Encode, Decode, TypeInfo)]
+	#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+	pub enum KzgHeaderVersion {
+		V4,
+	}
+
+	#[derive(PartialEq, Eq, Clone, Encode, Decode, TypeInfo)]
+	#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+	#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
+	#[cfg_attr(not(feature = "runtime"), derive(Debug))]
+	pub enum KzgHeader {
+		V4(v4::HeaderExtension),
+	}
+
+	impl KzgHeader {
+		pub fn data_root(&self) -> H256 {
+			match self {
+				KzgHeader::V4(ext) => ext.data_root(),
+			}
+		}
+
+		pub fn version(&self) -> KzgHeaderVersion {
+			match self {
+				KzgHeader::V4(_) => KzgHeaderVersion::V4,
+			}
+		}
+
+		pub fn get_empty_header(data_root: H256, version: KzgHeaderVersion) -> Self {
+			match version {
+				KzgHeaderVersion::V4 => v4::HeaderExtension::get_empty_header(data_root).into(),
+			}
+		}
+
+		pub fn get_faulty_header(data_root: H256, version: KzgHeaderVersion) -> Self {
+			match version {
+				KzgHeaderVersion::V4 => v4::HeaderExtension::get_faulty_header(data_root).into(),
+			}
+		}
+	}
+
+	impl From<v4::HeaderExtension> for KzgHeader {
+		#[inline]
+		fn from(ext: v4::HeaderExtension) -> Self {
+			KzgHeader::V4(ext)
+		}
+	}
 }
 
-/// It forwards the call to the inner version of the header. Any invalid version will return the
-/// default value or execute an empty block.
-macro_rules! forward_to_version {
-	($self:ident, $function:ident) => {{
-		match $self {
-			HeaderExtension::V3(ext) => ext.$function(),
-			HeaderExtension::V4(ext) => ext.$function(),
-		}
-	}};
+pub mod fri_header {
+	use super::*;
 
-	($self:ident, $function:ident, $arg:expr) => {{
-		match $self {
-			HeaderExtension::V3(ext) => ext.$function($arg),
-			HeaderExtension::V4(ext) => ext.$function($arg),
+	/// Versioning for Fri/Binius header formats.
+	#[derive(Clone, Copy, PartialEq, Eq, Encode, Decode, TypeInfo)]
+	#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+	pub enum FriHeaderVersion {
+		V1,
+	}
+
+	#[derive(PartialEq, Eq, Clone, Encode, Decode, TypeInfo)]
+	#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+	#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
+	#[cfg_attr(not(feature = "runtime"), derive(Debug))]
+	pub enum FriHeader {
+		V1(fri_v1::HeaderExtension),
+	}
+
+	impl FriHeader {
+		pub fn data_root(&self) -> H256 {
+			match self {
+				FriHeader::V1(ext) => ext.data_root(),
+			}
 		}
-	}};
+
+		pub fn version(&self) -> FriHeaderVersion {
+			match self {
+				FriHeader::V1(_) => FriHeaderVersion::V1,
+			}
+		}
+
+		pub fn get_empty_header(data_root: H256, version: FriHeaderVersion) -> Self {
+			match version {
+				FriHeaderVersion::V1 => fri_v1::HeaderExtension::get_empty_header(data_root).into(),
+			}
+		}
+
+		pub fn get_faulty_header(data_root: H256, version: FriHeaderVersion) -> Self {
+			match version {
+				FriHeaderVersion::V1 => {
+					fri_v1::HeaderExtension::get_faulty_header(data_root).into()
+				},
+			}
+		}
+	}
+
+	impl From<fri_v1::HeaderExtension> for FriHeader {
+		#[inline]
+		fn from(ext: fri_v1::HeaderExtension) -> Self {
+			FriHeader::V1(ext)
+		}
+	}
+}
+
+/// header extension: *which PCS + which version inside*.
+#[derive(PartialEq, Eq, Clone, Encode, Decode, TypeInfo)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
+#[cfg_attr(not(feature = "runtime"), derive(Debug))]
+pub enum HeaderExtension {
+	Kzg(kzg::KzgHeader),
+	Fri(fri_header::FriHeader),
 }
 
 impl HeaderExtension {
 	pub fn data_root(&self) -> H256 {
-		forward_to_version!(self, data_root)
-	}
-
-	pub fn app_lookup(&self) -> DataLookup {
 		match self {
-			HeaderExtension::V3(ext) => DataLookup::from(&ext.app_lookup),
-			HeaderExtension::V4(ext) => ext.app_lookup.clone(),
+			HeaderExtension::Kzg(h) => h.data_root(),
+			HeaderExtension::Fri(h) => h.data_root(),
 		}
 	}
 
-	pub fn rows(&self) -> u16 {
-		forward_to_version!(self, rows)
+	pub fn is_kzg(&self) -> bool {
+		matches!(self, HeaderExtension::Kzg(_))
 	}
 
-	pub fn cols(&self) -> u16 {
-		forward_to_version!(self, cols)
+	pub fn is_fri(&self) -> bool {
+		matches!(self, HeaderExtension::Fri(_))
 	}
 
-	pub fn get_empty_header(data_root: H256, version: HeaderVersion) -> HeaderExtension {
-		match version {
-			HeaderVersion::V3 => v3::HeaderExtension::get_empty_header(data_root).into(),
-			HeaderVersion::V4 => v4::HeaderExtension::get_empty_header(data_root).into(),
-		}
+	pub fn get_empty_kzg(data_root: H256, version: kzg::KzgHeaderVersion) -> Self {
+		HeaderExtension::Kzg(kzg::KzgHeader::get_empty_header(data_root, version))
 	}
 
-	pub fn get_faulty_header(data_root: H256, version: HeaderVersion) -> HeaderExtension {
-		match version {
-			HeaderVersion::V3 => v3::HeaderExtension::get_faulty_header(data_root).into(),
-			HeaderVersion::V4 => v4::HeaderExtension::get_faulty_header(data_root).into(),
-		}
+	pub fn get_empty_fri(data_root: H256, version: fri_header::FriHeaderVersion) -> Self {
+		HeaderExtension::Fri(fri_header::FriHeader::get_empty_header(data_root, version))
 	}
 
-	pub fn get_header_version(&self) -> HeaderVersion {
-		match self {
-			HeaderExtension::V3(_) => HeaderVersion::V3,
-			HeaderExtension::V4(_) => HeaderVersion::V4,
-		}
+	pub fn get_faulty_kzg(data_root: H256, version: kzg::KzgHeaderVersion) -> Self {
+		HeaderExtension::Kzg(kzg::KzgHeader::get_faulty_header(data_root, version))
+	}
+
+	pub fn get_faulty_fri(data_root: H256, version: fri_header::FriHeaderVersion) -> Self {
+		HeaderExtension::Fri(fri_header::FriHeader::get_faulty_header(data_root, version))
 	}
 }
 
 impl Default for HeaderExtension {
 	fn default() -> Self {
-		v3::HeaderExtension::default().into()
-	}
-}
-
-impl From<v3::HeaderExtension> for HeaderExtension {
-	#[inline]
-	fn from(ext: v3::HeaderExtension) -> Self {
-		Self::V3(ext)
-	}
-}
-
-impl From<v4::HeaderExtension> for HeaderExtension {
-	#[inline]
-	fn from(ext: v4::HeaderExtension) -> Self {
-		Self::V4(ext)
+		HeaderExtension::Fri(fri_header::FriHeader::V1(fri_v1::HeaderExtension::default()))
 	}
 }

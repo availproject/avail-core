@@ -572,7 +572,6 @@ mod tests {
 		}
 	}
 
-
 	type Ex = AppUncheckedExtrinsic<TestAccountId, TestCall, TestSig, TestExtra>;
 	type CEx = CheckedExtrinsic<TestAccountId, TestCall, TestExtra>;
 
