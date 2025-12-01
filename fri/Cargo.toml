@@ -15,20 +15,20 @@ log = { workspace = true, optional = true }
 rayon = { version = "1.10", optional = true }
 
 [dev-dependencies]
+avail-core = { path = "../core", default-features = false, features = ["runtime"]}
+codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive", "max-encoded-len"] }
 rand = { version = "0.9.1", default-features = false, features = ["std", "std_rng"] }
+primitive-types = { workspace = true }
 
 [features]
-default = ["std"]
+default = [ "std" ]
 
 # This crate is node-side only currently
-std = [
-    "avail-core/std",
-    "log",
-]
+std = [ "avail-core/std", "log" ]
 
 # Enable rayon-based parallel code paths
-parallel = ["std", "rayon"]
+parallel = [ "rayon", "std" ]
 
 testing = []
-serde = ["avail-core/serde"]
-runtime = ["avail-core/runtime"]
+serde = [ "avail-core/serde" ]
+runtime = [ "avail-core/runtime" ]

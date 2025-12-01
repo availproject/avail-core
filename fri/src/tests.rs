@@ -1,9 +1,18 @@
 #[cfg(test)]
 mod e2e_tests {
 	use crate::core::FriCommitOutput;
+	pub use crate::encoding::BytesEncoder;
 	use crate::{e2e_helpers::*, FriBiniusPCS, FriCommitment, FriContext};
 	use crate::{FriBiniusError, FriParamsConfig};
+	use avail_core::header::extension::{
+		fri_header::FriHeader,
+		fri_v1::{FriBlobCommitment, HeaderExtension as FriV1HeaderExtension},
+		HeaderExtension as CoreHeaderExtension,
+	};
+	use avail_core::FriParamsVersion;
 	use binius_verifier::config::B128;
+	use codec::{Decode, Encode};
+	use primitive_types::H256;
 	use rand::{rngs::StdRng, Rng, SeedableRng};
 
 	fn patterned_data(size: usize) -> Vec<u8> {
@@ -103,6 +112,18 @@ mod e2e_tests {
 		}
 
 		Ok(())
+	}
+
+	#[test]
+	fn fri_params_version_zero_maps_to_expected_config() {
+		let v = FriParamsVersion(0);
+		let n_vars = 17;
+		let cfg = v.to_config(n_vars);
+
+		assert_eq!(cfg.log_inv_rate, 1);
+		assert_eq!(cfg.num_test_queries, 128);
+		assert_eq!(cfg.log_num_shares, 80);
+		assert_eq!(cfg.n_vars, n_vars);
 	}
 
 	#[test]
@@ -256,5 +277,88 @@ mod e2e_tests {
 		}
 
 		Ok(())
+	}
+
+	#[test]
+	fn fri_header_drives_fri_pcs_end_to_end() {
+		let blob_size = 1024 * 1024; // 1 MiB
+		let blob_bytes: Vec<u8> = (0..blob_size).map(|i| (i % 251) as u8).collect();
+
+		let packed = BytesEncoder::<B128>::new()
+			.bytes_to_packed_mle(&blob_bytes)
+			.expect("bytes_to_packed_mle must succeed");
+		let n_vars = packed.total_n_vars;
+
+		let params_version = FriParamsVersion(0);
+		let cfg = params_version.to_config(n_vars);
+
+		let pcs = FriBiniusPCS::new(cfg);
+		let ctx = pcs
+			.initialize_fri_context(&packed.packed_mle)
+			.expect("initialize_fri_context must succeed");
+
+		let commit_output = pcs
+			.commit(&packed.packed_mle, &ctx)
+			.expect("commit must succeed");
+
+		// Turn Merkle root into H256 for header storage
+		let commitment_bytes: [u8; 32] = commit_output
+			.commitment
+			.as_slice()
+			.try_into()
+			.expect("commitment should be 32 bytes");
+		let real_commitment = H256(commitment_bytes);
+
+		// In the real node, data_root would be merkle root of raw blobs;
+		// here we just fake one for testing.
+		let data_root = H256::repeat_byte(0xAB);
+
+		let blob_meta = FriBlobCommitment {
+			size_bytes: blob_size as u64,
+			commitment: real_commitment,
+		};
+
+		let fri_v1_header = FriV1HeaderExtension {
+			blobs: vec![blob_meta.clone()],
+			data_root,
+			params_version,
+		};
+
+		// Wrap in versioned FriHeader + top-level HeaderExtension
+		let core_header = CoreHeaderExtension::Fri(FriHeader::V1(fri_v1_header.clone()));
+
+		let encoded = core_header.encode();
+		let decoded =
+			CoreHeaderExtension::decode(&mut &encoded[..]).expect("SCALE decode must succeed");
+
+		assert!(decoded.is_fri());
+		assert_eq!(decoded.data_root(), data_root);
+
+		// Extract inner Fri v1 header again
+		let inner = match decoded {
+			CoreHeaderExtension::Fri(FriHeader::V1(h)) => h,
+			_ => panic!("expected Fri V1 header"),
+		};
+
+		assert_eq!(inner.params_version.0, 0);
+		assert_eq!(inner.blobs.len(), 1);
+		assert_eq!(inner.blobs[0].size_bytes, blob_size as u64);
+		assert_eq!(inner.blobs[0].commitment, real_commitment);
+
+		let mut rng = StdRng::from_seed([7u8; 32]);
+		let eval_point = pcs.sample_evaluation_point(&mut rng);
+
+		let proof = pcs
+			.prove(
+				&packed.packed_values,
+				&packed.packed_mle,
+				&ctx,
+				&commit_output,
+				&eval_point,
+			)
+			.expect("prove must succeed");
+
+		pcs.verify(&proof, &ctx)
+			.expect("Fri evaluation proof must verify");
 	}
 }

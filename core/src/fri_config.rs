@@ -23,7 +23,7 @@ pub struct FriParamsConfig {
 #[derive(Clone, Copy, PartialEq, Eq, Encode, Decode, Default, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
-pub struct FriParamsVersion(u8);
+pub struct FriParamsVersion(pub u8);
 
 impl FriParamsVersion {
 	/// Map this version to a FriParamsConfig, given `n_vars`
