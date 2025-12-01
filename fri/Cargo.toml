@@ -10,8 +10,9 @@ binius-math = { workspace = true }
 binius-field = { workspace = true }
 binius-transcript = { workspace = true }
 
-rayon = { version = "1.10", optional = true }
+avail-core = { path = "../core", default-features = false }
 log = { workspace = true, optional = true }
+rayon = { version = "1.10", optional = true }
 
 [dev-dependencies]
 rand = { version = "0.9.1", default-features = false, features = ["std", "std_rng"] }
@@ -21,6 +22,7 @@ default = ["std"]
 
 # This crate is node-side only currently
 std = [
+    "avail-core/std",
     "log",
 ]
 
@@ -28,3 +30,5 @@ std = [
 parallel = ["std", "rayon"]
 
 testing = []
+serde = ["avail-core/serde"]
+runtime = ["avail-core/runtime"]

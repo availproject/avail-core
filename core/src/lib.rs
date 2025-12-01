@@ -45,6 +45,9 @@ pub mod traits;
 pub mod keccak256;
 pub use keccak256::Keccak256;
 
+pub mod fri_config;
+pub use fri_config::*;
+
 pub mod data_proof;
 pub use data_proof::DataProof;
 

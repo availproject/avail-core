@@ -1,4 +1,3 @@
-mod config;
 mod core;
 mod encoding;
 mod error;
@@ -9,7 +8,7 @@ mod transcript;
 #[cfg(test)]
 mod tests;
 
-pub use config::FriParamsConfig;
+pub use avail_core::FriParamsConfig;
 pub use core::{FriBiniusPCS, FriCommitment, FriContext, FriProof};
 pub use encoding::{BytesEncoder, PackedMLE};
 pub use error::FriBiniusError;

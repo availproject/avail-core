@@ -1,3 +1,4 @@
+use crate::FriParamsVersion;
 use codec::{Decode, Encode};
 use primitive_types::H256;
 use scale_info::TypeInfo;
@@ -7,13 +8,6 @@ use sp_std::vec::Vec;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "runtime")]
 use sp_debug_derive::RuntimeDebug;
-
-/// Version of Fri/Binius parameters used to interpret size_bytes into
-/// codeword length and sampling domain.
-#[derive(Clone, Copy, PartialEq, Eq, Encode, Decode, Default, TypeInfo)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
-pub struct FriParamsVersion(pub u8);
 
 /// Metadata needed for DA sampling + PCS verification of one blob.
 #[derive(Clone, PartialEq, Eq, Encode, Decode, Default, TypeInfo)]

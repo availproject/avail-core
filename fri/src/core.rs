@@ -1,6 +1,6 @@
-use crate::config::FriParamsConfig;
 use crate::error::FriBiniusError;
 use crate::transcript::{Challenger, VerifierTr};
+use avail_core::FriParamsConfig;
 
 use binius_field::{ExtensionField, Field, PackedExtension, PackedField};
 use binius_math::{
