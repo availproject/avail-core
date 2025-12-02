@@ -5,7 +5,7 @@ mod e2e_tests {
 	use crate::{e2e_helpers::*, FriBiniusPCS, FriCommitment, FriContext};
 	use crate::{FriBiniusError, FriParamsConfig};
 	use avail_core::header::extension::{
-		fri_header::FriHeader,
+		fri::FriHeader,
 		fri_v1::{FriBlobCommitment, HeaderExtension as FriV1HeaderExtension},
 		HeaderExtension as CoreHeaderExtension,
 	};
@@ -302,12 +302,7 @@ mod e2e_tests {
 			.expect("commit must succeed");
 
 		// Turn Merkle root into H256 for header storage
-		let commitment_bytes: [u8; 32] = commit_output
-			.commitment
-			.as_slice()
-			.try_into()
-			.expect("commitment should be 32 bytes");
-		let real_commitment = H256(commitment_bytes);
+		let commitment_bytes = commit_output.commitment.clone();
 
 		// In the real node, data_root would be merkle root of raw blobs;
 		// here we just fake one for testing.
@@ -315,7 +310,7 @@ mod e2e_tests {
 
 		let blob_meta = FriBlobCommitment {
 			size_bytes: blob_size as u64,
-			commitment: real_commitment,
+			commitment: commitment_bytes.clone(),
 		};
 
 		let fri_v1_header = FriV1HeaderExtension {
@@ -343,7 +338,7 @@ mod e2e_tests {
 		assert_eq!(inner.params_version.0, 0);
 		assert_eq!(inner.blobs.len(), 1);
 		assert_eq!(inner.blobs[0].size_bytes, blob_size as u64);
-		assert_eq!(inner.blobs[0].commitment, real_commitment);
+		assert_eq!(inner.blobs[0].commitment, commitment_bytes);
 
 		let mut rng = StdRng::from_seed([7u8; 32]);
 		let eval_point = pcs.sample_evaluation_point(&mut rng);

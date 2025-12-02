@@ -64,7 +64,7 @@ pub mod kzg {
 	}
 }
 
-pub mod fri_header {
+pub mod fri {
 	use super::*;
 
 	/// Versioning for Fri/Binius header formats.
@@ -119,6 +119,12 @@ pub mod fri_header {
 	}
 }
 
+#[derive(Clone, Copy, Eq, PartialEq, Debug, Encode, Decode, TypeInfo)]
+pub enum CommitmentScheme {
+    Kzg,
+    Fri,
+}
+
 /// header extension: *which PCS + which version inside*.
 #[derive(PartialEq, Eq, Clone, Encode, Decode, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -126,7 +132,7 @@ pub mod fri_header {
 #[cfg_attr(not(feature = "runtime"), derive(Debug))]
 pub enum HeaderExtension {
 	Kzg(kzg::KzgHeader),
-	Fri(fri_header::FriHeader),
+	Fri(fri::FriHeader),
 }
 
 impl HeaderExtension {
@@ -145,25 +151,32 @@ impl HeaderExtension {
 		matches!(self, HeaderExtension::Fri(_))
 	}
 
+	pub fn commitment_scheme(&self) -> CommitmentScheme {
+		match self {
+			HeaderExtension::Fri(_) => CommitmentScheme::Fri,
+			HeaderExtension::Kzg(_) => CommitmentScheme::Kzg,
+		}
+	}
+
 	pub fn get_empty_kzg(data_root: H256, version: kzg::KzgHeaderVersion) -> Self {
 		HeaderExtension::Kzg(kzg::KzgHeader::get_empty_header(data_root, version))
 	}
 
-	pub fn get_empty_fri(data_root: H256, version: fri_header::FriHeaderVersion) -> Self {
-		HeaderExtension::Fri(fri_header::FriHeader::get_empty_header(data_root, version))
+	pub fn get_empty_fri(data_root: H256, version: fri::FriHeaderVersion) -> Self {
+		HeaderExtension::Fri(fri::FriHeader::get_empty_header(data_root, version))
 	}
 
 	pub fn get_faulty_kzg(data_root: H256, version: kzg::KzgHeaderVersion) -> Self {
 		HeaderExtension::Kzg(kzg::KzgHeader::get_faulty_header(data_root, version))
 	}
 
-	pub fn get_faulty_fri(data_root: H256, version: fri_header::FriHeaderVersion) -> Self {
-		HeaderExtension::Fri(fri_header::FriHeader::get_faulty_header(data_root, version))
+	pub fn get_faulty_fri(data_root: H256, version: fri::FriHeaderVersion) -> Self {
+		HeaderExtension::Fri(fri::FriHeader::get_faulty_header(data_root, version))
 	}
 }
 
 impl Default for HeaderExtension {
 	fn default() -> Self {
-		HeaderExtension::Fri(fri_header::FriHeader::V1(fri_v1::HeaderExtension::default()))
+		HeaderExtension::Fri(fri::FriHeader::V1(fri_v1::HeaderExtension::default()))
 	}
 }

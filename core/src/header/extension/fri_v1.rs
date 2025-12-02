@@ -18,7 +18,7 @@ pub struct FriBlobCommitment {
 	pub size_bytes: u64,
 
 	/// Fri PCS commitment (Merkle root of the blob codeword).
-	pub commitment: H256,
+	pub commitment: Vec<u8>,
 }
 
 /// DA commitment extension — input to LC sampling & verification.
