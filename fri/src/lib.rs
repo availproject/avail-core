@@ -1,9 +1,9 @@
-mod core;
-mod encoding;
-mod error;
+pub mod core;
+pub mod encoding;
+pub mod error;
 #[cfg(feature = "testing")]
-mod sampling;
-mod transcript;
+pub mod sampling;
+pub mod transcript;
 
 #[cfg(test)]
 mod tests;

@@ -17,6 +17,7 @@ pub mod kzg {
 	/// Versioning for KZG header formats.
 	#[derive(Clone, Copy, PartialEq, Eq, Encode, Decode, TypeInfo)]
 	#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+	#[cfg_attr(feature = "runtime", derive(PassByCodec, RuntimeDebug))]
 	pub enum KzgHeaderVersion {
 		V4,
 	}
@@ -69,6 +70,7 @@ pub mod fri_header {
 	/// Versioning for Fri/Binius header formats.
 	#[derive(Clone, Copy, PartialEq, Eq, Encode, Decode, TypeInfo)]
 	#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+	#[cfg_attr(feature = "runtime", derive(PassByCodec, RuntimeDebug))]
 	pub enum FriHeaderVersion {
 		V1,
 	}

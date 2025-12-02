@@ -1,6 +1,5 @@
 use crate::error::FriBiniusError;
 use crate::transcript::{Challenger, VerifierTr};
-use avail_core::FriParamsConfig;
 
 use binius_field::{ExtensionField, Field, PackedExtension, PackedField};
 use binius_math::{
@@ -20,12 +19,16 @@ use binius_prover::{
 };
 use binius_transcript::ProverTranscript;
 use binius_verifier::{
-	config::{B1, B128},
+	config::B1,
 	fri::FRIParams,
 	hash::{StdCompression, StdDigest},
 	merkle_tree::MerkleTreeScheme,
 	pcs::verify as fri_verify,
 };
+
+// TODO: re-export some of the common types to be sued by downstream
+pub use binius_verifier::config::B128;
+pub use avail_core::{FriParamsConfig, FriParamsVersion};
 
 #[cfg(test)]
 use binius_field::Random;
