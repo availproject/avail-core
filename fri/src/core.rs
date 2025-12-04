@@ -27,8 +27,8 @@ use binius_verifier::{
 };
 
 // TODO: re-export some of the common types to be sued by downstream
-pub use binius_verifier::config::B128;
 pub use avail_core::{FriParamsConfig, FriParamsVersion};
+pub use binius_verifier::config::B128;
 
 #[cfg(test)]
 use binius_field::Random;
@@ -49,13 +49,13 @@ pub type MerkleCommitted<S> = <BinaryMerkleTreeProver<
 /// Our PCS commit output type specialization.
 pub type FriCommitOutput<P> = CommitOutput<P, Vec<u8>, MerkleCommitted<<P as PackedField>::Scalar>>;
 
-/// Commitment object that we can serialize.
+/// Commitment
 #[derive(Clone, Debug)]
 pub struct FriCommitment {
 	pub digest: [u8; 32],
 }
 
-/// Evaluation proof object that we can propagate.
+/// Evaluation proof
 #[derive(Clone, Debug)]
 pub struct FriProof {
 	pub commitment: FriCommitment,
@@ -177,10 +177,10 @@ impl FriBiniusPCS {
 	where
 		P: PackedField<Scalar = B128> + PackedExtension<B128> + PackedExtension<B1>,
 	{
-		// 1) Compute evaluation claim from scalar values
+		// Compute evaluation claim from scalar values
 		let evaluation_claim = self.calculate_evaluation_claim(values, evaluation_point)?;
 
-		// 2) Set up PCS prover and transcript
+		// Set up PCS prover and transcript
 		let pcs = OneBitPCSProver::new(&ctx.ntt, &self.merkle_prover, &ctx.fri_params);
 		let mut prover_transcript = ProverTranscript::new(Challenger::default());
 
@@ -189,7 +189,7 @@ impl FriBiniusPCS {
 			.message()
 			.write_bytes(&commit_output.commitment);
 
-		// 3) Run FRI proof generation
+		// Run FRI proof generation
 		pcs.prove(
 			&commit_output.codeword,
 			&commit_output.committed,
@@ -199,11 +199,11 @@ impl FriBiniusPCS {
 		)
 		.map_err(|e| FriBiniusError::Proof(e.to_string()))?;
 
-		// 4) Turn prover transcript into verifier transcript and serialize it
+		// Turn prover transcript into verifier transcript and serialize it
 		let verifier_transcript: VerifierTr = prover_transcript.into_verifier();
 		let transcript_bytes = crate::transcript::transcript_to_bytes(&verifier_transcript);
 
-		// 5) Extract commitment digest as [u8; 32]
+		// Extract commitment digest as [u8; 32]
 		let digest: [u8; 32] = commit_output
 			.commitment
 			.as_slice()

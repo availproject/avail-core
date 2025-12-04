@@ -121,8 +121,8 @@ pub mod fri {
 
 #[derive(Clone, Copy, Eq, PartialEq, Debug, Encode, Decode, TypeInfo)]
 pub enum CommitmentScheme {
-    Kzg,
-    Fri,
+	Kzg,
+	Fri,
 }
 
 /// header extension: *which PCS + which version inside*.

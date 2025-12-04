@@ -45,19 +45,15 @@ mod e2e_tests {
 			log_inv_rate: 1,
 			num_test_queries: 128,
 			log_num_shares: 8,
-			n_vars: 0, // auto-filled from data
+			n_vars: 0,
 		};
 
 		let mut rng = StdRng::from_seed([1u8; 32]);
-
-		// --- 1. Commit from bytes ---
 		let (pcs, ctx, packed, commit_output, _commitment) = commit_bytes(cfg, &data)?;
 
-		// --- 2. Sample evaluation point & compute claim ---
 		let eval_point = pcs.sample_evaluation_point(&mut rng);
 		let eval_claim = pcs.calculate_evaluation_claim(&packed.packed_values, &eval_point)?;
 
-		// --- 3. Prove (full control) ---
 		let proof = pcs.prove::<B128>(
 			&packed.packed_values,
 			&packed.packed_mle,
@@ -66,7 +62,6 @@ mod e2e_tests {
 			&eval_point,
 		)?;
 
-		// --- 4. Verify ---
 		pcs.verify(&proof, &ctx)?;
 
 		// Sanity: proof carries same claim we computed locally
@@ -141,7 +136,7 @@ mod e2e_tests {
 
 		let mut rng = StdRng::seed_from_u64(42);
 
-		// "Block producer" side: compute commitments for each blob
+		// Block producer side: compute commitments for each blob
 		struct BlobState {
 			#[allow(dead_code)]
 			data: Vec<u8>, // original blob bytes (node-only)
@@ -168,7 +163,7 @@ mod e2e_tests {
 			});
 		}
 
-		// "Light client" side:
+		// Light client side:
 		// - sees the per-blob commitments + blob sizes (Either from the header or from SummaryTxPostInherent)
 		// - wants to randomly sample cells in each blob's codeword
 		//   and verify Merkle inclusion proofs.
@@ -236,13 +231,13 @@ mod e2e_tests {
 
 		let honest_value = commit_output.codeword[idx];
 
-		// --- 1) Honest proof should verify ---
+		// Honest proof should verify
 		{
 			let mut transcript = pcs.inclusion_proof::<B128>(&commit_output.committed, idx)?;
 			pcs.verify_inclusion_proof(&mut transcript, &[honest_value], idx, &ctx, &commitment)?;
 		}
 
-		// --- 2) Corrupted value should fail ---
+		// Corrupted value should fail
 		{
 			let mut transcript = pcs.inclusion_proof::<B128>(&commit_output.committed, idx)?;
 			let mut bad_value = honest_value;
@@ -255,7 +250,7 @@ mod e2e_tests {
 			assert!(res.is_err(), "verification should fail for corrupted value");
 		}
 
-		// --- 3) Corrupted commitment should fail ---
+		// Corrupted commitment should fail
 		{
 			let mut transcript = pcs.inclusion_proof::<B128>(&commit_output.committed, idx)?;
 
