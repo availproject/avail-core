@@ -289,7 +289,7 @@ mod e2e_tests {
 
 		let pcs = FriBiniusPCS::new(cfg);
 		let ctx = pcs
-			.initialize_fri_context(&packed.packed_mle)
+			.initialize_fri_context::<B128>(packed.packed_mle.log_len())
 			.expect("initialize_fri_context must succeed");
 
 		let commit_output = pcs

@@ -87,21 +87,23 @@ impl FriBiniusPCS {
 
 	pub fn initialize_fri_context<P>(
 		&self,
-		packed_buffer: &FieldBuffer<P>,
+		mle_log_len: usize,
 	) -> Result<FriContext, FriBiniusError>
 	where
 		P: PackedField<Scalar = B128> + PackedExtension<B128> + PackedExtension<B1>,
 	{
-		let committed_rs_code =
-			ReedSolomonCode::<B128>::new(packed_buffer.log_len(), self.cfg.log_inv_rate)
-				.map_err(|e| FriBiniusError::ReedSolomonInit(e.to_string()))?;
+		// Reed–Solomon code over B128; parameterized only by log-length + inv-rate.
+		let committed_rs_code = ReedSolomonCode::<B128>::new(mle_log_len, self.cfg.log_inv_rate)
+			.map_err(|e| FriBiniusError::ReedSolomonInit(e.to_string()))?;
 
 		let fri_log_batch_size = 0;
 
+		// FRI arities depend on packing width and log-length, not the data itself.
 		let fri_arities = if P::LOG_WIDTH == 2 {
+			// small-width special case
 			vec![2, 2]
 		} else {
-			vec![2; packed_buffer.log_len() / 2]
+			vec![2; mle_log_len / 2]
 		};
 
 		let fri_params = FRIParams::new(

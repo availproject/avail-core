@@ -42,18 +42,18 @@ pub mod e2e_helpers {
 		),
 		FriBiniusError,
 	> {
-		// 1. bytes -> packed MLE
+		// bytes -> packed MLE
 		let encoder = BytesEncoder::<B128>::new();
 		let packed = encoder.bytes_to_packed_mle(data)?;
 
-		// 2. fill in n_vars from data (UX: user doesn't have to know it)
+		// fill in n_vars from data (UX: user doesn't have to know it)
 		cfg.n_vars = packed.total_n_vars;
 
-		// 3. PCS + FRI context
+		// PCS + FRI context
 		let pcs = FriBiniusPCS::new(cfg);
-		let ctx = pcs.initialize_fri_context(&packed.packed_mle)?;
+		let ctx = pcs.initialize_fri_context::<B128>(packed.packed_mle.log_len())?;
 
-		// 4. Commit
+		// Commit
 		let commit_output = pcs.commit::<B128>(&packed.packed_mle, &ctx)?;
 		let digest: [u8; 32] = commit_output
 			.commitment
@@ -74,10 +74,10 @@ pub mod e2e_helpers {
 	) -> Result<(), FriBiniusError> {
 		let (pcs, ctx, packed, commit_output, _commitment) = commit_bytes(cfg, data)?;
 
-		// 1. Sample evaluation point
+		// Sample evaluation point
 		let eval_point = pcs.sample_evaluation_point(rng);
 
-		// 2. Generate proof
+		// Generate proof
 		let proof = pcs.prove::<B128>(
 			&packed.packed_values,
 			&packed.packed_mle,
@@ -86,7 +86,7 @@ pub mod e2e_helpers {
 			&eval_point,
 		)?;
 
-		// 3. Verify
+		// Verify
 		pcs.verify(&proof, &ctx)
 	}
 }
