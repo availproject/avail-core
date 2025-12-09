@@ -54,18 +54,11 @@ mod e2e_tests {
 		let eval_point = pcs.sample_evaluation_point(&mut rng);
 		let eval_claim = pcs.calculate_evaluation_claim(&packed.packed_values, &eval_point)?;
 
-		let proof = pcs.prove::<B128>(
-			&packed.packed_values,
-			&packed.packed_mle,
-			&ctx,
-			&commit_output,
-			&eval_point,
-		)?;
+		let proof =
+			pcs.prove::<B128>(packed.packed_mle.clone(), &ctx, &commit_output, &eval_point)?;
 
-		pcs.verify(&proof, &ctx)?;
-
-		// Sanity: proof carries same claim we computed locally
-		assert_eq!(proof.evaluation_claim, eval_claim);
+		// Verify using the explicit claim + evaluation point
+		pcs.verify(&proof, eval_claim, &eval_point, &ctx)?;
 
 		Ok(())
 	}
@@ -337,18 +330,15 @@ mod e2e_tests {
 
 		let mut rng = StdRng::from_seed([7u8; 32]);
 		let eval_point = pcs.sample_evaluation_point(&mut rng);
+		let eval_claim = pcs
+			.calculate_evaluation_claim(&packed.packed_values, &eval_point)
+			.expect("claim must succeed");
 
 		let proof = pcs
-			.prove(
-				&packed.packed_values,
-				&packed.packed_mle,
-				&ctx,
-				&commit_output,
-				&eval_point,
-			)
+			.prove::<B128>(packed.packed_mle.clone(), &ctx, &commit_output, &eval_point)
 			.expect("prove must succeed");
 
-		pcs.verify(&proof, &ctx)
+		pcs.verify(&proof, eval_claim, &eval_point, &ctx)
 			.expect("Fri evaluation proof must verify");
 	}
 }

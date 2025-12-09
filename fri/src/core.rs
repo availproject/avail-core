@@ -58,9 +58,6 @@ pub struct FriCommitment {
 /// Evaluation proof
 #[derive(Clone, Debug)]
 pub struct FriProof {
-	pub commitment: FriCommitment,
-	pub evaluation_point: Vec<B128>,
-	pub evaluation_claim: B128,
 	pub transcript_bytes: Vec<u8>,
 }
 
@@ -71,8 +68,8 @@ pub struct FriContext {
 }
 
 pub struct FriBiniusPCS {
-	cfg: FriParamsConfig,
-	merkle_prover: DefaultMerkleProver,
+	pub(crate) cfg: FriParamsConfig,
+	pub(crate) merkle_prover: DefaultMerkleProver,
 }
 
 impl FriBiniusPCS {
@@ -170,8 +167,7 @@ impl FriBiniusPCS {
 	/// Generate a FRI evaluation proof.
 	pub fn prove<P>(
 		&self,
-		values: &[B128],
-		packed_mle: &FieldBuffer<P>,
+		packed_mle: FieldBuffer<P>,
 		ctx: &FriContext,
 		commit_output: &FriCommitOutput<P>,
 		evaluation_point: &[B128],
@@ -179,49 +175,45 @@ impl FriBiniusPCS {
 	where
 		P: PackedField<Scalar = B128> + PackedExtension<B128> + PackedExtension<B1>,
 	{
-		// Compute evaluation claim from scalar values
-		let evaluation_claim = self.calculate_evaluation_claim(values, evaluation_point)?;
-
-		// Set up PCS prover and transcript
 		let pcs = OneBitPCSProver::new(&ctx.ntt, &self.merkle_prover, &ctx.fri_params);
 		let mut prover_transcript = ProverTranscript::new(Challenger::default());
 
-		// First write commitment bytes into transcript
+		// Write commitment bytes to transcript.
 		prover_transcript
 			.message()
 			.write_bytes(&commit_output.commitment);
 
-		// Run FRI proof generation
+		// Generate FRI proof.
 		pcs.prove(
 			&commit_output.codeword,
 			&commit_output.committed,
-			packed_mle.clone(),
+			packed_mle,
 			evaluation_point.to_vec(),
 			&mut prover_transcript,
 		)
 		.map_err(|e| FriBiniusError::Proof(e.to_string()))?;
 
-		// Turn prover transcript into verifier transcript and serialize it
 		let verifier_transcript: VerifierTr = prover_transcript.into_verifier();
 		let transcript_bytes = crate::transcript::transcript_to_bytes(&verifier_transcript);
 
-		// Extract commitment digest as [u8; 32]
-		let digest: [u8; 32] = commit_output
-			.commitment
-			.as_slice()
-			.try_into()
-			.expect("commitment is 32 bytes by construction");
-
-		Ok(FriProof {
-			commitment: FriCommitment { digest },
-			evaluation_point: evaluation_point.to_vec(),
-			evaluation_claim,
-			transcript_bytes,
-		})
+		Ok(FriProof { transcript_bytes })
 	}
 
 	/// Verify a proof produced by `prove`.
-	pub fn verify(&self, proof: &FriProof, ctx: &FriContext) -> Result<(), FriBiniusError> {
+	///
+	/// Caller supplies:
+	/// - `evaluation_claim`: f(z)
+	/// - `evaluation_point`: z
+	/// - `ctx`: FRI parameters + NTT context
+	///
+	/// Commitment is read from the transcript.
+	pub fn verify(
+		&self,
+		proof: &FriProof,
+		evaluation_claim: B128,
+		evaluation_point: &[B128],
+		ctx: &FriContext,
+	) -> Result<(), FriBiniusError> {
 		// Reconstruct transcript from bytes
 		let mut transcript =
 			crate::transcript::transcript_from_bytes(proof.transcript_bytes.clone());
@@ -233,11 +225,10 @@ impl FriBiniusPCS {
 
 		let merkle_scheme = self.merkle_prover.scheme().clone();
 
-		// Call the Binius FRI verification routine
 		fri_verify(
 			&mut transcript,
-			proof.evaluation_claim,
-			&proof.evaluation_point,
+			evaluation_claim,
+			evaluation_point,
 			retrieved_commitment,
 			&ctx.fri_params,
 			&merkle_scheme,
@@ -287,7 +278,6 @@ impl FriBiniusPCS {
 	}
 }
 
-// Helper conversions at bottom
 fn lift_small_to_large_field<F, FE>(small_field_elms: &[F]) -> Vec<FE>
 where
 	F: Field,

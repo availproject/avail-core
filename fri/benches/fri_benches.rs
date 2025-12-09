@@ -1,6 +1,5 @@
 #![allow(clippy::needless_pass_by_value)]
 
-use std::sync::Arc;
 use avail_core::FriParamsVersion;
 use avail_fri::{
 	core::FriCommitOutput, e2e_helpers::commit_bytes, FriBiniusPCS, FriCommitment, FriContext,
@@ -8,10 +7,7 @@ use avail_fri::{
 };
 use binius_verifier::config::B128;
 use divan::{black_box, Bencher};
-use rand::{rngs::StdRng, Rng, SeedableRng};
-
-/// Blob sizes in MiB.
-const SIZES_MB: &[usize] = &[2, 4, 8, 16, 32];
+use rand::{rngs::StdRng, SeedableRng};
 
 fn patterned_data(size: usize) -> Vec<u8> {
 	(0..size).map(|i| (i % 251) as u8).collect()
@@ -50,27 +46,27 @@ fn fri_commit_for_size(bencher: Bencher, mb: usize) {
 	});
 }
 
-#[divan::bench(name = "fri_commit_2_mib")]
+#[divan::bench(max_time = 10)]
 fn fri_commit_2_mib(bencher: Bencher) {
 	fri_commit_for_size(bencher, 2);
 }
 
-#[divan::bench(name = "fri_commit_4_mib")]
+#[divan::bench(max_time = 10)]
 fn fri_commit_4_mib(bencher: Bencher) {
 	fri_commit_for_size(bencher, 4);
 }
 
-#[divan::bench(name = "fri_commit_8_mib")]
+#[divan::bench(max_time = 10)]
 fn fri_commit_8_mib(bencher: Bencher) {
 	fri_commit_for_size(bencher, 8);
 }
 
-#[divan::bench(name = "fri_commit_16_mib")]
+#[divan::bench(max_time = 10)]
 fn fri_commit_16_mib(bencher: Bencher) {
 	fri_commit_for_size(bencher, 16);
 }
 
-#[divan::bench(name = "fri_commit_32_mib")]
+#[divan::bench(max_time = 10)]
 fn fri_commit_32_mib(bencher: Bencher) {
 	fri_commit_for_size(bencher, 32);
 }
@@ -142,27 +138,27 @@ fn fri_sampling_verify_for_size(bencher: Bencher, mb: usize) {
 	});
 }
 
-#[divan::bench(name = "fri_sampling_verify_2_mib")]
+#[divan::bench(max_time = 10)]
 fn fri_sampling_verify_2_mib(bencher: Bencher) {
 	fri_sampling_verify_for_size(bencher, 2);
 }
 
-#[divan::bench(name = "fri_sampling_verify_4_mib")]
+#[divan::bench(max_time = 10)]
 fn fri_sampling_verify_4_mib(bencher: Bencher) {
 	fri_sampling_verify_for_size(bencher, 4);
 }
 
-#[divan::bench(name = "fri_sampling_verify_8_mib")]
+#[divan::bench(max_time = 10)]
 fn fri_sampling_verify_8_mib(bencher: Bencher) {
 	fri_sampling_verify_for_size(bencher, 8);
 }
 
-#[divan::bench(name = "fri_sampling_verify_16_mib")]
+#[divan::bench(max_time = 10)]
 fn fri_sampling_verify_16_mib(bencher: Bencher) {
 	fri_sampling_verify_for_size(bencher, 16);
 }
 
-#[divan::bench(name = "fri_sampling_verify_32_mib")]
+#[divan::bench(max_time = 10)]
 fn fri_sampling_verify_32_mib(bencher: Bencher) {
 	fri_sampling_verify_for_size(bencher, 32);
 }
@@ -176,44 +172,35 @@ fn fri_eval_prove_for_size(bencher: Bencher, mb: usize) {
 	let mut rng = StdRng::from_seed([7u8; 32]);
 	let eval_point = pcs.sample_evaluation_point(&mut rng);
 
-	let packed_values = Arc::new(packed.packed_values);
-	let packed_mle = Arc::new(packed.packed_mle);
-
 	bencher.bench_local(|| {
 		let proof = pcs
-			.prove::<B128>(
-				&packed_values,
-				&packed_mle,
-				&ctx,
-				&commit_output,
-				&eval_point,
-			)
+			.prove::<B128>(packed.packed_mle.clone(), &ctx, &commit_output, &eval_point)
 			.expect("prove");
 		black_box(proof);
 	});
 }
 
-#[divan::bench(name = "fri_eval_prove_2_mib", max_time = 30)]
+#[divan::bench(max_time = 10)]
 fn fri_eval_prove_2_mib(bencher: Bencher) {
 	fri_eval_prove_for_size(bencher, 2);
 }
 
-#[divan::bench(name = "fri_eval_prove_4_mib", max_time = 30)]
+#[divan::bench(max_time = 10)]
 fn fri_eval_prove_4_mib(bencher: Bencher) {
 	fri_eval_prove_for_size(bencher, 4);
 }
 
-#[divan::bench(name = "fri_eval_prove_8_mib", max_time = 30)]
+#[divan::bench(max_time = 10)]
 fn fri_eval_prove_8_mib(bencher: Bencher) {
 	fri_eval_prove_for_size(bencher, 8);
 }
 
-#[divan::bench(name = "fri_eval_prove_16_mib", max_time = 30)]
+#[divan::bench(max_time = 10)]
 fn fri_eval_prove_16_mib(bencher: Bencher) {
 	fri_eval_prove_for_size(bencher, 16);
 }
 
-#[divan::bench(name = "fri_eval_prove_32_mib", max_time = 30)]
+#[divan::bench(max_time = 10)]
 fn fri_eval_prove_32_mib(bencher: Bencher) {
 	fri_eval_prove_for_size(bencher, 32);
 }
@@ -227,21 +214,24 @@ fn fri_eval_verify_for_size(bencher: Bencher, mb: usize) {
 	let mut rng = StdRng::from_seed([8u8; 32]);
 	let eval_point = pcs.sample_evaluation_point(&mut rng);
 
+	// Heavy part done once: claim + proof
+	let eval_claim = pcs
+		.calculate_evaluation_claim(&packed.packed_values, &eval_point)
+		.expect("claim");
+
 	let proof = pcs
-		.prove::<B128>(
-			&packed.packed_values,
-			&packed.packed_mle,
-			&ctx,
-			&commit_output,
-			&eval_point,
-		)
+		.prove::<B128>(packed.packed_mle.clone(), &ctx, &commit_output, &eval_point)
 		.expect("prove");
 
-	// Compute approximate proof size.
-	let fp_size = std::mem::size_of::<B128>();
-	let eval_point_bytes = proof.evaluation_point.len() * fp_size;
+	// Approximate proof size "over the wire":
+	// - commitment: 32 bytes (already in header)
+	// - eval_point: n_vars * sizeof(B128)
+	// - eval_claim: sizeof(B128)
+	// - transcript: proof.transcript_bytes.len()
+	let fp_size = core::mem::size_of::<B128>();
+	let eval_point_bytes = eval_point.len() * fp_size;
 	let eval_claim_bytes = fp_size;
-	let commitment_bytes = proof.commitment.digest.len();
+	let commitment_bytes = 32;
 	let transcript_bytes = proof.transcript_bytes.len();
 	let total_bytes = commitment_bytes + eval_point_bytes + eval_claim_bytes + transcript_bytes;
 
@@ -252,34 +242,80 @@ fn fri_eval_verify_for_size(bencher: Bencher, mb: usize) {
 	);
 
 	bencher.bench_local(|| {
-		pcs.verify(&proof, &ctx).expect("verify");
+		pcs.verify(&proof, eval_claim, &eval_point, &ctx)
+			.expect("verify");
 		black_box(&proof);
 	});
 }
 
-#[divan::bench(name = "fri_eval_verify_2_mib")]
+#[divan::bench(max_time = 10)]
 fn fri_eval_verify_2_mib(bencher: Bencher) {
 	fri_eval_verify_for_size(bencher, 2);
 }
 
-#[divan::bench(name = "fri_eval_verify_4_mib")]
+#[divan::bench(max_time = 10)]
 fn fri_eval_verify_4_mib(bencher: Bencher) {
 	fri_eval_verify_for_size(bencher, 4);
 }
 
-#[divan::bench(name = "fri_eval_verify_8_mib")]
+#[divan::bench(max_time = 10)]
 fn fri_eval_verify_8_mib(bencher: Bencher) {
 	fri_eval_verify_for_size(bencher, 8);
 }
 
-#[divan::bench(name = "fri_eval_verify_16_mib")]
+#[divan::bench(max_time = 10)]
 fn fri_eval_verify_16_mib(bencher: Bencher) {
 	fri_eval_verify_for_size(bencher, 16);
 }
 
-#[divan::bench(name = "fri_eval_verify_32_mib")]
+#[divan::bench(max_time = 10)]
 fn fri_eval_verify_32_mib(bencher: Bencher) {
 	fri_eval_verify_for_size(bencher, 32);
+}
+
+// evaluation claim (p(z)) computation
+fn fri_eval_claim_for_size(bencher: Bencher, mb: usize) {
+	let size_bytes = mb * 1024 * 1024;
+
+	let (pcs, _ctx, packed, _commit_output, _commitment) = setup_for_size(size_bytes);
+
+	// Deterministic evaluation point.
+	let mut rng = StdRng::from_seed([42u8; 32]);
+	let eval_point = pcs.sample_evaluation_point(&mut rng);
+
+	bencher.bench_local(|| {
+		let claim = pcs
+			.calculate_evaluation_claim(&packed.packed_values, &eval_point)
+			.expect("evaluation_claim must succeed");
+
+		// Prevent the optimizer from throwing this away.
+		black_box(claim);
+	});
+}
+
+#[divan::bench(max_time = 20)]
+fn fri_eval_claim_2_mib(bencher: Bencher) {
+	fri_eval_claim_for_size(bencher, 2);
+}
+
+#[divan::bench(max_time = 20)]
+fn fri_eval_claim_4_mib(bencher: Bencher) {
+	fri_eval_claim_for_size(bencher, 4);
+}
+
+#[divan::bench(max_time = 20)]
+fn fri_eval_claim_8_mib(bencher: Bencher) {
+	fri_eval_claim_for_size(bencher, 8);
+}
+
+#[divan::bench(max_time = 20)]
+fn fri_eval_claim_16_mib(bencher: Bencher) {
+	fri_eval_claim_for_size(bencher, 16);
+}
+
+#[divan::bench(max_time = 30)]
+fn fri_eval_claim_32_mib(bencher: Bencher) {
+	fri_eval_claim_for_size(bencher, 32);
 }
 
 fn main() {
