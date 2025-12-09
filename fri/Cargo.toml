@@ -13,10 +13,12 @@ binius-transcript = { workspace = true }
 avail-core = { path = "../core", default-features = false }
 log = { workspace = true, default-features = false }
 rayon = { version = "1.10", optional = true }
+rand = { version = "0.9.1", default-features = false, features = ["std", "std_rng"], optional = true}
 
 [dev-dependencies]
 avail-core = { path = "../core", default-features = false, features = ["runtime"]}
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive", "max-encoded-len"] }
+divan = { version = "0.1"}
 rand = { version = "0.9.1", default-features = false, features = ["std", "std_rng"] }
 primitive-types = { workspace = true }
 
@@ -29,6 +31,12 @@ std = [ "avail-core/std", "log/std" ]
 # Enable rayon-based parallel code paths
 parallel = [ "rayon", "std" ]
 
+bench = [ "std", "rand" ]
 testing = []
 serde = [ "avail-core/serde" ]
 runtime = [ "avail-core/runtime" ]
+
+[[bench]]
+name = "fri_benches"
+harness = false
+required-features = ["bench"]

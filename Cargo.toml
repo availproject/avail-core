@@ -51,11 +51,11 @@ poly-multiproof = { git = "https://github.com/availproject/poly-multiproof", rev
 hash-db = { version = "0.16.0",  default-features = false }
 
 # fri
-binius-prover = { git = "https://github.com/binius-zk/binius64.git", rev = "fe3e14a87dd59de1baf68505f98dc9cf7bf8595c" }
-binius-verifier = { git = "https://github.com/binius-zk/binius64.git", rev = "fe3e14a87dd59de1baf68505f98dc9cf7bf8595c" }
-binius-math = { git = "https://github.com/binius-zk/binius64.git", rev = "fe3e14a87dd59de1baf68505f98dc9cf7bf8595c" }
-binius-field = { git = "https://github.com/binius-zk/binius64.git", rev = "fe3e14a87dd59de1baf68505f98dc9cf7bf8595c" }
-binius-transcript = { git = "https://github.com/binius-zk/binius64.git", rev = "fe3e14a87dd59de1baf68505f98dc9cf7bf8595c" }
+binius-prover = { git = "https://github.com/binius-zk/binius64.git", rev = "41cda4a3eeb3fcb57bcd324e20a0ffe0b653f896" }
+binius-verifier = { git = "https://github.com/binius-zk/binius64.git", rev = "41cda4a3eeb3fcb57bcd324e20a0ffe0b653f896" }
+binius-math = { git = "https://github.com/binius-zk/binius64.git", rev = "41cda4a3eeb3fcb57bcd324e20a0ffe0b653f896" }
+binius-field = { git = "https://github.com/binius-zk/binius64.git", rev = "41cda4a3eeb3fcb57bcd324e20a0ffe0b653f896" }
+binius-transcript = { git = "https://github.com/binius-zk/binius64.git", rev = "41cda4a3eeb3fcb57bcd324e20a0ffe0b653f896" }
 
 # Others
 rayon = "1.5.2"

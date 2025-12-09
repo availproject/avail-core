@@ -16,7 +16,7 @@ pub use error::FriBiniusError;
 pub use sampling::reconstruct_codeword_naive;
 pub use transcript::{transcript_from_bytes, transcript_to_bytes, VerifierTr};
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 pub mod e2e_helpers {
 	use crate::core::FriCommitOutput;
 

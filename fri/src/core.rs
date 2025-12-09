@@ -30,9 +30,9 @@ use binius_verifier::{
 pub use avail_core::{FriParamsConfig, FriParamsVersion};
 pub use binius_verifier::config::B128;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 use binius_field::Random;
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 use rand::{CryptoRng, RngCore};
 
 // Concrete merkle prover type we’ll use everywhere.
@@ -123,7 +123,7 @@ impl FriBiniusPCS {
 		Ok(FriContext { fri_params, ntt })
 	}
 
-	#[cfg(test)]
+	#[cfg(any(test, feature = "bench"))]
 	pub fn sample_evaluation_point<R: RngCore + CryptoRng>(&self, rng: &mut R) -> Vec<B128> {
 		let mut point = Vec::with_capacity(self.cfg.n_vars);
 		for _ in 0..self.cfg.n_vars {
