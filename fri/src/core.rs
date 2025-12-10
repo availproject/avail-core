@@ -138,9 +138,34 @@ impl FriBiniusPCS {
 		let small_mle = large_field_mle_to_small_field::<B1, B128>(values);
 		let lifted = lift_small_to_large_field::<B1, B128>(&small_mle);
 
-		let eq_vals = eq_ind_partial_eval(evaluation_point).as_ref().to_vec();
+		let eq_vals = eq_ind_partial_eval(evaluation_point);
+		let eq_slice: &[B128] = eq_vals.as_ref();
 
-		Ok(inner_product::<B128>(lifted, eq_vals))
+		if lifted.len() != eq_slice.len() {
+			return Err(FriBiniusError::Verification(format!(
+				"calculate_evaluation_claim: mismatched lengths: lifted={}, eq_slice={}",
+				lifted.len(),
+				eq_slice.len()
+			)));
+		}
+
+		#[cfg(feature = "parallel")]
+		{
+			use rayon::prelude::*;
+
+			let acc = lifted
+				.par_iter()
+				.zip(eq_slice.par_iter())
+				.map(|(a, b)| *a * *b)
+				.reduce(|| B128::ZERO, |x, y| x + y);
+
+			Ok(acc)
+		}
+
+		#[cfg(not(feature = "parallel"))]
+		{
+			Ok(inner_product::<B128>(lifted, eq_slice.to_vec()))
+		}
 	}
 
 	pub fn commit<P>(
