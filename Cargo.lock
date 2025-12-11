@@ -572,11 +572,13 @@ dependencies = [
  "binius-prover",
  "binius-transcript",
  "binius-verifier",
+ "blake2b_simd",
  "divan",
  "log",
  "parity-scale-codec",
  "primitive-types",
  "rand 0.9.2",
+ "rand_chacha 0.3.1",
  "rayon",
 ]
 

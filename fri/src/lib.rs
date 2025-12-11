@@ -1,6 +1,7 @@
 pub mod core;
 pub mod encoding;
 pub mod error;
+pub mod eval_utils;
 #[cfg(feature = "testing")]
 pub mod sampling;
 pub mod transcript;

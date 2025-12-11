@@ -36,7 +36,9 @@ where
 
 	pub fn bytes_to_packed_mle(&self, data: &[u8]) -> Result<PackedMLE<P>, FriBiniusError> {
 		if data.is_empty() {
-			return Err(FriBiniusError::InvalidInput("input data must be non-empty"));
+			return Err(FriBiniusError::InvalidInput(format!(
+				"input data must be non-empty"
+			)));
 		}
 
 		// Number of 128-bit field elements needed

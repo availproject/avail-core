@@ -12,7 +12,8 @@ pub enum FriBiniusError {
 	Encoding(String),
 	Transcript(String),
 	Reconstruction(String),
-	InvalidInput(&'static str),
+	InvalidInput(String),
+	InvalidEvaluationPoint(usize, usize),
 }
 
 impl fmt::Display for FriBiniusError {
@@ -30,6 +31,9 @@ impl fmt::Display for FriBiniusError {
 			Transcript(e) => write!(f, "Transcript error: {e}"),
 			Reconstruction(e) => write!(f, "Reconstruction error: {e}"),
 			InvalidInput(msg) => write!(f, "Invalid input: {msg}"),
+			InvalidEvaluationPoint(e, g) => {
+				write!(f, "Invalid evaluation point, expected: {e}, got {g}")
+			},
 		}
 	}
 }

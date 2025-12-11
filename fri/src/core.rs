@@ -200,6 +200,13 @@ impl FriBiniusPCS {
 	where
 		P: PackedField<Scalar = B128> + PackedExtension<B128> + PackedExtension<B1>,
 	{
+		if evaluation_point.len() != self.cfg.n_vars {
+			return Err(FriBiniusError::InvalidEvaluationPoint(
+				self.cfg.n_vars,
+				evaluation_point.len(),
+			));
+		}
+
 		let pcs = OneBitPCSProver::new(&ctx.ntt, &self.merkle_prover, &ctx.fri_params);
 		let mut prover_transcript = ProverTranscript::new(Challenger::default());
 
