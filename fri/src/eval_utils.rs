@@ -8,7 +8,9 @@ use rand_chacha::ChaChaRng;
 const EVAL_POINT_SEED_DOMAIN: &[u8] = b"avail-fri-eval-point-seed:v1";
 
 /// Derive a 32-byte seed from provided inputs.
-fn derive_seed_from_inputs(rand_src: &[u8], blob_hash: &[u8]) -> [u8; 32] {
+/// - `rand_src` : arbitrary randomness (e.g. epoch randomness bytes)
+/// - `blob_hash`: blob identifier (e.g. blob commitment or H256)
+pub fn derive_seed_from_inputs(rand_src: &[u8], blob_hash: &[u8]) -> [u8; 32] {
 	let mut hasher = Blake2bParams::new().hash_length(32).to_state();
 	hasher.update(EVAL_POINT_SEED_DOMAIN);
 	hasher.update(rand_src);
@@ -21,11 +23,9 @@ fn derive_seed_from_inputs(rand_src: &[u8], blob_hash: &[u8]) -> [u8; 32] {
 }
 
 /// Deterministically generate an evaluation point (n_vars coordinates), returning Vec<B128>.
-/// - `rand_src` : arbitrary randomness (e.g. epoch randomness bytes)
-/// - `blob_hash`: blob identifier (e.g. blob commitment or H256)
+/// - `seed`	 : 32-byte seed
 /// - `n_vars`   : number of coordinates (from FriParams / packed MLE)
-pub fn derive_evaluation_point(rand_src: &[u8], blob_hash: &[u8], n_vars: usize) -> Vec<B128> {
-	let seed = derive_seed_from_inputs(rand_src, blob_hash);
+pub fn derive_evaluation_point(seed: [u8; 32], n_vars: usize) -> Vec<B128> {
 	let mut rng = ChaChaRng::from_seed(seed);
 
 	let mut out = Vec::with_capacity(n_vars);
@@ -95,9 +95,8 @@ mod tests {
 	#[test]
 	fn roundtrip_eval_point_bytes() {
 		let rand_src = [7u8; 32];
-		let blob_hash = [11u8; 32];
 		let n = 10;
-		let p = derive_evaluation_point(&rand_src, &blob_hash, n);
+		let p = derive_evaluation_point(rand_src, n);
 		assert_eq!(p.len(), n);
 		let b = eval_point_to_bytes(&p);
 		let p2 = eval_point_from_bytes(&b).unwrap();

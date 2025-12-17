@@ -6,6 +6,7 @@ use core::marker::PhantomData;
 
 const BYTES_PER_ELEMENT: usize = 16; // 128 bits
 const BITS_PER_ELEMENT: usize = 128;
+const LOG_SCALAR_BIT_WIDTH: usize = BITS_PER_ELEMENT.ilog2() as usize; // log2(128) = 7
 
 pub struct BytesEncoder<P> {
 	log_scalar_bit_width: usize,
@@ -101,4 +102,70 @@ where
 	fn default() -> Self {
 		Self::new()
 	}
+}
+
+/// Derive MLE dimensions from a blob size in bytes.
+///
+/// This utility mirrors the logic in `BytesEncoder::bytes_to_packed_mle` and
+/// computes:
+///
+/// - `log_len`: the log₂ size of the *big-field* MLE (number of multilinear
+///   variables over `B128`)
+/// - `n_vars`: the *total* number of MLE variables after scalar-bit expansion
+///
+/// # Returns
+///
+/// `(log_len, n_vars)` where:
+///
+/// - `log_len` = log₂(next_pow2(ceil(blob_size_bytes / 16)))
+/// - `n_vars`  = log_len + LOG_SCALAR_BIT_WIDTH
+///
+/// # Explanation
+///
+/// - Blob bytes are packed into 128-bit field elements (`B128`)
+/// - Each element consumes 16 bytes
+/// - The element count is padded to the next power of two
+/// - The padded size determines the number of big-field MLE variables
+/// - Each `B128` element expands into `LOG_SCALAR_BIT_WIDTH` scalar bits
+///
+/// # Constants (for B128)
+///
+/// - `BYTES_PER_ELEMENT = 16`
+/// - `LOG_SCALAR_BIT_WIDTH = 7`  (since 128 = 2⁷)
+///
+/// # Panics
+///
+/// Panics if `blob_size_bytes == 0`.
+///
+/// # Example
+///
+/// ```text
+/// blob_size_bytes = 1_048_576 (1 MiB)
+/// num_elements    = 65_536
+/// padded_elements = 65_536
+/// log_len         = 16
+/// n_vars          = 16 + 7 = 23
+/// ```
+pub fn mle_dims_from_blob_size(blob_size_bytes: usize) -> (usize, usize) {
+    assert!(blob_size_bytes > 0, "blob must be non-empty");
+
+    // Number of 128-bit field elements
+    let num_elements = (blob_size_bytes + BYTES_PER_ELEMENT - 1) / BYTES_PER_ELEMENT;
+
+    // Pad to power of two
+    let padded_elements = num_elements.next_power_of_two();
+
+    // Big-field MLE variables
+    let big_field_n_vars = padded_elements.ilog2() as usize;
+
+    // (log_len, total_n_vars)
+    (big_field_n_vars, big_field_n_vars + LOG_SCALAR_BIT_WIDTH)
+}
+
+#[test]
+fn n_vars_matches_encoder() {
+	let blob_size = 1024 * 1024; // 1 MiB
+	let (log_len, n_vars) = mle_dims_from_blob_size(blob_size);
+	assert_eq!(n_vars, 23);
+	assert_eq!(log_len, 16);
 }
