@@ -1,5 +1,5 @@
 use crate::error::FriBiniusError;
-use crate::transcript::{Challenger, VerifierTr};
+use crate::transcript::{transcript_from_bytes, Challenger, VerifierTr};
 
 use binius_field::{ExtensionField, Field, PackedExtension, PackedField};
 use binius_math::{
@@ -25,6 +25,8 @@ use binius_verifier::{
 	merkle_tree::MerkleTreeScheme,
 	pcs::verify as fri_verify,
 };
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 // TODO: re-export some of the common types to be sued by downstream
 pub use avail_core::{FriParamsConfig, FriParamsVersion};
@@ -61,6 +63,49 @@ pub struct FriProof {
 	pub transcript_bytes: Vec<u8>,
 }
 
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct SamplingProof {
+	/// Index of the codeword
+	pub index: u32,
+	/// Canonical B128 value, LE-encoded (16 bytes)
+	pub cell: Vec<u8>,
+	/// Serialized inclusion proof transcript
+	pub proof: Vec<u8>,
+}
+
+impl SamplingProof {
+	pub fn new(index: u32, cell: Vec<u8>, proof: Vec<u8>) -> Self {
+		Self { index, cell, proof }
+	}
+
+	pub fn verify_b128(
+		&self,
+		pcs: &FriBiniusPCS,
+		ctx: &FriContext,
+		commitment: &FriCommitment,
+	) -> Result<(), FriBiniusError> {
+		if self.cell.len() != 16 {
+			return Err(FriBiniusError::InvalidInput(
+				"SamplingProof.cell must be 16 bytes".into(),
+			));
+		}
+
+		let mut arr = [0u8; 16];
+		arr.copy_from_slice(&self.cell);
+
+		let value = B128::from(u128::from_le_bytes(arr));
+		let mut transcript = transcript_from_bytes(self.proof.clone());
+
+		pcs.verify_inclusion_proof(
+			&mut transcript,
+			&[value],
+			self.index as usize,
+			ctx,
+			commitment,
+		)
+	}
+}
 /// Context holding FRI parameters + NTT domain.
 pub struct FriContext {
 	pub fri_params: FRIParams<B128>,

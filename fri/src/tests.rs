@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod e2e_tests {
-	use crate::core::FriCommitOutput;
+	use crate::core::{FriCommitOutput, SamplingProof};
 	pub use crate::encoding::BytesEncoder;
-	use crate::{e2e_helpers::*, FriBiniusPCS, FriCommitment, FriContext};
+	use crate::{e2e_helpers::*, transcript_to_bytes, FriBiniusPCS, FriCommitment, FriContext};
 	use crate::{FriBiniusError, FriParamsConfig};
 	use avail_core::header::extension::{
 		fri::FriHeader,
@@ -66,7 +66,7 @@ mod e2e_tests {
 	#[test]
 	fn end_to_end_inclusion_proofs() -> Result<(), FriBiniusError> {
 		use binius_verifier::config::B128;
-		use rand::seq::SliceRandom;
+		use rand::{Rng, SeedableRng};
 
 		let data = patterned_data(8 * 1024);
 
@@ -84,19 +84,24 @@ mod e2e_tests {
 		let codeword_len = commit_output.codeword.len();
 		assert!(codeword_len > 0);
 
-		// sample a few random indices
-		let mut indices: Vec<usize> = (0..codeword_len).collect();
-		indices.shuffle(&mut rng);
-		let indices = &indices[..usize::min(16, codeword_len)];
+		let num_samples = usize::min(10, codeword_len);
+		let mut proofs = Vec::with_capacity(num_samples);
 
-		for &idx in indices {
+		for _ in 0..num_samples {
+			let idx = rng.random_range(0..codeword_len);
 			let value = commit_output.codeword[idx];
 
-			// create Merkle inclusion proof
-			let mut transcript = pcs.inclusion_proof::<B128>(&commit_output.committed, idx)?;
+			let transcript = pcs.inclusion_proof::<B128>(&commit_output.committed, idx)?;
 
-			// verify it
-			pcs.verify_inclusion_proof(&mut transcript, &[value], idx, &ctx, &commitment)?;
+			proofs.push(SamplingProof::new(
+				idx as u32,
+				value.val().to_le_bytes().to_vec(),
+				transcript_to_bytes(&transcript),
+			));
+		}
+
+		for proof in &proofs {
+			proof.verify_b128(&pcs, &ctx, &commitment)?;
 		}
 
 		Ok(())

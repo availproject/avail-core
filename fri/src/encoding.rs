@@ -147,19 +147,19 @@ where
 /// n_vars          = 16 + 7 = 23
 /// ```
 pub fn mle_dims_from_blob_size(blob_size_bytes: usize) -> (usize, usize) {
-    assert!(blob_size_bytes > 0, "blob must be non-empty");
+	assert!(blob_size_bytes > 0, "blob must be non-empty");
 
-    // Number of 128-bit field elements
-    let num_elements = (blob_size_bytes + BYTES_PER_ELEMENT - 1) / BYTES_PER_ELEMENT;
+	// Number of 128-bit field elements
+	let num_elements = (blob_size_bytes + BYTES_PER_ELEMENT - 1) / BYTES_PER_ELEMENT;
 
-    // Pad to power of two
-    let padded_elements = num_elements.next_power_of_two();
+	// Pad to power of two
+	let padded_elements = num_elements.next_power_of_two();
 
-    // Big-field MLE variables
-    let big_field_n_vars = padded_elements.ilog2() as usize;
+	// Big-field MLE variables
+	let big_field_n_vars = padded_elements.ilog2() as usize;
 
-    // (log_len, total_n_vars)
-    (big_field_n_vars, big_field_n_vars + LOG_SCALAR_BIT_WIDTH)
+	// (log_len, total_n_vars)
+	(big_field_n_vars, big_field_n_vars + LOG_SCALAR_BIT_WIDTH)
 }
 
 #[test]
