@@ -14,6 +14,8 @@ use sp_debug_derive::RuntimeDebug;
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
 pub struct FriBlobCommitment {
+	/// Blob hash
+	pub blob_hash: H256,
 	/// Original blob size in bytes.
 	pub size_bytes: u64,
 

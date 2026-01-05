@@ -43,6 +43,13 @@ pub mod kzg {
 			}
 		}
 
+		/// Returns true if this header commits to at least one DA blob.
+		pub fn has_da_commitments(&self) -> bool {
+			match self {
+				KzgHeader::V4(ext) => !ext.commitment.commitment.is_empty(),
+			}
+		}
+
 		pub fn get_empty_header(data_root: H256, version: KzgHeaderVersion) -> Self {
 			match version {
 				KzgHeaderVersion::V4 => v4::HeaderExtension::get_empty_header(data_root).into(),
@@ -93,6 +100,13 @@ pub mod fri {
 		pub fn version(&self) -> FriHeaderVersion {
 			match self {
 				FriHeader::V1(_) => FriHeaderVersion::V1,
+			}
+		}
+
+		/// Returns true if this header commits to at least one DA blob.
+		pub fn has_da_commitments(&self) -> bool {
+			match self {
+				FriHeader::V1(ext) => !ext.blobs.is_empty(),
 			}
 		}
 
@@ -149,6 +163,17 @@ impl HeaderExtension {
 
 	pub fn is_fri(&self) -> bool {
 		matches!(self, HeaderExtension::Fri(_))
+	}
+
+	/// Returns true if this header commits to at least one DA blob.
+	///
+	/// - `false` ⇒ block contains no DA transactions
+	/// - `true`  ⇒ DA commitments must be verified
+	pub fn has_da_commitments(&self) -> bool {
+		match self {
+			HeaderExtension::Kzg(h) => h.has_da_commitments(),
+			HeaderExtension::Fri(h) => h.has_da_commitments(),
+		}
 	}
 
 	pub fn commitment_scheme(&self) -> CommitmentScheme {

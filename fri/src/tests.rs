@@ -302,6 +302,8 @@ mod e2e_tests {
 		let data_root = H256::repeat_byte(0xAB);
 
 		let blob_meta = FriBlobCommitment {
+			// random blob_hash, insignificant here
+			blob_hash: data_root,
 			size_bytes: blob_size as u64,
 			commitment: commitment_bytes.clone(),
 		};
