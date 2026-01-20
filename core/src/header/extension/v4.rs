@@ -1,5 +1,5 @@
 use crate::{data_lookup::v4::DataLookup, v3::KateCommitment};
-use codec::{Decode, Encode};
+use codec::{Decode, DecodeWithMemTracking, Encode};
 use primitive_types::H256;
 use scale_info::TypeInfo;
 use sp_std::{vec, vec::Vec};
@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "runtime")]
 use sp_debug_derive::RuntimeDebug;
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 #[cfg_attr(feature = "runtime", derive(RuntimeDebug))]

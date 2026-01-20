@@ -141,8 +141,8 @@ impl DataProof {
 			root,
 			proof: self.proof.clone(),
 			leaf,
-			number_of_leaves: self.number_of_leaves as usize,
-			leaf_index: self.leaf_index as usize,
+			number_of_leaves: self.number_of_leaves,
+			leaf_index: self.leaf_index,
 		}
 	}
 }

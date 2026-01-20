@@ -1,4 +1,4 @@
-use codec::{Decode, Encode, Input};
+use codec::{Decode, DecodeWithMemTracking, Encode, Input};
 use core::convert::TryFrom;
 use scale_info::{Type, TypeInfo};
 use sp_std::vec;
@@ -28,7 +28,7 @@ pub enum Error {
 	EmptyTransactions,
 }
 
-#[derive(PartialEq, Eq, Clone, Default)]
+#[derive(PartialEq, Eq, Clone, DecodeWithMemTracking, Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
 	feature = "serde",

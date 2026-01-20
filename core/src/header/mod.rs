@@ -19,7 +19,7 @@
 
 use crate::from_substrate::HexDisplay;
 use crate::traits::ExtendedHeader;
-use codec::{Decode, Encode};
+use codec::{Decode, DecodeWithMemTracking, Encode};
 use primitive_types::U256;
 use sp_std::{
 	convert::TryFrom,
@@ -35,7 +35,6 @@ use {
 		traits::{BlockNumber, Hash as HashT, Header as HeaderT},
 		Digest,
 	},
-	sp_runtime_interface::pass_by::{Codec as PassByCodecImpl, PassBy},
 };
 
 #[cfg(feature = "std")]
@@ -45,7 +44,7 @@ pub mod extension;
 pub use extension::HeaderExtension;
 
 /// Abstraction over a block header for a substrate chain.
-#[derive(PartialEq, Eq, Clone, TypeInfo, Encode, Decode)]
+#[derive(PartialEq, Eq, Clone, TypeInfo, Encode, Decode, DecodeWithMemTracking)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
 	feature = "serde",
@@ -171,16 +170,6 @@ where
 			extension: Default::default(),
 		}
 	}
-}
-
-#[cfg(feature = "runtime")]
-impl<N, H> PassBy for Header<N, H>
-where
-	N: BlockNumber,
-	H: HashT,
-	H::Output: TypeInfo,
-{
-	type PassBy = PassByCodecImpl<Header<N, H>>;
 }
 
 impl<N, H> HeaderT for Header<N, H>
