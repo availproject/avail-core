@@ -56,7 +56,9 @@ impl Message {
 }
 
 /// Message type used to bridge between Avail & other chains
-#[derive(Debug, Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, Eq, Constructor, TypeInfo)]
+#[derive(
+	Debug, Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, Eq, Constructor, TypeInfo,
+)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct AddressedMessage {

@@ -80,7 +80,9 @@ impl<Block: BlockT> fmt::Display for BlockId<Block> {
 }
 
 /// Abstraction over a substrate block.
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, scale_info::TypeInfo)]
+#[derive(
+	PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, scale_info::TypeInfo,
+)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
@@ -106,7 +108,8 @@ where
 impl<Header, Extrinsic> BlockT for DaBlock<Header, Extrinsic>
 where
 	Header: Codec + HeaderT + MaybeSerializeDeserialize,
-	Extrinsic: Member + Codec + DecodeWithMemTracking + MaybeSerializeDeserialize + traits::ExtrinsicLike,
+	Extrinsic:
+		Member + Codec + DecodeWithMemTracking + MaybeSerializeDeserialize + traits::ExtrinsicLike,
 {
 	type Extrinsic = Extrinsic;
 	type Header = Header;
@@ -132,7 +135,8 @@ where
 impl<Header, Extrinsic> ExtendedBlock for DaBlock<Header, Extrinsic>
 where
 	Header: Codec + ExtendedHeader + MaybeSerializeDeserialize,
-	Extrinsic: Member + Codec + DecodeWithMemTracking + traits::ExtrinsicLike + MaybeSerializeDeserialize,
+	Extrinsic:
+		Member + Codec + DecodeWithMemTracking + traits::ExtrinsicLike + MaybeSerializeDeserialize,
 {
 	type ExtHeader = Header;
 }
