@@ -59,9 +59,6 @@ num-traits = { version = "0.2.18", default-features = false }
 # ETH
 ethabi-decode = { git = "https://github.com/Snowfork/ethabi-decode.git", branch = "master", default-features = false }
 
-[patch."https://github.com/paritytech/polkadot-sdk"]
-sp-crypto-ec-utils = { git = "https://github.com/availproject/polkadot-sdk", rev = "ff3c47f6c3f52c0b1b919bc56cd3108c17cce822" }
-
 [workspace.lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
 	'cfg(substrate_runtime)',

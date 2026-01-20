@@ -4578,8 +4578,3 @@ name = "zmij"
 version = "1.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dfcd145825aace48cff44a8844de64bf75feec3080e0aa5cdbde72961ae51a65"
-
-[[patch.unused]]
-name = "sp-crypto-ec-utils"
-version = "0.18.0"
-source = "git+https://github.com/availproject/polkadot-sdk?rev=ff3c47f6c3f52c0b1b919bc56cd3108c17cce822#ff3c47f6c3f52c0b1b919bc56cd3108c17cce822"
