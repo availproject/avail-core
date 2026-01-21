@@ -1,5 +1,5 @@
 use crate::FriParamsVersion;
-use codec::{Decode, Encode};
+use codec::{Decode, DecodeWithMemTracking, Encode};
 use primitive_types::H256;
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use sp_debug_derive::RuntimeDebug;
 
 /// Metadata needed for DA sampling + PCS verification of one blob.
-#[derive(Clone, PartialEq, Eq, Encode, Decode, Default, TypeInfo)]
+#[derive(Clone, PartialEq, Eq, Encode, Decode, DecodeWithMemTracking, Default, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
 pub struct FriBlobCommitment {
@@ -25,7 +25,7 @@ pub struct FriBlobCommitment {
 
 /// DA commitment extension — input to LC sampling & verification.
 /// Replaces KZG’s KateCommitment format.
-#[derive(Clone, PartialEq, Eq, Encode, Decode, Default, TypeInfo)]
+#[derive(Clone, PartialEq, Eq, Encode, Decode, DecodeWithMemTracking, Default, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 #[cfg_attr(feature = "runtime", derive(RuntimeDebug))]

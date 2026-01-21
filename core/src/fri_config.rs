@@ -1,10 +1,10 @@
-use codec::{Decode, Encode};
+use codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "runtime")]
-use {sp_debug_derive::RuntimeDebug, sp_runtime_interface::pass_by::PassByCodec};
+use sp_debug_derive::RuntimeDebug;
 /// Parameters that Avail config / node code will set.
 #[derive(Clone, Copy, Debug)]
 pub struct FriParamsConfig {
@@ -20,9 +20,9 @@ pub struct FriParamsConfig {
 
 /// Version of Fri/Binius parameters used to interpret size_bytes into
 /// codeword length and sampling domain.
-#[derive(Clone, Copy, PartialEq, Eq, Encode, Decode, Default, TypeInfo)]
+#[derive(Clone, Copy, PartialEq, Eq, Encode, Decode, DecodeWithMemTracking, Default, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "runtime", derive(PassByCodec, RuntimeDebug))]
+#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
 pub struct FriParamsVersion(pub u8);
 
 impl FriParamsVersion {
