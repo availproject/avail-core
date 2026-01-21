@@ -68,6 +68,3 @@ serde = [ "avail-core/serde", "dep:serde" ]
 extended-columns = []
 maximum-block-size = []
 
-[[bench]]
-name = "reconstruct"
-harness = false

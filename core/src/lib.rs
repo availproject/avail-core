@@ -3,7 +3,7 @@
 
 use core::fmt::Debug;
 
-use codec::{Decode, Encode, MaxEncodedLen};
+use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use derive_more::{Add, Constructor, Deref, Into, Mul};
 use num_traits::Zero;
 use scale_info::TypeInfo;
@@ -33,10 +33,6 @@ pub mod header;
 pub mod kate_commitment;
 pub use kate_commitment::*;
 
-/// Application Specific Data Retrieval
-#[cfg(feature = "runtime")]
-pub mod asdr;
-
 pub mod sha2;
 pub use sha2::ShaTwo256;
 
@@ -55,10 +51,6 @@ pub mod data_lookup;
 pub use data_lookup::v3 as V3DataLookup;
 pub use data_lookup::v4::*;
 pub use data_lookup::{v3_compact, v4_compact};
-
-pub mod app_extrinsic;
-pub use app_extrinsic::AppExtrinsic;
-
 pub mod constants;
 pub use constants::*;
 
@@ -96,6 +88,7 @@ pub enum InvalidTransactionCustomId {
 	TypeInfo,
 	Encode,
 	Decode,
+	DecodeWithMemTracking,
 	Default,
 	Into,
 	MaxEncodedLen,
@@ -131,6 +124,7 @@ impl Zero for AppId {
 	Eq,
 	Encode,
 	Decode,
+	DecodeWithMemTracking,
 	TypeInfo,
 	PartialOrd,
 	Ord,
@@ -148,6 +142,7 @@ pub struct BlockLengthColumns(#[codec(compact)] pub u32);
 #[derive(
 	Encode,
 	Decode,
+	DecodeWithMemTracking,
 	TypeInfo,
 	MaxEncodedLen,
 	Clone,

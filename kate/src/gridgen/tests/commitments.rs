@@ -1,6 +1,6 @@
 use super::*;
 use crate::{com::Cell, couscous, gridgen::core::*, Seed};
-use avail_core::{AppExtrinsic, BlockLengthColumns, BlockLengthRows};
+use avail_core::{BlockLengthColumns, BlockLengthRows};
 use core::num::NonZeroU16;
 use hex_literal::hex;
 use kate_recovery::{

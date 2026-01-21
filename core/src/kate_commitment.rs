@@ -1,5 +1,5 @@
 use crate::from_substrate::HexDisplay;
-use codec::{Decode, Encode};
+use codec::{Decode, DecodeWithMemTracking, Encode};
 use primitive_types::H256;
 use scale_info::TypeInfo;
 use sp_std::{fmt, vec::Vec};
@@ -11,7 +11,7 @@ pub mod v3 {
 	use super::*;
 
 	/// Customized extrinsics root to save the commitment.
-	#[derive(PartialEq, Eq, Clone, Default, Encode, Decode, TypeInfo)]
+	#[derive(PartialEq, Eq, Clone, Default, Encode, Decode, DecodeWithMemTracking, TypeInfo)]
 	#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 	#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 	#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]

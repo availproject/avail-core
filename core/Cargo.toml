@@ -21,7 +21,7 @@ num-traits = { workspace = true }
 
 # Parity
 binary-merkle-tree = { workspace = true, optional = true }
-bounded-collections.workspace = true
+bounded-collections = { workspace = true, features = ["scale-codec"] }
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive", "max-encoded-len"] }
 scale-info = { workspace = true }
 

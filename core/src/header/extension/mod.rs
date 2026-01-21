@@ -1,11 +1,11 @@
-use codec::{Decode, Encode};
+use codec::{Decode, DecodeWithMemTracking, Encode};
 use primitive_types::H256;
 use scale_info::TypeInfo;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "runtime")]
-use {sp_debug_derive::RuntimeDebug, sp_runtime_interface::pass_by::PassByCodec};
+use sp_debug_derive::RuntimeDebug;
 
 pub mod fri_v1;
 // basically only supported kzg header currently
@@ -15,14 +15,14 @@ pub mod kzg {
 	use super::*;
 
 	/// Versioning for KZG header formats.
-	#[derive(Clone, Copy, PartialEq, Eq, Encode, Decode, TypeInfo)]
+	#[derive(Clone, Copy, PartialEq, Eq, Encode, Decode, DecodeWithMemTracking, TypeInfo)]
 	#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-	#[cfg_attr(feature = "runtime", derive(PassByCodec, RuntimeDebug))]
+	#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
 	pub enum KzgHeaderVersion {
 		V4,
 	}
 
-	#[derive(PartialEq, Eq, Clone, Encode, Decode, TypeInfo)]
+	#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, TypeInfo)]
 	#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 	#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
 	#[cfg_attr(not(feature = "runtime"), derive(Debug))]
@@ -75,14 +75,14 @@ pub mod fri {
 	use super::*;
 
 	/// Versioning for Fri/Binius header formats.
-	#[derive(Clone, Copy, PartialEq, Eq, Encode, Decode, TypeInfo)]
+	#[derive(Clone, Copy, PartialEq, Eq, Encode, Decode, DecodeWithMemTracking, TypeInfo)]
 	#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-	#[cfg_attr(feature = "runtime", derive(PassByCodec, RuntimeDebug))]
+	#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
 	pub enum FriHeaderVersion {
 		V1,
 	}
 
-	#[derive(PartialEq, Eq, Clone, Encode, Decode, TypeInfo)]
+	#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, TypeInfo)]
 	#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 	#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
 	#[cfg_attr(not(feature = "runtime"), derive(Debug))]
@@ -140,9 +140,9 @@ pub enum CommitmentScheme {
 }
 
 /// header extension: *which PCS + which version inside*.
-#[derive(PartialEq, Eq, Clone, Encode, Decode, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "runtime", derive(PassByCodec, RuntimeDebug))]
+#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
 #[cfg_attr(not(feature = "runtime"), derive(Debug))]
 pub enum HeaderExtension {
 	Kzg(kzg::KzgHeader),
