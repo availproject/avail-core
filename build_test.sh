@@ -33,3 +33,14 @@ cargo check --no-default-features --features "std"
 cargo check --no-default-features --features "std, serde"
 cargo check --target wasm32-unknown-unknown --no-default-features
 cargo check --target wasm32-unknown-unknown --no-default-features --features "serde"
+
+
+# Fri
+cd ../fri
+cargo check
+cargo check --no-default-features
+cargo check --no-default-features --features "serde"
+cargo check --no-default-features --features "std"
+cargo check --no-default-features --features "std, serde"
+cargo check --target wasm32-unknown-unknown --no-default-features
+cargo check --target wasm32-unknown-unknown --no-default-features --features "serde"
