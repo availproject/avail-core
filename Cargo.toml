@@ -12,14 +12,14 @@ bounded-collections = { version = "0.3.2", default-features = false }
 scale-info = { version = "2", default-features = false, features = ["derive"] }
 
 # Polkadot SDK
-binary-merkle-tree = { git = "https://github.com/availproject/polkadot-sdk", rev = "ff3c47f6c3f52c0b1b919bc56cd3108c17cce822", default-features = false }
-sp-std = { git = "https://github.com/availproject/polkadot-sdk", rev = "ff3c47f6c3f52c0b1b919bc56cd3108c17cce822", default-features = false }
-sp-trie = { git = "https://github.com/availproject/polkadot-sdk", rev = "ff3c47f6c3f52c0b1b919bc56cd3108c17cce822", default-features = false }
-sp-runtime = { git = "https://github.com/availproject/polkadot-sdk", rev = "ff3c47f6c3f52c0b1b919bc56cd3108c17cce822", default-features = false }
-frame-support = { git = "https://github.com/availproject/polkadot-sdk", rev = "ff3c47f6c3f52c0b1b919bc56cd3108c17cce822", default-features = false }
-sp-runtime-interface = { git = "https://github.com/availproject/polkadot-sdk", rev = "ff3c47f6c3f52c0b1b919bc56cd3108c17cce822", default-features = false }
-sp-storage = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "ff3c47f6c3f52c0b1b919bc56cd3108c17cce822", default-features = false }
-sp-debug-derive = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "ff3c47f6c3f52c0b1b919bc56cd3108c17cce822", default-features = false }
+binary-merkle-tree = { git = "https://github.com/availproject/polkadot-sdk", rev = "1e0f57bda03004b3ef2ed6988b6e8ec4eaf2f0ee", default-features = false }
+sp-std = { git = "https://github.com/availproject/polkadot-sdk", rev = "1e0f57bda03004b3ef2ed6988b6e8ec4eaf2f0ee", default-features = false }
+sp-trie = { git = "https://github.com/availproject/polkadot-sdk", rev = "1e0f57bda03004b3ef2ed6988b6e8ec4eaf2f0ee", default-features = false }
+sp-runtime = { git = "https://github.com/availproject/polkadot-sdk", rev = "1e0f57bda03004b3ef2ed6988b6e8ec4eaf2f0ee", default-features = false }
+frame-support = { git = "https://github.com/availproject/polkadot-sdk", rev = "1e0f57bda03004b3ef2ed6988b6e8ec4eaf2f0ee", default-features = false }
+sp-runtime-interface = { git = "https://github.com/availproject/polkadot-sdk", rev = "1e0f57bda03004b3ef2ed6988b6e8ec4eaf2f0ee", default-features = false }
+sp-storage = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "1e0f57bda03004b3ef2ed6988b6e8ec4eaf2f0ee", default-features = false }
+sp-debug-derive = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "1e0f57bda03004b3ef2ed6988b6e8ec4eaf2f0ee", default-features = false }
 
 primitive-types = { version = "0.13.1",  default-features = false, features = ["codec", "scale-info"] }
 
