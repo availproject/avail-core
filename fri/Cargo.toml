@@ -9,6 +9,9 @@ binius-verifier = { workspace = true }
 binius-math = { workspace = true }
 binius-field = { workspace = true }
 binius-transcript = { workspace = true }
+binius-spartan-prover = { workspace = true, default-features = false, optional = true }
+binius-spartan-verifier = { workspace = true, optional = true }
+binius-iop = { workspace = true, optional = true }
 
 avail-core = { path = "../core", default-features = false }
 blake2b_simd = { workspace = true }
@@ -18,6 +21,8 @@ rayon = { version = "1.10", optional = true }
 rand_chacha = { workspace = true, default-features = false }
 rand = { version = "0.9.1", default-features = false, features = ["std", "std_rng"], optional = true}
 serde = { workspace = true, optional = true }
+digest = "0.10"
+itertools = { version = "0.14", optional = true }
 
 [dev-dependencies]
 avail-core = { path = "../core", default-features = false, features = ["runtime"]}
@@ -29,7 +34,16 @@ primitive-types = { workspace = true }
 default = [ "std" ]
 
 # This crate is node-side only currently
-std = [ "avail-core/std", "log/std", "rand_chacha/std", "serde?/std" ]
+std = [
+    "avail-core/std",
+    "log/std",
+    "rand_chacha/std",
+    "serde?/std",
+    "dep:binius-spartan-prover",
+    "dep:binius-spartan-verifier",
+    "dep:binius-iop",
+    "dep:itertools",
+]
 
 # Enable rayon-based parallel code paths
 parallel = [ "rayon", "std" ]

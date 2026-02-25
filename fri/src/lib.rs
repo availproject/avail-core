@@ -6,6 +6,8 @@ pub mod eval_utils;
 pub mod sampling;
 pub mod transcript;
 
+#[cfg(feature = "std")]
+pub use crate::core::FriQueryProver;
 pub use crate::core::{
 	DefaultMerkleProver, FriBiniusPCS, FriCommitOutput, FriCommitment, FriContext, FriParamsConfig,
 	FriParamsVersion, FriProof, SamplingProof, B128,
@@ -56,11 +58,15 @@ pub mod e2e_helpers {
 		let commit_output = pcs.commit::<B128>(&packed.packed_mle, &ctx)?;
 		let digest: [u8; 32] = commit_output
 			.commitment
+			.to_vec()
 			.as_slice()
 			.try_into()
 			.expect("Binius commitment is 32 bytes");
 
-		let commitment = FriCommitment { digest };
+		let commitment = FriCommitment {
+			digest,
+			depth: commit_output.committed.log_len,
+		};
 
 		Ok((pcs, ctx, packed, commit_output, commitment))
 	}
