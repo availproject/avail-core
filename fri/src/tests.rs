@@ -19,6 +19,14 @@ mod e2e_tests {
 		(0..size).map(|i| (i % 256) as u8).collect()
 	}
 
+	fn encode_cells_le(values: &[B128]) -> Vec<u8> {
+		let mut out = Vec::with_capacity(values.len() * 16);
+		for value in values {
+			out.extend_from_slice(&value.val().to_le_bytes());
+		}
+		out
+	}
+
 	#[test]
 	fn end_to_end_commit_prove_verify_small() -> Result<(), FriBiniusError> {
 		let data = patterned_data(1024); // 1 KiB
@@ -64,6 +72,53 @@ mod e2e_tests {
 	}
 
 	#[test]
+	fn end_to_end_verify_with_extra_query_openings() -> Result<(), FriBiniusError> {
+		use binius_verifier::config::B128;
+
+		let data = patterned_data(16 * 1024);
+
+		let cfg = FriParamsConfig {
+			log_inv_rate: 1,
+			num_test_queries: 128,
+			log_num_shares: 8,
+			n_vars: 0,
+		};
+
+		let mut rng = StdRng::from_seed([11u8; 32]);
+		let (pcs, ctx, packed, commit_output, _commitment) = commit_bytes(cfg, &data)?;
+
+		let eval_point = pcs.sample_evaluation_point(&mut rng);
+		let eval_claim = pcs.calculate_evaluation_claim(&packed.packed_values, &eval_point)?;
+
+		let (terminate_codeword, query_prover, proof) = pcs.prove_with_openings::<B128>(
+			packed.packed_mle.clone(),
+			&ctx,
+			&commit_output,
+			&eval_point,
+		)?;
+
+		let layers = query_prover
+			.vcs_optimal_layers()
+			.map_err(|e| FriBiniusError::Proof(e.to_string()))?;
+		let terminate_codeword_vec = terminate_codeword.iter_scalars().collect::<Vec<_>>();
+
+		let mut extra_transcript = pcs.open(0, &query_prover)?;
+
+		pcs.verify_with_extra_query(
+			&proof,
+			eval_claim,
+			&eval_point,
+			&ctx,
+			0,
+			&terminate_codeword_vec,
+			&layers,
+			&mut extra_transcript,
+		)?;
+
+		Ok(())
+	}
+
+	#[test]
 	fn end_to_end_inclusion_proofs() -> Result<(), FriBiniusError> {
 		use binius_verifier::config::B128;
 		use rand::{Rng, SeedableRng};
@@ -81,21 +136,32 @@ mod e2e_tests {
 
 		let (pcs, ctx, _packed, commit_output, commitment) = commit_bytes(cfg, &data)?;
 
-		let codeword_len = commit_output.codeword.len();
-		assert!(codeword_len > 0);
+		let log_batch_size = ctx.fri_params.log_batch_size();
+		let leaf_count = 1usize
+			<< (ctx
+				.fri_params
+				.rs_code()
+				.log_len()
+				.saturating_sub(log_batch_size));
+		assert!(leaf_count > 0);
 
-		let num_samples = usize::min(10, codeword_len);
+		let num_samples = usize::min(10, leaf_count);
 		let mut proofs = Vec::with_capacity(num_samples);
 
 		for _ in 0..num_samples {
-			let idx = rng.random_range(0..codeword_len);
-			let value = commit_output.codeword[idx];
+			let idx = rng.random_range(0..leaf_count);
+			let opened_values = commit_output
+				.codeword
+				.to_ref()
+				.chunk(log_batch_size, idx)
+				.iter_scalars()
+				.collect::<Vec<_>>();
 
 			let transcript = pcs.inclusion_proof::<B128>(&commit_output.committed, idx)?;
 
 			proofs.push(SamplingProof::new(
 				idx as u32,
-				value.val().to_le_bytes().to_vec(),
+				encode_cells_le(&opened_values),
 				transcript_to_bytes(&transcript),
 			));
 		}
@@ -167,16 +233,23 @@ mod e2e_tests {
 		//   and verify Merkle inclusion proofs.
 
 		for (blob_idx, blob) in blobs.iter().enumerate() {
-			let codeword_len = blob.commit_output.codeword.len();
-			assert!(codeword_len > 0, "blob {blob_idx} has empty codeword");
+			let log_batch_size = blob.ctx.fri_params.log_batch_size();
+			let leaf_count = 1usize
+				<< (blob
+					.ctx
+					.fri_params
+					.rs_code()
+					.log_len()
+					.saturating_sub(log_batch_size));
+			assert!(leaf_count > 0, "blob {blob_idx} has empty codeword");
 
 			// randomly sampling 10 cells per blob, same as current lc
-			let samples = usize::min(10, codeword_len);
+			let samples = usize::min(10, leaf_count);
 			let mut sampled_indices = Vec::with_capacity(samples);
 
 			// Sample distinct indices at random
 			while sampled_indices.len() < samples {
-				let idx = rng.random_range(0..codeword_len);
+				let idx = rng.random_range(0..leaf_count);
 				if !sampled_indices.contains(&idx) {
 					sampled_indices.push(idx);
 				}
@@ -184,7 +257,13 @@ mod e2e_tests {
 
 			for &idx in &sampled_indices {
 				// Node side: provide (value, inclusion proof) for this index
-				let value = blob.commit_output.codeword[idx];
+				let sampled_values = blob
+					.commit_output
+					.codeword
+					.to_ref()
+					.chunk(log_batch_size, idx)
+					.iter_scalars()
+					.collect::<Vec<_>>();
 				let mut proof_transcript = blob
 					.pcs
 					.inclusion_proof::<B128>(&blob.commit_output.committed, idx)?;
@@ -196,7 +275,7 @@ mod e2e_tests {
 				// - per-blob FRI context (which it can reconstruct from size + config)
 				blob.pcs.verify_inclusion_proof(
 					&mut proof_transcript,
-					&[value],
+					&sampled_values,
 					idx,
 					&blob.ctx,
 					&blob.commitment,
@@ -221,29 +300,39 @@ mod e2e_tests {
 
 		let (pcs, ctx, _packed, commit_output, commitment) = commit_bytes(cfg, &data)?;
 
-		let codeword_len = commit_output.codeword.len();
-		assert!(codeword_len > 0);
+		let log_batch_size = ctx.fri_params.log_batch_size();
+		let leaf_count = 1usize
+			<< (ctx
+				.fri_params
+				.rs_code()
+				.log_len()
+				.saturating_sub(log_batch_size));
+		assert!(leaf_count > 0);
 
 		// Pick a random index to test
-		let idx = rng.random_range(0..codeword_len);
+		let idx = rng.random_range(0..leaf_count);
 
-		let honest_value = commit_output.codeword[idx];
+		let honest_values = commit_output
+			.codeword
+			.to_ref()
+			.chunk(log_batch_size, idx)
+			.iter_scalars()
+			.collect::<Vec<_>>();
 
 		// Honest proof should verify
 		{
 			let mut transcript = pcs.inclusion_proof::<B128>(&commit_output.committed, idx)?;
-			pcs.verify_inclusion_proof(&mut transcript, &[honest_value], idx, &ctx, &commitment)?;
+			pcs.verify_inclusion_proof(&mut transcript, &honest_values, idx, &ctx, &commitment)?;
 		}
 
 		// Corrupted value should fail
 		{
 			let mut transcript = pcs.inclusion_proof::<B128>(&commit_output.committed, idx)?;
-			let mut bad_value = honest_value;
-			// change the original value
-			bad_value += B128::from(1u128);
+			let mut bad_values = honest_values.clone();
+			bad_values[0] += B128::from(1u128);
 
 			let res =
-				pcs.verify_inclusion_proof(&mut transcript, &[bad_value], idx, &ctx, &commitment);
+				pcs.verify_inclusion_proof(&mut transcript, &bad_values, idx, &ctx, &commitment);
 
 			assert!(res.is_err(), "verification should fail for corrupted value");
 		}
@@ -257,7 +346,7 @@ mod e2e_tests {
 
 			let res = pcs.verify_inclusion_proof(
 				&mut transcript,
-				&[honest_value],
+				&honest_values,
 				idx,
 				&ctx,
 				&bad_commitment,
@@ -295,7 +384,7 @@ mod e2e_tests {
 			.expect("commit must succeed");
 
 		// Turn Merkle root into H256 for header storage
-		let commitment_bytes = commit_output.commitment.clone();
+		let commitment_bytes = commit_output.commitment.to_vec();
 
 		// In the real node, data_root would be merkle root of raw blobs;
 		// here we just fake one for testing.
