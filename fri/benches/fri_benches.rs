@@ -77,8 +77,14 @@ fn fri_sampling_proof_for_size(bencher: Bencher, mb: usize) {
 	let size_bytes = mb * 1024 * 1024;
 
 	let (pcs, ctx, _packed, commit_output, _commitment) = setup_for_size(size_bytes);
-	let codeword_len = commit_output.codeword.len();
-	let idx = codeword_len / 2; // middle cell
+	let log_batch_size = ctx.fri_params.log_batch_size();
+	let leaf_count = 1usize
+		<< (ctx
+			.fri_params
+			.rs_code()
+			.log_len()
+			.saturating_sub(log_batch_size));
+	let idx = leaf_count / 2; // middle leaf
 
 	bencher.bench_local(|| {
 		let mut transcript = pcs
@@ -121,9 +127,20 @@ fn fri_sampling_verify_for_size(bencher: Bencher, mb: usize) {
 	let size_bytes = mb * 1024 * 1024;
 
 	let (pcs, ctx, _packed, commit_output, commitment) = setup_for_size(size_bytes);
-	let codeword_len = commit_output.codeword.len();
-	let idx = codeword_len / 2;
-	let value = commit_output.codeword[idx];
+	let log_batch_size = ctx.fri_params.log_batch_size();
+	let leaf_count = 1usize
+		<< (ctx
+			.fri_params
+			.rs_code()
+			.log_len()
+			.saturating_sub(log_batch_size));
+	let idx = leaf_count / 2;
+	let values = commit_output
+		.codeword
+		.to_ref()
+		.chunk(log_batch_size, idx)
+		.iter_scalars()
+		.collect::<Vec<_>>();
 
 	let base_transcript = pcs
 		.inclusion_proof::<B128>(&commit_output.committed, idx)
@@ -132,7 +149,7 @@ fn fri_sampling_verify_for_size(bencher: Bencher, mb: usize) {
 	bencher.bench_local(|| {
 		// clone transcript to avoid re-proving inside loop
 		let mut tr = base_transcript.clone();
-		pcs.verify_inclusion_proof(&mut tr, &[value], idx, &ctx, &commitment)
+		pcs.verify_inclusion_proof(&mut tr, &values, idx, &ctx, &commitment)
 			.expect("verify");
 		black_box(tr);
 	});
