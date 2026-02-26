@@ -290,6 +290,123 @@ fn fri_eval_verify_32_mib(bencher: Bencher) {
 	fri_eval_verify_for_size(bencher, 32);
 }
 
+// evaluation proof bundle generation (prove_with_openings + extra-query payload)
+fn fri_eval_bundle_build_for_size(bencher: Bencher, mb: usize) {
+	let size_bytes = mb * 1024 * 1024;
+
+	let (pcs, ctx, packed, commit_output, _commitment) = setup_for_size(size_bytes);
+	let mut rng = StdRng::from_seed([9u8; 32]);
+	let eval_point = pcs.sample_evaluation_point(&mut rng);
+
+	let log_batch_size = ctx.fri_params.log_batch_size();
+	let leaf_count = 1usize
+		<< (ctx
+			.fri_params
+			.rs_code()
+			.log_len()
+			.saturating_sub(log_batch_size));
+	let extra_index = leaf_count / 2;
+
+	bencher.bench_local(|| {
+		let (_terminate_codeword, query_prover, proof) = pcs
+			.prove_with_openings::<B128>(
+				packed.packed_mle.clone(),
+				&ctx,
+				&commit_output,
+				&eval_point,
+			)
+			.expect("prove_with_openings");
+		let bundle = pcs
+			.build_eval_proof_bundle(&proof, &_terminate_codeword, &query_prover, extra_index)
+			.expect("build_eval_proof_bundle");
+		black_box(bundle);
+	});
+}
+
+#[divan::bench(max_time = 10)]
+fn fri_eval_bundle_build_2_mib(bencher: Bencher) {
+	fri_eval_bundle_build_for_size(bencher, 2);
+}
+
+#[divan::bench(max_time = 10)]
+fn fri_eval_bundle_build_4_mib(bencher: Bencher) {
+	fri_eval_bundle_build_for_size(bencher, 4);
+}
+
+#[divan::bench(max_time = 10)]
+fn fri_eval_bundle_build_8_mib(bencher: Bencher) {
+	fri_eval_bundle_build_for_size(bencher, 8);
+}
+
+#[divan::bench(max_time = 10)]
+fn fri_eval_bundle_build_16_mib(bencher: Bencher) {
+	fri_eval_bundle_build_for_size(bencher, 16);
+}
+
+#[divan::bench(max_time = 10)]
+fn fri_eval_bundle_build_32_mib(bencher: Bencher) {
+	fri_eval_bundle_build_for_size(bencher, 32);
+}
+
+// evaluation proof bundle verification (verify_with_extra_query wrapper)
+fn fri_eval_bundle_verify_for_size(bencher: Bencher, mb: usize) {
+	let size_bytes = mb * 1024 * 1024;
+
+	let (pcs, ctx, packed, commit_output, _commitment) = setup_for_size(size_bytes);
+	let mut rng = StdRng::from_seed([10u8; 32]);
+	let eval_point = pcs.sample_evaluation_point(&mut rng);
+	let eval_claim = pcs
+		.calculate_evaluation_claim(&packed.packed_values, &eval_point)
+		.expect("evaluation_claim");
+
+	let log_batch_size = ctx.fri_params.log_batch_size();
+	let leaf_count = 1usize
+		<< (ctx
+			.fri_params
+			.rs_code()
+			.log_len()
+			.saturating_sub(log_batch_size));
+	let extra_index = leaf_count / 2;
+
+	let (terminate_codeword, query_prover, proof) = pcs
+		.prove_with_openings::<B128>(packed.packed_mle.clone(), &ctx, &commit_output, &eval_point)
+		.expect("prove_with_openings");
+	let bundle = pcs
+		.build_eval_proof_bundle(&proof, &terminate_codeword, &query_prover, extra_index)
+		.expect("build_eval_proof_bundle");
+
+	bencher.bench_local(|| {
+		pcs.verify_eval_proof_bundle(&bundle, eval_claim, &eval_point, &ctx)
+			.expect("verify_eval_proof_bundle");
+		black_box(&bundle);
+	});
+}
+
+#[divan::bench(max_time = 10)]
+fn fri_eval_bundle_verify_2_mib(bencher: Bencher) {
+	fri_eval_bundle_verify_for_size(bencher, 2);
+}
+
+#[divan::bench(max_time = 10)]
+fn fri_eval_bundle_verify_4_mib(bencher: Bencher) {
+	fri_eval_bundle_verify_for_size(bencher, 4);
+}
+
+#[divan::bench(max_time = 10)]
+fn fri_eval_bundle_verify_8_mib(bencher: Bencher) {
+	fri_eval_bundle_verify_for_size(bencher, 8);
+}
+
+#[divan::bench(max_time = 10)]
+fn fri_eval_bundle_verify_16_mib(bencher: Bencher) {
+	fri_eval_bundle_verify_for_size(bencher, 16);
+}
+
+#[divan::bench(max_time = 10)]
+fn fri_eval_bundle_verify_32_mib(bencher: Bencher) {
+	fri_eval_bundle_verify_for_size(bencher, 32);
+}
+
 // evaluation claim (p(z)) computation
 fn fri_eval_claim_for_size(bencher: Bencher, mb: usize) {
 	let size_bytes = mb * 1024 * 1024;
