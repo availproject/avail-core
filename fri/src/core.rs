@@ -1,5 +1,5 @@
 use crate::error::FriBiniusError;
-use crate::transcript::{transcript_from_bytes, Challenger, VerifierTr};
+use crate::transcript::{transcript_from_bytes, transcript_to_bytes, Challenger, VerifierTr};
 
 use binius_field::{PackedExtension, PackedField};
 #[cfg(feature = "std")]
@@ -81,6 +81,20 @@ pub struct FriCommitment {
 #[derive(Clone, Debug)]
 pub struct FriProof {
 	pub transcript_bytes: Vec<u8>,
+}
+
+#[derive(Clone, Debug, codec::Encode, codec::Decode)]
+pub struct FriExtraQueryProof {
+	pub extra_index: u32,
+	pub terminate_codeword: Vec<u8>,
+	pub layers: Vec<Vec<[u8; 32]>>,
+	pub extra_proof: Vec<u8>,
+}
+
+#[derive(Clone, Debug, codec::Encode, codec::Decode)]
+pub struct FriEvalProofBundle {
+	pub eval_proof: Vec<u8>,
+	pub extra_query: FriExtraQueryProof,
 }
 
 #[derive(Debug, Clone)]
@@ -396,6 +410,117 @@ impl FriBiniusPCS {
 			.map_err(|e| FriBiniusError::Verification(e.to_string()))?;
 
 		Ok(())
+	}
+
+	#[cfg(feature = "std")]
+	pub fn build_eval_proof_bundle<'a, P>(
+		&self,
+		proof: &FriProof,
+		terminate_codeword: &FieldBuffer<B128>,
+		query_prover: &FriQueryProver<'a, P>,
+		extra_index: usize,
+	) -> Result<FriEvalProofBundle, FriBiniusError>
+	where
+		P: PackedField<Scalar = B128> + PackedExtension<B128> + PackedExtension<B1>,
+	{
+		let layers = query_prover
+			.vcs_optimal_layers()
+			.map_err(|e| FriBiniusError::Proof(e.to_string()))?;
+		let layers = layers
+			.into_iter()
+			.map(|layer| {
+				layer
+					.into_iter()
+					.map(|h| {
+						let hash_bytes = h.to_vec();
+						let bytes: [u8; 32] = hash_bytes
+							.as_slice()
+							.try_into()
+							.map_err(|_| FriBiniusError::Proof("invalid layer hash size".into()))?;
+						Ok(bytes)
+					})
+					.collect::<Result<Vec<_>, FriBiniusError>>()
+			})
+			.collect::<Result<Vec<_>, FriBiniusError>>()?;
+
+		let mut terminate_codeword_bytes = Vec::with_capacity(terminate_codeword.len() * 16);
+		for v in terminate_codeword.iter_scalars() {
+			terminate_codeword_bytes.extend_from_slice(&v.val().to_le_bytes());
+		}
+
+		let extra_transcript = self.open(extra_index, query_prover)?;
+		let extra_query = FriExtraQueryProof {
+			extra_index: u32::try_from(extra_index)
+				.map_err(|_| FriBiniusError::InvalidInput("extra index out of range".into()))?,
+			terminate_codeword: terminate_codeword_bytes,
+			layers,
+			extra_proof: transcript_to_bytes(&extra_transcript),
+		};
+
+		Ok(FriEvalProofBundle {
+			eval_proof: proof.transcript_bytes.clone(),
+			extra_query,
+		})
+	}
+
+	#[cfg(feature = "std")]
+	pub fn verify_eval_proof_bundle(
+		&self,
+		bundle: &FriEvalProofBundle,
+		evaluation_claim: B128,
+		evaluation_point: &[B128],
+		ctx: &FriContext,
+	) -> Result<(), FriBiniusError> {
+		if bundle.extra_query.terminate_codeword.is_empty()
+			|| !bundle
+				.extra_query
+				.terminate_codeword
+				.len()
+				.is_multiple_of(16)
+		{
+			return Err(FriBiniusError::InvalidInput(
+				"terminate_codeword must be a non-empty multiple of 16 bytes".into(),
+			));
+		}
+
+		let terminate_codeword = bundle
+			.extra_query
+			.terminate_codeword
+			.chunks_exact(16)
+			.map(|chunk| {
+				let mut arr = [0u8; 16];
+				arr.copy_from_slice(chunk);
+				B128::from(u128::from_le_bytes(arr))
+			})
+			.collect::<Vec<_>>();
+
+		let layers = bundle
+			.extra_query
+			.layers
+			.iter()
+			.map(|layer| {
+				layer
+					.iter()
+					.map(|h| Ok((*h).into()))
+					.collect::<Result<Vec<digest::Output<StdDigest>>, FriBiniusError>>()
+			})
+			.collect::<Result<Vec<_>, FriBiniusError>>()?;
+
+		let proof = FriProof {
+			transcript_bytes: bundle.eval_proof.clone(),
+		};
+		let mut extra_transcript = transcript_from_bytes(bundle.extra_query.extra_proof.clone());
+
+		self.verify_with_extra_query(
+			&proof,
+			evaluation_claim,
+			evaluation_point,
+			ctx,
+			bundle.extra_query.extra_index as usize,
+			&terminate_codeword,
+			&layers,
+			&mut extra_transcript,
+		)
 	}
 
 	pub fn inclusion_proof<P>(

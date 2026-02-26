@@ -9,8 +9,9 @@ pub mod transcript;
 #[cfg(feature = "std")]
 pub use crate::core::FriQueryProver;
 pub use crate::core::{
-	DefaultMerkleProver, FriBiniusPCS, FriCommitOutput, FriCommitment, FriContext, FriParamsConfig,
-	FriParamsVersion, FriProof, SamplingProof, B128,
+	DefaultMerkleProver, FriBiniusPCS, FriCommitOutput, FriCommitment, FriContext,
+	FriEvalProofBundle, FriExtraQueryProof, FriParamsConfig, FriParamsVersion, FriProof,
+	SamplingProof, B128,
 };
 pub use crate::encoding::{BytesEncoder, PackedMLE};
 pub use crate::error::FriBiniusError;
