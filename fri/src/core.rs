@@ -1,5 +1,7 @@
 use crate::error::FriBiniusError;
-use crate::transcript::{transcript_from_bytes, transcript_to_bytes, Challenger, VerifierTr};
+#[cfg(feature = "std")]
+use crate::transcript::transcript_to_bytes;
+use crate::transcript::{transcript_from_bytes, Challenger, VerifierTr};
 
 use binius_field::{PackedExtension, PackedField};
 #[cfg(feature = "std")]
@@ -7,10 +9,7 @@ use binius_iop::fri::{vcs_optimal_layers_depths_iter, ConstantArityStrategy};
 use binius_math::{
 	inner_product::inner_product,
 	multilinear::eq::eq_ind_partial_eval,
-	ntt::{
-		domain_context::{self, GenericPreExpanded},
-		NeighborsLastMultiThread,
-	},
+	ntt::{domain_context::GenericPreExpanded, NeighborsLastMultiThread},
 };
 #[cfg(feature = "std")]
 use binius_math::{BinarySubspace, FieldBuffer};
@@ -152,6 +151,7 @@ pub struct FriContext {
 }
 
 pub struct FriBiniusPCS {
+	#[allow(dead_code)]
 	pub(crate) cfg: FriParamsConfig,
 	pub(crate) merkle_prover: DefaultMerkleProver,
 }
@@ -177,7 +177,7 @@ impl FriBiniusPCS {
 		let code_log_len = mle_log_len + self.cfg.log_inv_rate;
 		let subspace = BinarySubspace::with_dim(code_log_len);
 
-		let domain_context = domain_context::GenericPreExpanded::generate_from_subspace(&subspace);
+		let domain_context = GenericPreExpanded::generate_from_subspace(&subspace);
 		let ntt = NeighborsLastMultiThread::new(domain_context, self.cfg.log_num_shares);
 
 		let fri_params = FRIParams::with_strategy(
