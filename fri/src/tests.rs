@@ -182,7 +182,7 @@ mod e2e_tests {
 
 	#[test]
 	fn fri_params_version_zero_maps_to_expected_config() {
-		let v = FriParamsVersion(0);
+		let v = FriParamsVersion::V0;
 		let n_vars = 17;
 		let cfg = v.to_config(n_vars);
 
@@ -381,7 +381,7 @@ mod e2e_tests {
 			.expect("bytes_to_packed_mle must succeed");
 		let n_vars = packed.total_n_vars;
 
-		let params_version = FriParamsVersion(0);
+		let params_version = FriParamsVersion::V0;
 		let cfg = params_version.to_config(n_vars);
 
 		let pcs = FriBiniusPCS::new(cfg);
@@ -429,7 +429,7 @@ mod e2e_tests {
 			_ => panic!("expected Fri V1 header"),
 		};
 
-		assert_eq!(inner.params_version.0, 0);
+		assert_eq!(inner.params_version, FriParamsVersion::V0);
 		assert_eq!(inner.blobs.len(), 1);
 		assert_eq!(inner.blobs[0].size_bytes, blob_size as u64);
 		assert_eq!(inner.blobs[0].commitment, commitment_bytes);

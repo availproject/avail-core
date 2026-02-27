@@ -25,7 +25,7 @@ fn setup_for_size(
 ) {
 	let data = patterned_data(size_bytes);
 
-	let params_version = FriParamsVersion(0);
+	let params_version = FriParamsVersion::V0;
 	let cfg = params_version.to_config(0);
 
 	commit_bytes(cfg, &data).expect("commit_bytes must succeed")
@@ -38,7 +38,7 @@ fn fri_commit_for_size(bencher: Bencher, mb: usize) {
 	bencher.bench_local(|| {
 		let data = patterned_data(size_bytes);
 
-		let params_version = FriParamsVersion(0);
+		let params_version = FriParamsVersion::V0;
 		let cfg = params_version.to_config(0);
 
 		let _ = commit_bytes(cfg, &data).expect("commit_bytes must succeed");
