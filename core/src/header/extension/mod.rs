@@ -106,7 +106,7 @@ pub mod fri {
 		/// Returns true if this header commits to at least one DA blob.
 		pub fn has_da_commitments(&self) -> bool {
 			match self {
-				FriHeader::V1(ext) => !ext.blobs.is_empty(),
+				FriHeader::V1(ext) => ext.blob_count > 0,
 			}
 		}
 
