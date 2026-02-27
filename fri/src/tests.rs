@@ -34,6 +34,7 @@ mod e2e_tests {
 		let cfg = FriParamsConfig {
 			log_inv_rate: 1,
 			num_test_queries: 32,
+			arity: 2,
 			log_num_shares: 8,
 			n_vars: 0, // will be filled from data
 		};
@@ -52,6 +53,7 @@ mod e2e_tests {
 		let cfg = FriParamsConfig {
 			log_inv_rate: 1,
 			num_test_queries: 128,
+			arity: 2,
 			log_num_shares: 8,
 			n_vars: 0,
 		};
@@ -62,11 +64,14 @@ mod e2e_tests {
 		let eval_point = pcs.sample_evaluation_point(&mut rng);
 		let eval_claim = pcs.calculate_evaluation_claim(&packed.packed_values, &eval_point)?;
 
-		let proof =
-			pcs.prove::<B128>(packed.packed_mle.clone(), &ctx, &commit_output, &eval_point)?;
-
-		// Verify using the explicit claim + evaluation point
-		pcs.verify(&proof, eval_claim, &eval_point, &ctx)?;
+		let (terminate_codeword, query_prover, proof) = pcs.prove_with_openings::<B128>(
+			packed.packed_mle.clone(),
+			&ctx,
+			&commit_output,
+			&eval_point,
+		)?;
+		let bundle = pcs.build_eval_proof_bundle(&proof, &terminate_codeword, &query_prover, 0)?;
+		pcs.verify_eval_proof_bundle(&bundle, eval_claim, &eval_point, &ctx)?;
 
 		Ok(())
 	}
@@ -80,6 +85,7 @@ mod e2e_tests {
 		let cfg = FriParamsConfig {
 			log_inv_rate: 1,
 			num_test_queries: 128,
+			arity: 2,
 			log_num_shares: 8,
 			n_vars: 0,
 		};
@@ -128,6 +134,7 @@ mod e2e_tests {
 		let cfg = FriParamsConfig {
 			log_inv_rate: 1,
 			num_test_queries: 64,
+			arity: 2,
 			log_num_shares: 8,
 			n_vars: 0,
 		};
@@ -181,6 +188,7 @@ mod e2e_tests {
 
 		assert_eq!(cfg.log_inv_rate, 1);
 		assert_eq!(cfg.num_test_queries, 128);
+		assert_eq!(cfg.arity, 2);
 		assert_eq!(cfg.log_num_shares, 80);
 		assert_eq!(cfg.n_vars, n_vars);
 	}
@@ -194,6 +202,7 @@ mod e2e_tests {
 		let base_cfg = FriParamsConfig {
 			log_inv_rate: 1,
 			num_test_queries: 64,
+			arity: 2,
 			log_num_shares: 8,
 			n_vars: 0,
 		};
@@ -292,6 +301,7 @@ mod e2e_tests {
 		let cfg = FriParamsConfig {
 			log_inv_rate: 1,
 			num_test_queries: 64,
+			arity: 2,
 			log_num_shares: 8,
 			n_vars: 0,
 		};
@@ -430,11 +440,19 @@ mod e2e_tests {
 			.calculate_evaluation_claim(&packed.packed_values, &eval_point)
 			.expect("claim must succeed");
 
-		let proof = pcs
-			.prove::<B128>(packed.packed_mle.clone(), &ctx, &commit_output, &eval_point)
-			.expect("prove must succeed");
+		let (terminate_codeword, query_prover, proof) = pcs
+			.prove_with_openings::<B128>(
+				packed.packed_mle.clone(),
+				&ctx,
+				&commit_output,
+				&eval_point,
+			)
+			.expect("prove_with_openings must succeed");
+		let bundle = pcs
+			.build_eval_proof_bundle(&proof, &terminate_codeword, &query_prover, 0)
+			.expect("build_eval_proof_bundle must succeed");
 
-		pcs.verify(&proof, eval_claim, &eval_point, &ctx)
-			.expect("Fri evaluation proof must verify");
+		pcs.verify_eval_proof_bundle(&bundle, eval_claim, &eval_point, &ctx)
+			.expect("Fri evaluation proof bundle must verify");
 	}
 }

@@ -84,11 +84,16 @@ pub mod e2e_helpers {
 		let eval_point = pcs.sample_evaluation_point(rng);
 		let eval_claim = pcs.calculate_evaluation_claim(&packed.packed_values, &eval_point)?;
 
-		// Generate proof
-		let proof =
-			pcs.prove::<B128>(packed.packed_mle.clone(), &ctx, &commit_output, &eval_point)?;
-
-		// Verify
-		pcs.verify(&proof, eval_claim, &eval_point, &ctx)
+		// Generate and verify using the extra-query bundle path.
+		let (terminate_codeword, query_prover, proof) = pcs.prove_with_openings::<B128>(
+			packed.packed_mle.clone(),
+			&ctx,
+			&commit_output,
+			&eval_point,
+		)?;
+		let extra_index = 0usize;
+		let bundle =
+			pcs.build_eval_proof_bundle(&proof, &terminate_codeword, &query_prover, extra_index)?;
+		pcs.verify_eval_proof_bundle(&bundle, eval_claim, &eval_point, &ctx)
 	}
 }

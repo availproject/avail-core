@@ -187,7 +187,7 @@ impl FriBiniusPCS {
 			None,
 			self.cfg.log_inv_rate,
 			self.cfg.num_test_queries,
-			&ConstantArityStrategy::new(2),
+			&ConstantArityStrategy::new(self.cfg.arity),
 		)
 		.map_err(|e| FriBiniusError::FriParamsInit(e.to_string()))?;
 
@@ -292,59 +292,6 @@ impl FriBiniusPCS {
 		};
 
 		Ok((terminate_codeword, query_prover, proof))
-	}
-
-	#[cfg(feature = "std")]
-	pub fn prove<P>(
-		&self,
-		packed_mle: FieldBuffer<P>,
-		ctx: &FriContext,
-		commit_output: &FriCommitOutput<P>,
-		evaluation_point: &[B128],
-	) -> Result<FriProof, FriBiniusError>
-	where
-		P: PackedField<Scalar = B128> + PackedExtension<B128> + PackedExtension<B1>,
-	{
-		let (_, _, proof) =
-			self.prove_with_openings(packed_mle, ctx, commit_output, evaluation_point)?;
-		Ok(proof)
-	}
-
-	#[cfg(feature = "std")]
-	pub fn verify(
-		&self,
-		proof: &FriProof,
-		evaluation_claim: B128,
-		evaluation_point: &[B128],
-		ctx: &FriContext,
-	) -> Result<(), FriBiniusError> {
-		let mut transcript = transcript_from_bytes(proof.transcript_bytes.clone());
-		let retrieved_commitment = transcript
-			.message()
-			.read()
-			.map_err(|e| FriBiniusError::Transcript(e.to_string()))?;
-
-		let n_packed_vars = ctx.fri_params.rs_code().log_dim() + ctx.fri_params.log_batch_size();
-		if evaluation_point.len() < n_packed_vars {
-			return Err(FriBiniusError::InvalidEvaluationPoint(
-				n_packed_vars,
-				evaluation_point.len(),
-			));
-		}
-		let eval_point = &evaluation_point[..n_packed_vars];
-
-		let merkle_scheme = self.merkle_prover.scheme().clone();
-		spartan_verify(
-			&mut transcript,
-			evaluation_claim,
-			eval_point,
-			retrieved_commitment,
-			&ctx.fri_params,
-			&merkle_scheme,
-		)
-		.map_err(|e| FriBiniusError::Verification(e.to_string()))?;
-
-		Ok(())
 	}
 
 	#[cfg(feature = "std")]

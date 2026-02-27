@@ -12,6 +12,8 @@ pub struct FriParamsConfig {
 	pub log_inv_rate: usize,
 	/// Number of FRI test queries (soundness parameter).
 	pub num_test_queries: usize,
+	/// FRI folding arity.
+	pub arity: usize,
 	/// log2(number of “shares” / repetitions).
 	pub log_num_shares: usize,
 	/// Number of multilinear variables (depends on data size).
@@ -32,6 +34,7 @@ impl FriParamsVersion {
 			0 => FriParamsConfig {
 				log_inv_rate: 1,
 				num_test_queries: 128,
+				arity: 2,
 				log_num_shares: 80,
 				n_vars,
 			},
