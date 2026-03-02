@@ -12,6 +12,8 @@ pub struct FriParamsConfig {
 	pub log_inv_rate: usize,
 	/// Number of FRI test queries (soundness parameter).
 	pub num_test_queries: usize,
+	/// FRI folding arity.
+	pub arity: usize,
 	/// log2(number of “shares” / repetitions).
 	pub log_num_shares: usize,
 	/// Number of multilinear variables (depends on data size).
@@ -23,19 +25,22 @@ pub struct FriParamsConfig {
 #[derive(Clone, Copy, PartialEq, Eq, Encode, Decode, DecodeWithMemTracking, Default, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
-pub struct FriParamsVersion(pub u8);
+pub enum FriParamsVersion {
+	#[default]
+	V0,
+}
 
 impl FriParamsVersion {
 	/// Map this version to a FriParamsConfig, given `n_vars`
 	pub fn to_config(self, n_vars: usize) -> FriParamsConfig {
-		match self.0 {
-			0 => FriParamsConfig {
+		match self {
+			FriParamsVersion::V0 => FriParamsConfig {
 				log_inv_rate: 1,
 				num_test_queries: 128,
+				arity: 2,
 				log_num_shares: 80,
 				n_vars,
 			},
-			_ => panic!("Unsupported FriParamsVersion {}", self.0),
 		}
 	}
 }

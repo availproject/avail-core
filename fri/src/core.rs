@@ -1,34 +1,44 @@
 use crate::error::FriBiniusError;
+#[cfg(feature = "std")]
+use crate::transcript::transcript_to_bytes;
 use crate::transcript::{transcript_from_bytes, Challenger, VerifierTr};
 
-use binius_field::{ExtensionField, Field, PackedExtension, PackedField};
+use binius_field::{PackedExtension, PackedField};
+#[cfg(feature = "std")]
+use binius_iop::fri::{vcs_optimal_layers_depths_iter, ConstantArityStrategy};
 use binius_math::{
 	inner_product::inner_product,
 	multilinear::eq::eq_ind_partial_eval,
-	ntt::{
-		domain_context::{self, GenericPreExpanded},
-		NeighborsLastMultiThread,
-	},
-	BinarySubspace, FieldBuffer, ReedSolomonCode,
+	ntt::{domain_context::GenericPreExpanded, NeighborsLastMultiThread},
 };
+#[cfg(feature = "std")]
+use binius_math::{BinarySubspace, FieldBuffer};
+#[cfg(feature = "std")]
+use binius_prover::fri::FRIQueryProver;
 use binius_prover::{
 	fri::CommitOutput,
 	hash::parallel_compression::ParallelCompressionAdaptor,
 	merkle_tree::{prover::BinaryMerkleTreeProver, MerkleTreeProver},
-	pcs::OneBitPCSProver,
 };
+#[cfg(feature = "std")]
+use binius_spartan_prover::pcs::PCSProver;
+#[cfg(feature = "std")]
+use binius_spartan_verifier::pcs::verify as spartan_verify;
 use binius_transcript::ProverTranscript;
+#[cfg(feature = "std")]
+use binius_verifier::merkle_tree::BinaryMerkleTreeScheme;
 use binius_verifier::{
 	config::B1,
 	fri::FRIParams,
 	hash::{StdCompression, StdDigest},
 	merkle_tree::MerkleTreeScheme,
-	pcs::verify as fri_verify,
 };
+#[cfg(feature = "std")]
+use itertools::izip;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-// TODO: re-export some of the common types to be sued by downstream
+// TODO: re-export some of the common types to be used by downstream
 pub use avail_core::{FriParamsConfig, FriParamsVersion};
 pub use binius_verifier::config::B128;
 
@@ -48,19 +58,42 @@ pub type MerkleCommitted<S> = <BinaryMerkleTreeProver<
 	ParallelCompressionAdaptor<StdCompression>,
 > as MerkleTreeProver<S>>::Committed;
 
-/// Our PCS commit output type specialization.
-pub type FriCommitOutput<P> = CommitOutput<P, Vec<u8>, MerkleCommitted<<P as PackedField>::Scalar>>;
+pub type FriCommitOutput<P> =
+	CommitOutput<P, digest::Output<StdDigest>, MerkleCommitted<<P as PackedField>::Scalar>>;
 
-/// Commitment
+#[cfg(feature = "std")]
+pub type FriQueryProver<'a, P> = FRIQueryProver<
+	'a,
+	B128,
+	P,
+	DefaultMerkleProver,
+	BinaryMerkleTreeScheme<B128, StdDigest, StdCompression>,
+>;
+
 #[derive(Clone, Debug)]
 pub struct FriCommitment {
 	pub digest: [u8; 32],
+	pub depth: usize,
 }
 
 /// Evaluation proof
 #[derive(Clone, Debug)]
 pub struct FriProof {
 	pub transcript_bytes: Vec<u8>,
+}
+
+#[derive(Clone, Debug, codec::Encode, codec::Decode)]
+pub struct FriExtraQueryProof {
+	pub extra_index: u32,
+	pub terminate_codeword: Vec<u8>,
+	pub layers: Vec<Vec<[u8; 32]>>,
+	pub extra_proof: Vec<u8>,
+}
+
+#[derive(Clone, Debug, codec::Encode, codec::Decode)]
+pub struct FriEvalProofBundle {
+	pub eval_proof: Vec<u8>,
+	pub extra_query: FriExtraQueryProof,
 }
 
 #[derive(Debug, Clone)]
@@ -85,21 +118,26 @@ impl SamplingProof {
 		ctx: &FriContext,
 		commitment: &FriCommitment,
 	) -> Result<(), FriBiniusError> {
-		if self.cell.len() != 16 {
+		if self.cell.is_empty() || !self.cell.len().is_multiple_of(16) {
 			return Err(FriBiniusError::InvalidInput(
-				"SamplingProof.cell must be 16 bytes".into(),
+				"SamplingProof.cell must be a non-empty multiple of 16 bytes".into(),
 			));
 		}
 
-		let mut arr = [0u8; 16];
-		arr.copy_from_slice(&self.cell);
-
-		let value = B128::from(u128::from_le_bytes(arr));
+		let values = self
+			.cell
+			.chunks_exact(16)
+			.map(|chunk| {
+				let mut arr = [0u8; 16];
+				arr.copy_from_slice(chunk);
+				B128::from(u128::from_le_bytes(arr))
+			})
+			.collect::<Vec<_>>();
 		let mut transcript = transcript_from_bytes(self.proof.clone());
 
 		pcs.verify_inclusion_proof(
 			&mut transcript,
-			&[value],
+			&values,
 			self.index as usize,
 			ctx,
 			commitment,
@@ -113,6 +151,7 @@ pub struct FriContext {
 }
 
 pub struct FriBiniusPCS {
+	#[allow(dead_code)]
 	pub(crate) cfg: FriParamsConfig,
 	pub(crate) merkle_prover: DefaultMerkleProver,
 }
@@ -127,6 +166,7 @@ impl FriBiniusPCS {
 		}
 	}
 
+	#[cfg(feature = "std")]
 	pub fn initialize_fri_context<P>(
 		&self,
 		mle_log_len: usize,
@@ -134,33 +174,22 @@ impl FriBiniusPCS {
 	where
 		P: PackedField<Scalar = B128> + PackedExtension<B128> + PackedExtension<B1>,
 	{
-		// Reed–Solomon code over B128; parameterized only by log-length + inv-rate.
-		let committed_rs_code = ReedSolomonCode::<B128>::new(mle_log_len, self.cfg.log_inv_rate)
-			.map_err(|e| FriBiniusError::ReedSolomonInit(e.to_string()))?;
+		let code_log_len = mle_log_len + self.cfg.log_inv_rate;
+		let subspace = BinarySubspace::with_dim(code_log_len);
 
-		let fri_log_batch_size = 0;
+		let domain_context = GenericPreExpanded::generate_from_subspace(&subspace);
+		let ntt = NeighborsLastMultiThread::new(domain_context, self.cfg.log_num_shares);
 
-		// FRI arities depend on packing width and log-length, not the data itself.
-		let fri_arities = if P::LOG_WIDTH == 2 {
-			// small-width special case
-			vec![2, 2]
-		} else {
-			vec![2; mle_log_len / 2]
-		};
-
-		let fri_params = FRIParams::new(
-			committed_rs_code.clone(),
-			fri_log_batch_size,
-			fri_arities,
+		let fri_params = FRIParams::with_strategy(
+			&ntt,
+			self.merkle_prover.scheme(),
+			mle_log_len,
+			None,
+			self.cfg.log_inv_rate,
 			self.cfg.num_test_queries,
+			&ConstantArityStrategy::new(self.cfg.arity),
 		)
 		.map_err(|e| FriBiniusError::FriParamsInit(e.to_string()))?;
-
-		let subspace = BinarySubspace::with_dim(fri_params.rs_code().log_len())
-			.map_err(|e| FriBiniusError::DomainInit(e.to_string()))?;
-
-		let domain_context = domain_context::GenericPreExpanded::generate_from_subspace(&subspace);
-		let ntt = NeighborsLastMultiThread::new(domain_context, self.cfg.log_num_shares);
 
 		Ok(FriContext { fri_params, ntt })
 	}
@@ -179,40 +208,33 @@ impl FriBiniusPCS {
 		values: &[B128],
 		evaluation_point: &[B128],
 	) -> Result<B128, FriBiniusError> {
-		// convert large-field MLE -> small-field MLE over B1
-		let small_mle = large_field_mle_to_small_field::<B1, B128>(values);
-		let lifted = lift_small_to_large_field::<B1, B128>(&small_mle);
-
-		let eq_vals = eq_ind_partial_eval(evaluation_point);
-		let eq_slice: &[B128] = eq_vals.as_ref();
-
-		if lifted.len() != eq_slice.len() {
-			return Err(FriBiniusError::Verification(format!(
-				"calculate_evaluation_claim: mismatched lengths: lifted={}, eq_slice={}",
-				lifted.len(),
-				eq_slice.len()
-			)));
+		if !values.len().is_power_of_two() {
+			return Err(FriBiniusError::InvalidInput(
+				"values length must be a power of two".into(),
+			));
 		}
 
-		#[cfg(feature = "parallel")]
-		{
-			use rayon::prelude::*;
-
-			let acc = lifted
-				.par_iter()
-				.zip(eq_slice.par_iter())
-				.map(|(a, b)| *a * *b)
-				.reduce(|| B128::ZERO, |x, y| x + y);
-
-			Ok(acc)
+		let required_n_vars = values.len().ilog2() as usize;
+		if evaluation_point.len() < required_n_vars {
+			return Err(FriBiniusError::InvalidEvaluationPoint(
+				required_n_vars,
+				evaluation_point.len(),
+			));
 		}
 
-		#[cfg(not(feature = "parallel"))]
-		{
-			Ok(inner_product::<B128>(lifted, eq_slice.to_vec()))
-		}
+		let eval_slice = &evaluation_point[..required_n_vars];
+		let evaluation_claim = inner_product::<B128>(
+			values.to_vec(),
+			eq_ind_partial_eval(eval_slice)
+				.as_ref()
+				.iter()
+				.copied()
+				.collect::<Vec<_>>(),
+		);
+		Ok(evaluation_claim)
 	}
 
+	#[cfg(feature = "std")]
 	pub fn commit<P>(
 		&self,
 		packed_mle: &FieldBuffer<P>,
@@ -221,99 +243,233 @@ impl FriBiniusPCS {
 	where
 		P: PackedField<Scalar = B128> + PackedExtension<B128> + PackedExtension<B1>,
 	{
-		let pcs = OneBitPCSProver::new(&ctx.ntt, &self.merkle_prover, &ctx.fri_params);
-
-		let commit_output = pcs
-			.commit(packed_mle.clone())
-			.map_err(|e| FriBiniusError::Commitment(e.to_string()))?;
-
-		Ok(CommitOutput {
-			codeword: commit_output.codeword,
-			commitment: commit_output.commitment.to_vec(),
-			committed: commit_output.committed,
-		})
+		let pcs = PCSProver::new(&ctx.ntt, &self.merkle_prover, &ctx.fri_params);
+		pcs.commit(packed_mle.to_ref())
+			.map_err(|e| FriBiniusError::Commitment(e.to_string()))
 	}
 
-	/// Generate a FRI evaluation proof.
-	pub fn prove<P>(
-		&self,
+	#[cfg(feature = "std")]
+	pub fn prove_with_openings<'a, P>(
+		&'a self,
 		packed_mle: FieldBuffer<P>,
-		ctx: &FriContext,
-		commit_output: &FriCommitOutput<P>,
+		ctx: &'a FriContext,
+		commit_output: &'a FriCommitOutput<P>,
 		evaluation_point: &[B128],
-	) -> Result<FriProof, FriBiniusError>
+	) -> Result<(FieldBuffer<B128>, FriQueryProver<'a, P>, FriProof), FriBiniusError>
 	where
 		P: PackedField<Scalar = B128> + PackedExtension<B128> + PackedExtension<B1>,
 	{
-		if evaluation_point.len() != self.cfg.n_vars {
+		let n_packed_vars = ctx.fri_params.rs_code().log_dim() + ctx.fri_params.log_batch_size();
+		if evaluation_point.len() < n_packed_vars {
 			return Err(FriBiniusError::InvalidEvaluationPoint(
-				self.cfg.n_vars,
+				n_packed_vars,
 				evaluation_point.len(),
 			));
 		}
+		let eval_point = &evaluation_point[..n_packed_vars];
 
-		let pcs = OneBitPCSProver::new(&ctx.ntt, &self.merkle_prover, &ctx.fri_params);
+		let eval_point_eq = eq_ind_partial_eval::<P>(eval_point);
+		let evaluation_claim =
+			binius_math::inner_product::inner_product_buffers(&packed_mle, &eval_point_eq);
+
+		let pcs = PCSProver::new(&ctx.ntt, &self.merkle_prover, &ctx.fri_params);
 		let mut prover_transcript = ProverTranscript::new(Challenger::default());
+		prover_transcript.message().write(&commit_output.commitment);
 
-		// Write commitment bytes to transcript.
-		prover_transcript
-			.message()
-			.write_bytes(&commit_output.commitment);
+		let (terminate_codeword, query_prover) = pcs
+			.prove_with_openings(
+				commit_output.codeword.clone(),
+				&commit_output.committed,
+				packed_mle,
+				eval_point,
+				evaluation_claim,
+				&mut prover_transcript,
+			)
+			.map_err(|e| FriBiniusError::Proof(e.to_string()))?;
 
-		// Generate FRI proof.
-		pcs.prove(
-			&commit_output.codeword,
-			&commit_output.committed,
-			packed_mle,
-			evaluation_point.to_vec(),
-			&mut prover_transcript,
-		)
-		.map_err(|e| FriBiniusError::Proof(e.to_string()))?;
+		let proof = FriProof {
+			transcript_bytes: prover_transcript.finalize(),
+		};
 
-		let verifier_transcript: VerifierTr = prover_transcript.into_verifier();
-		let transcript_bytes = crate::transcript::transcript_to_bytes(&verifier_transcript);
-
-		Ok(FriProof { transcript_bytes })
+		Ok((terminate_codeword, query_prover, proof))
 	}
 
-	/// Verify a proof produced by `prove`.
-	///
-	/// Caller supplies:
-	/// - `evaluation_claim`: f(z)
-	/// - `evaluation_point`: z
-	/// - `ctx`: FRI parameters + NTT context
-	///
-	/// Commitment is read from the transcript.
-	pub fn verify(
+	#[cfg(feature = "std")]
+	pub fn verify_with_extra_query(
 		&self,
 		proof: &FriProof,
 		evaluation_claim: B128,
 		evaluation_point: &[B128],
 		ctx: &FriContext,
+		extra_index: usize,
+		terminate_codeword: &[B128],
+		layers: &[Vec<digest::Output<StdDigest>>],
+		extra_transcript: &mut VerifierTr,
 	) -> Result<(), FriBiniusError> {
-		// Reconstruct transcript from bytes
-		let mut transcript =
-			crate::transcript::transcript_from_bytes(proof.transcript_bytes.clone());
-
+		let mut transcript = transcript_from_bytes(proof.transcript_bytes.clone());
 		let retrieved_commitment = transcript
 			.message()
 			.read()
 			.map_err(|e| FriBiniusError::Transcript(e.to_string()))?;
 
-		let merkle_scheme = self.merkle_prover.scheme().clone();
+		let n_packed_vars = ctx.fri_params.rs_code().log_dim() + ctx.fri_params.log_batch_size();
+		if evaluation_point.len() < n_packed_vars {
+			return Err(FriBiniusError::InvalidEvaluationPoint(
+				n_packed_vars,
+				evaluation_point.len(),
+			));
+		}
+		let eval_point = &evaluation_point[..n_packed_vars];
 
-		fri_verify(
+		let merkle_scheme = self.merkle_prover.scheme().clone();
+		let verifier_with_arena = spartan_verify(
 			&mut transcript,
 			evaluation_claim,
-			evaluation_point,
+			eval_point,
 			retrieved_commitment,
 			&ctx.fri_params,
 			&merkle_scheme,
 		)
-		.map_err(|e| FriBiniusError::Verification(e.to_string()))
+		.map_err(|e| FriBiniusError::Verification(e.to_string()))?;
+
+		let verifier = verifier_with_arena.verifier();
+
+		for (commitment, layer_depth, layer) in izip!(
+			std::iter::once(verifier.codeword_commitment).chain(verifier.round_commitments),
+			vcs_optimal_layers_depths_iter(verifier.params, verifier.vcs),
+			layers
+		) {
+			verifier
+				.vcs
+				.verify_layer(commitment, layer_depth, layer)
+				.map_err(|e| FriBiniusError::Verification(e.to_string()))?;
+		}
+
+		let mut advice = extra_transcript.decommitment();
+		verifier
+			.verify_query(
+				extra_index,
+				&ctx.ntt,
+				terminate_codeword,
+				layers,
+				&mut advice,
+			)
+			.map_err(|e| FriBiniusError::Verification(e.to_string()))?;
+
+		Ok(())
 	}
 
-	/// Inclusion proof: Merkle opening for a particular codeword index.
+	#[cfg(feature = "std")]
+	pub fn build_eval_proof_bundle<'a, P>(
+		&self,
+		proof: &FriProof,
+		terminate_codeword: &FieldBuffer<B128>,
+		query_prover: &FriQueryProver<'a, P>,
+		extra_index: usize,
+	) -> Result<FriEvalProofBundle, FriBiniusError>
+	where
+		P: PackedField<Scalar = B128> + PackedExtension<B128> + PackedExtension<B1>,
+	{
+		let layers = query_prover
+			.vcs_optimal_layers()
+			.map_err(|e| FriBiniusError::Proof(e.to_string()))?;
+		let layers = layers
+			.into_iter()
+			.map(|layer| {
+				layer
+					.into_iter()
+					.map(|h| {
+						let hash_bytes = h.to_vec();
+						let bytes: [u8; 32] = hash_bytes
+							.as_slice()
+							.try_into()
+							.map_err(|_| FriBiniusError::Proof("invalid layer hash size".into()))?;
+						Ok(bytes)
+					})
+					.collect::<Result<Vec<_>, FriBiniusError>>()
+			})
+			.collect::<Result<Vec<_>, FriBiniusError>>()?;
+
+		let mut terminate_codeword_bytes = Vec::with_capacity(terminate_codeword.len() * 16);
+		for v in terminate_codeword.iter_scalars() {
+			terminate_codeword_bytes.extend_from_slice(&v.val().to_le_bytes());
+		}
+
+		let extra_transcript = self.open(extra_index, query_prover)?;
+		let extra_query = FriExtraQueryProof {
+			extra_index: u32::try_from(extra_index)
+				.map_err(|_| FriBiniusError::InvalidInput("extra index out of range".into()))?,
+			terminate_codeword: terminate_codeword_bytes,
+			layers,
+			extra_proof: transcript_to_bytes(&extra_transcript),
+		};
+
+		Ok(FriEvalProofBundle {
+			eval_proof: proof.transcript_bytes.clone(),
+			extra_query,
+		})
+	}
+
+	#[cfg(feature = "std")]
+	pub fn verify_eval_proof_bundle(
+		&self,
+		bundle: &FriEvalProofBundle,
+		evaluation_claim: B128,
+		evaluation_point: &[B128],
+		ctx: &FriContext,
+	) -> Result<(), FriBiniusError> {
+		if bundle.extra_query.terminate_codeword.is_empty()
+			|| !bundle
+				.extra_query
+				.terminate_codeword
+				.len()
+				.is_multiple_of(16)
+		{
+			return Err(FriBiniusError::InvalidInput(
+				"terminate_codeword must be a non-empty multiple of 16 bytes".into(),
+			));
+		}
+
+		let terminate_codeword = bundle
+			.extra_query
+			.terminate_codeword
+			.chunks_exact(16)
+			.map(|chunk| {
+				let mut arr = [0u8; 16];
+				arr.copy_from_slice(chunk);
+				B128::from(u128::from_le_bytes(arr))
+			})
+			.collect::<Vec<_>>();
+
+		let layers = bundle
+			.extra_query
+			.layers
+			.iter()
+			.map(|layer| {
+				layer
+					.iter()
+					.map(|h| Ok((*h).into()))
+					.collect::<Result<Vec<digest::Output<StdDigest>>, FriBiniusError>>()
+			})
+			.collect::<Result<Vec<_>, FriBiniusError>>()?;
+
+		let proof = FriProof {
+			transcript_bytes: bundle.eval_proof.clone(),
+		};
+		let mut extra_transcript = transcript_from_bytes(bundle.extra_query.extra_proof.clone());
+
+		self.verify_with_extra_query(
+			&proof,
+			evaluation_claim,
+			evaluation_point,
+			ctx,
+			bundle.extra_query.extra_index as usize,
+			&terminate_codeword,
+			&layers,
+			&mut extra_transcript,
+		)
+	}
+
 	pub fn inclusion_proof<P>(
 		&self,
 		committed: &MerkleCommitted<P::Scalar>,
@@ -330,16 +486,34 @@ impl FriBiniusPCS {
 		Ok(proof_writer.into_verifier())
 	}
 
-	/// Verify inclusion proof for a given leaf.
+	#[cfg(feature = "std")]
+	pub fn open<'a, P>(
+		&self,
+		index: usize,
+		query_prover: &FriQueryProver<'a, P>,
+	) -> Result<VerifierTr, FriBiniusError>
+	where
+		P: PackedField<Scalar = B128> + PackedExtension<B128> + PackedExtension<B1>,
+	{
+		let mut proof_transcript = ProverTranscript::new(Challenger::default());
+		let mut advice = proof_transcript.decommitment();
+
+		query_prover
+			.prove_query(index, &mut advice)
+			.map_err(|e| FriBiniusError::Proof(e.to_string()))?;
+
+		Ok(proof_transcript.into_verifier())
+	}
+
 	pub fn verify_inclusion_proof(
 		&self,
 		verifier_transcript: &mut VerifierTr,
 		data: &[B128],
 		index: usize,
-		ctx: &FriContext,
+		_ctx: &FriContext,
 		commitment: &FriCommitment,
 	) -> Result<(), FriBiniusError> {
-		let tree_depth = ctx.fri_params.rs_code().log_len();
+		let tree_depth = commitment.depth;
 
 		self.merkle_prover
 			.scheme()
@@ -353,23 +527,4 @@ impl FriBiniusPCS {
 			)
 			.map_err(|e| FriBiniusError::Merkle(e.to_string()))
 	}
-}
-
-fn lift_small_to_large_field<F, FE>(small_field_elms: &[F]) -> Vec<FE>
-where
-	F: Field,
-	FE: Field + ExtensionField<F>,
-{
-	small_field_elms.iter().map(|&elm| FE::from(elm)).collect()
-}
-
-fn large_field_mle_to_small_field<F, FE>(large_field_mle: &[FE]) -> Vec<F>
-where
-	F: Field,
-	FE: Field + ExtensionField<F>,
-{
-	large_field_mle
-		.iter()
-		.flat_map(|elm| ExtensionField::<F>::iter_bases(elm))
-		.collect()
 }

@@ -1,4 +1,5 @@
 use crate::error::FriBiniusError;
+use binius_field::field::FieldOps;
 use binius_field::{ExtensionField, PackedField};
 use binius_math::FieldBuffer;
 use binius_verifier::config::B1;
@@ -80,8 +81,7 @@ where
 		packed_values.resize(packed_size, P::Scalar::zero());
 		log::debug!("Packed values after padding: {}", packed_values.len());
 
-		let packed_mle = FieldBuffer::<P>::from_values(&packed_values)
-			.map_err(|e| FriBiniusError::Encoding(e.to_string()))?;
+		let packed_mle = FieldBuffer::<P>::from_values(&packed_values);
 
 		let big_field_n_vars = packed_mle.log_len();
 		let total_n_vars = big_field_n_vars + self.log_scalar_bit_width;
