@@ -38,6 +38,9 @@ pub struct HeaderExtension {
 	/// Dataroot to be used for bridge & blob inclusion proofs
 	pub data_root: H256,
 
+	/// Merkle root over per-blob metadata.
+	pub blob_meta_root: H256,
+
 	/// Parameter set identifier to decode sampling domain / FRI params.
 	pub params_version: FriParamsVersion,
 }
@@ -50,6 +53,7 @@ impl HeaderExtension {
 	pub fn get_empty_header(data_root: H256) -> Self {
 		HeaderExtension {
 			data_root,
+			blob_meta_root: H256::zero(),
 			blob_count: 0,
 			..Default::default()
 		}
@@ -58,6 +62,7 @@ impl HeaderExtension {
 	pub fn get_faulty_header(data_root: H256) -> Self {
 		HeaderExtension {
 			data_root,
+			blob_meta_root: H256::zero(),
 			blob_count: 0,
 			..Default::default()
 		}
