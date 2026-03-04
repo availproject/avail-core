@@ -12,14 +12,14 @@ bounded-collections = { version = "0.3.2", default-features = false }
 scale-info = { version = "2", default-features = false, features = ["derive"] }
 
 # Polkadot SDK
-binary-merkle-tree = { git = "https://github.com/availproject/polkadot-sdk", rev = "2f44d2f9ddc3f352f2e5a5bc4710349914c086a6", default-features = false }
-sp-std = { git = "https://github.com/availproject/polkadot-sdk", rev = "2f44d2f9ddc3f352f2e5a5bc4710349914c086a6", default-features = false }
-sp-trie = { git = "https://github.com/availproject/polkadot-sdk", rev = "2f44d2f9ddc3f352f2e5a5bc4710349914c086a6", default-features = false }
-sp-runtime = { git = "https://github.com/availproject/polkadot-sdk", rev = "2f44d2f9ddc3f352f2e5a5bc4710349914c086a6", default-features = false }
-frame-support = { git = "https://github.com/availproject/polkadot-sdk", rev = "2f44d2f9ddc3f352f2e5a5bc4710349914c086a6", default-features = false }
-sp-runtime-interface = { git = "https://github.com/availproject/polkadot-sdk", rev = "2f44d2f9ddc3f352f2e5a5bc4710349914c086a6", default-features = false }
-sp-storage = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "2f44d2f9ddc3f352f2e5a5bc4710349914c086a6", default-features = false }
-sp-debug-derive = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "2f44d2f9ddc3f352f2e5a5bc4710349914c086a6", default-features = false }
+binary-merkle-tree = { git = "https://github.com/availproject/polkadot-sdk", rev = "5d9ed332c7869cbbf38d460c5266bb258f6298cd", default-features = false }
+sp-std = { git = "https://github.com/availproject/polkadot-sdk", rev = "5d9ed332c7869cbbf38d460c5266bb258f6298cd", default-features = false }
+sp-trie = { git = "https://github.com/availproject/polkadot-sdk", rev = "5d9ed332c7869cbbf38d460c5266bb258f6298cd", default-features = false }
+sp-runtime = { git = "https://github.com/availproject/polkadot-sdk", rev = "5d9ed332c7869cbbf38d460c5266bb258f6298cd", default-features = false }
+frame-support = { git = "https://github.com/availproject/polkadot-sdk", rev = "5d9ed332c7869cbbf38d460c5266bb258f6298cd", default-features = false }
+sp-runtime-interface = { git = "https://github.com/availproject/polkadot-sdk", rev = "5d9ed332c7869cbbf38d460c5266bb258f6298cd", default-features = false }
+sp-storage = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "5d9ed332c7869cbbf38d460c5266bb258f6298cd", default-features = false }
+sp-debug-derive = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "5d9ed332c7869cbbf38d460c5266bb258f6298cd", default-features = false }
 
 primitive-types = { version = "0.13.1",  default-features = false, features = ["codec", "scale-info"] }
 
@@ -54,11 +54,14 @@ poly-multiproof = { git = "https://github.com/availproject/poly-multiproof", rev
 hash-db = { version = "0.16.0",  default-features = false }
 
 # fri
-binius-prover = { git = "https://github.com/binius-zk/binius64.git", rev = "41cda4a3eeb3fcb57bcd324e20a0ffe0b653f896" }
-binius-verifier = { git = "https://github.com/binius-zk/binius64.git", rev = "41cda4a3eeb3fcb57bcd324e20a0ffe0b653f896" }
-binius-math = { git = "https://github.com/binius-zk/binius64.git", rev = "41cda4a3eeb3fcb57bcd324e20a0ffe0b653f896" }
-binius-field = { git = "https://github.com/binius-zk/binius64.git", rev = "41cda4a3eeb3fcb57bcd324e20a0ffe0b653f896" }
-binius-transcript = { git = "https://github.com/binius-zk/binius64.git", rev = "41cda4a3eeb3fcb57bcd324e20a0ffe0b653f896" }
+binius-prover = { git = "https://github.com/rac-sri/binius64", rev = "f0f707beb3dc0c33124c77b78ccd3ef95bf65499",  default-features = false }
+binius-verifier = { git = "https://github.com/rac-sri/binius64", rev = "f0f707beb3dc0c33124c77b78ccd3ef95bf65499",  default-features = false }
+binius-math = { git = "https://github.com/rac-sri/binius64", rev = "f0f707beb3dc0c33124c77b78ccd3ef95bf65499",  default-features = false }
+binius-field = { git = "https://github.com/rac-sri/binius64", rev = "f0f707beb3dc0c33124c77b78ccd3ef95bf65499",  default-features = false }
+binius-transcript = { git = "https://github.com/rac-sri/binius64", rev = "f0f707beb3dc0c33124c77b78ccd3ef95bf65499",  default-features = false }
+binius-spartan-prover = { git = "https://github.com/rac-sri/binius64", rev = "f0f707beb3dc0c33124c77b78ccd3ef95bf65499",  default-features = false }
+binius-spartan-verifier = { git = "https://github.com/rac-sri/binius64", rev = "f0f707beb3dc0c33124c77b78ccd3ef95bf65499",  default-features = false }
+binius-iop = { git = "https://github.com/rac-sri/binius64", rev = "f0f707beb3dc0c33124c77b78ccd3ef95bf65499",  default-features = false }
 
 # Others
 rayon = "1.5.2"
