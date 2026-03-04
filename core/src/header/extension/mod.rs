@@ -97,6 +97,12 @@ pub mod fri {
 			}
 		}
 
+		pub fn blob_meta_root(&self) -> H256 {
+			match self {
+				FriHeader::V1(ext) => ext.blob_meta_root,
+			}
+		}
+
 		pub fn version(&self) -> FriHeaderVersion {
 			match self {
 				FriHeader::V1(_) => FriHeaderVersion::V1,
@@ -106,7 +112,7 @@ pub mod fri {
 		/// Returns true if this header commits to at least one DA blob.
 		pub fn has_da_commitments(&self) -> bool {
 			match self {
-				FriHeader::V1(ext) => !ext.blobs.is_empty(),
+				FriHeader::V1(ext) => ext.blob_count > 0,
 			}
 		}
 
@@ -154,6 +160,13 @@ impl HeaderExtension {
 		match self {
 			HeaderExtension::Kzg(h) => h.data_root(),
 			HeaderExtension::Fri(h) => h.data_root(),
+		}
+	}
+
+	pub fn blob_meta_root(&self) -> H256 {
+		match self {
+			HeaderExtension::Kzg(_) => H256::zero(),
+			HeaderExtension::Fri(h) => h.blob_meta_root(),
 		}
 	}
 

@@ -400,16 +400,16 @@ mod e2e_tests {
 		// here we just fake one for testing.
 		let data_root = H256::repeat_byte(0xAB);
 
-		let blob_meta = FriBlobCommitment {
-			// random blob_hash, insignificant here
+		let _blob_meta = FriBlobCommitment {
 			blob_hash: data_root,
 			size_bytes: blob_size as u64,
 			commitment: commitment_bytes.clone(),
 		};
 
 		let fri_v1_header = FriV1HeaderExtension {
-			blobs: vec![blob_meta.clone()],
+			blob_count: 1,
 			data_root,
+			blob_meta_root: H256::repeat_byte(0xCC),
 			params_version,
 		};
 
@@ -422,6 +422,7 @@ mod e2e_tests {
 
 		assert!(decoded.is_fri());
 		assert_eq!(decoded.data_root(), data_root);
+		assert_eq!(decoded.blob_meta_root(), H256::repeat_byte(0xCC));
 
 		// Extract inner Fri v1 header again
 		let inner = match decoded {
