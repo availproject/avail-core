@@ -31,7 +31,7 @@ use crate::{
 };
 use lru::LruCache;
 use once_cell::sync::Lazy;
-use std::sync::Mutex;
+use std::{num::NonZeroUsize, sync::Mutex};
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
@@ -47,7 +47,7 @@ macro_rules! cfg_iter {
 }
 
 // Since we wont be changing the column length very often, 8 is a good number to cache
-const CACHE_CAPACITY: usize = 8;
+const CACHE_CAPACITY: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(8) };
 
 static CACHED_ROWS: Lazy<Mutex<LruCache<usize, (Vec<ArkScalar>, Vec<u8>)>>> =
 	Lazy::new(|| Mutex::new(LruCache::new(CACHE_CAPACITY)));

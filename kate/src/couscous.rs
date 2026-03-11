@@ -21,12 +21,12 @@ fn load_trusted_g1_g2() -> (Vec<G1>, Vec<G2>) {
 	let g1_bytes: Vec<[u8; 48]> = lines
 		.by_ref()
 		.take(g1_len)
-		.map(|line| hex::decode(line).unwrap().try_into().unwrap())
+		.map(|line| const_hex::decode(line).unwrap().try_into().unwrap())
 		.collect();
 
 	let g2_bytes: Vec<[u8; 96]> = lines
 		.take(g2_len)
-		.map(|line| hex::decode(line).unwrap().try_into().unwrap())
+		.map(|line| const_hex::decode(line).unwrap().try_into().unwrap())
 		.collect();
 
 	let g1: Vec<G1> = g1_bytes

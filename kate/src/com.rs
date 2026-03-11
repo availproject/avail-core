@@ -614,7 +614,7 @@ mod tests {
 			.flat_map(|e| e.to_vec())
 			.collect::<Vec<_>>();
 
-		hex::encode(padded)
+		const_hex::encode(padded)
 	}
 
 	// returns the random cell positions by respecting the max col_percent % per column
@@ -664,7 +664,7 @@ mod tests {
 				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
 			}
 		}
-		println!("Commitments1 (hex): {}", hex::encode(&commitments));
+		println!("Commitments1 (hex): {}", const_hex::encode(&commitments));
 
 		// exact 2 rows
 		let tx_size: usize = 2 * 256 * 31;
@@ -691,7 +691,7 @@ mod tests {
 				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
 			}
 		}
-		println!("Commitments1 (hex): {}", hex::encode(&commitments2));
+		println!("Commitments1 (hex): {}", const_hex::encode(&commitments2));
 		// let grid1 = grid1
 		// 	.extend_columns(NonZeroU16::new(2).expect("2>0"))
 		// 	.unwrap();
@@ -706,7 +706,7 @@ mod tests {
 		// print 5th row of the merged grid
 		println!(
 			"merged grid row 5 {}",
-			hex::encode(
+			const_hex::encode(
 				merged_grid
 					.row(5)
 					.unwrap()
@@ -718,7 +718,7 @@ mod tests {
 		);
 		println!(
 			"merged grid row 6 {}",
-			hex::encode(
+			const_hex::encode(
 				merged_grid
 					.row(6)
 					.unwrap()
@@ -821,7 +821,7 @@ mod tests {
 				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
 			}
 		}
-		println!("Commitments1 (hex): {}", hex::encode(&commitments));
+		println!("Commitments1 (hex): {}", const_hex::encode(&commitments));
 
 		let data2: Vec<u8> = (0..tx_size).map(|_| rng.gen()).collect();
 		let grid2 = EvaluationGrid::from_data(&data2, 256, 256, 256, Seed::default())
@@ -846,7 +846,7 @@ mod tests {
 				Err(e) => return println!("Failed to convert commitment to bytes: {e:?}"),
 			}
 		}
-		println!("Commitments1 (hex): {}", hex::encode(&commitments2));
+		println!("Commitments1 (hex): {}", const_hex::encode(&commitments2));
 		let grid1 = grid1
 			.extend_columns(NonZeroU16::new(2).expect("2>0"))
 			.unwrap();
@@ -858,7 +858,10 @@ mod tests {
 		let merged_grid = EvaluationGrid::merge(grids).unwrap();
 		println!("merged grid dims: {:?}", merged_grid.dims());
 		commitments.extend(commitments2);
-		println!("merged commitments (hex): {}", hex::encode(&commitments));
+		println!(
+			"merged commitments (hex): {}",
+			const_hex::encode(&commitments)
+		);
 		let commitments_vec =
 			commitments::from_slice(&commitments).expect("Failed to parse commitments");
 

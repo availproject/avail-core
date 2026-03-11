@@ -15,18 +15,18 @@ binius-iop = { workspace = true, optional = true }
 
 avail-core = { path = "../core", default-features = false }
 blake2b_simd = { workspace = true }
-codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive", "max-encoded-len"] }
+codec  = { workspace = true }
 log = { workspace = true, default-features = false }
-rayon = { version = "1.10", optional = true }
+rayon = { workspace = true, optional = true }
 rand_chacha = { workspace = true, default-features = false }
 rand = { version = "0.9.1", default-features = false, features = ["std", "std_rng"], optional = true}
 serde = { workspace = true, optional = true }
-digest = "0.10"
-itertools = { version = "0.14", optional = true }
+digest = { workspace = true }
+itertools = { workspace = true, optional = true }
 
 [dev-dependencies]
 avail-core = { path = "../core", default-features = false, features = ["runtime"]}
-divan = { version = "0.1"}
+divan = { workspace = true }
 rand = { version = "0.9.1", default-features = false, features = ["std", "std_rng"] }
 primitive-types = { workspace = true }
 
