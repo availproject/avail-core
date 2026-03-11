@@ -7,51 +7,51 @@ lto = "thin"
 
 [workspace.dependencies]
 # Parity
-codec = { package = "parity-scale-codec", version = "3.7.5", default-features = false, features = ["derive", "max-encoded-len"] }
-bounded-collections = { version = "0.3.2", default-features = false }
+codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive", "max-encoded-len"] }
+bounded-collections = { version = "0.3", default-features = false }
 scale-info = { version = "2", default-features = false, features = ["derive"] }
 
 # Polkadot SDK
-binary-merkle-tree = { git = "https://github.com/availproject/polkadot-sdk", rev = "5d9ed332c7869cbbf38d460c5266bb258f6298cd", default-features = false }
-sp-std = { git = "https://github.com/availproject/polkadot-sdk", rev = "5d9ed332c7869cbbf38d460c5266bb258f6298cd", default-features = false }
-sp-trie = { git = "https://github.com/availproject/polkadot-sdk", rev = "5d9ed332c7869cbbf38d460c5266bb258f6298cd", default-features = false }
-sp-runtime = { git = "https://github.com/availproject/polkadot-sdk", rev = "5d9ed332c7869cbbf38d460c5266bb258f6298cd", default-features = false }
-frame-support = { git = "https://github.com/availproject/polkadot-sdk", rev = "5d9ed332c7869cbbf38d460c5266bb258f6298cd", default-features = false }
-sp-runtime-interface = { git = "https://github.com/availproject/polkadot-sdk", rev = "5d9ed332c7869cbbf38d460c5266bb258f6298cd", default-features = false }
-sp-storage = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "5d9ed332c7869cbbf38d460c5266bb258f6298cd", default-features = false }
-sp-debug-derive = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "5d9ed332c7869cbbf38d460c5266bb258f6298cd", default-features = false }
+binary-merkle-tree = { git = "https://github.com/availproject/polkadot-sdk", rev = "4265c19fa5b1cbddf450b5f78e1054e456e7cbdc", default-features = false }
+sp-std = { git = "https://github.com/availproject/polkadot-sdk", rev = "4265c19fa5b1cbddf450b5f78e1054e456e7cbdc", default-features = false }
+sp-trie = { git = "https://github.com/availproject/polkadot-sdk", rev = "4265c19fa5b1cbddf450b5f78e1054e456e7cbdc", default-features = false }
+sp-runtime = { git = "https://github.com/availproject/polkadot-sdk", rev = "4265c19fa5b1cbddf450b5f78e1054e456e7cbdc", default-features = false }
+frame-support = { git = "https://github.com/availproject/polkadot-sdk", rev = "4265c19fa5b1cbddf450b5f78e1054e456e7cbdc", default-features = false }
+sp-runtime-interface = { git = "https://github.com/availproject/polkadot-sdk", rev = "4265c19fa5b1cbddf450b5f78e1054e456e7cbdc", default-features = false }
+sp-storage = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "4265c19fa5b1cbddf450b5f78e1054e456e7cbdc", default-features = false }
+sp-debug-derive = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "4265c19fa5b1cbddf450b5f78e1054e456e7cbdc", default-features = false }
 
 primitive-types = { version = "0.13.1",  default-features = false, features = ["codec", "scale-info"] }
 
 # Macros
-derive_more = { version = "0.99.17", default-features = false, features = ["constructor", "from", "add", "deref", "mul", "into"] }
-static_assertions = { version = "1.1.0" }
-hex-literal = { version = "0.3.4" }
+derive_more = { version = "2.1", default-features = false, features = ["constructor", "from", "add", "deref", "mul", "into"] }
+static_assertions = { version = "1.1" }
+hex-literal = { version = "1.1" }
 
 # Error & Logging
-thiserror-no-std = { version = "2.0.2" }
-log = { version = "0.4.8", default-features = false }
-test-case = { version = "1.2.3" }
+thiserror-no-std = { version = "2.0" }
+log = { version = "0.4", default-features = false }
+test-case = { version = "3.3" }
 proptest = { version = "1" }
-criterion = { version = "0.4", default-features = false }
+criterion = { version = "0.8", default-features = false }
 
 # Serialization
-serde = { version = "1.0.196", default-features = false, features = ["derive", "alloc"] }
-hex = { version = "0.4", default-features = false, features = ["alloc", "serde"] }
+serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
+const-hex = { version = "1.18", default-features = false, features = ["alloc"] }
 serde_json = { version = "1", default-features = false }
-impl-serde = { version = "0.5.0", default-features = false }
+impl-serde = { version = "0.5", default-features = false }
 
 # Crypto
-hash256-std-hasher = { version = "0.15.2", default-features = false }
-tiny-keccak = { version = "2.0.2", default-features = false, features = ["keccak"] }
-rand = { version = "0.8.4", features = ["alloc", "small_rng"], default-features = false }
+hash256-std-hasher = { version = "0.15", default-features = false }
+tiny-keccak = { version = "2.0", default-features = false, features = ["keccak"] }
+rand = { version = "0.8", features = ["alloc", "small_rng"], default-features = false }
 rand_chacha = { version = "0.3", default-features = false }
-blake2b_simd = { version = "1.0.2", default-features = false }
-sha2 = { version = "0.10.7", default-features = false }
-sha3 = { version = "0.10.0", default-features = false }
+blake2b_simd = { version = "1.0", default-features = false }
+sha2 = { version = "0.10", default-features = false }
+sha3 = { version = "0.10", default-features = false }
 
 poly-multiproof = { git = "https://github.com/availproject/poly-multiproof", rev="c2794e32ca040e6b2544abde18b7187af3e66feb", default-features = false, features = ["ark-bls12-381", "blst"]}
-hash-db = { version = "0.16.0",  default-features = false }
+hash-db = { version = "0.16",  default-features = false }
 
 # fri
 binius-prover = { git = "https://github.com/rac-sri/binius64", rev = "f0f707beb3dc0c33124c77b78ccd3ef95bf65499",  default-features = false }
@@ -64,13 +64,20 @@ binius-spartan-verifier = { git = "https://github.com/rac-sri/binius64", rev = "
 binius-iop = { git = "https://github.com/rac-sri/binius64", rev = "f0f707beb3dc0c33124c77b78ccd3ef95bf65499",  default-features = false }
 
 # Others
-rayon = "1.5.2"
-once_cell = "1.8.0"
-nalgebra = { version = "0.32.2", default-features = false }
-num-traits = { version = "0.2.18", default-features = false }
+rayon = "1.11"
+once_cell = "1.21"
+nalgebra = { version = "0.34", default-features = false }
+num-traits = { version = "0.2", default-features = false }
+divan = { version = "0.1" }
+digest = { version = "0.10" }
+itertools = { version = "0.14" }
+trybuild = { version = "1.0" }
+lru = { version = "0.16" }
+
 
 # ETH
-ethabi-decode = { git = "https://github.com/Snowfork/ethabi-decode.git", branch = "master", default-features = false }
+# TODO 3.0.0 has issues with some transitive dependency enabling STD in non-STD environment
+ethabi-decode = { version = "2.0.0", default-features = false }
 
 [workspace.lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
