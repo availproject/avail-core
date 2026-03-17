@@ -23,6 +23,7 @@ pub use sampling::reconstruct_codeword_naive;
 pub use transcript::{transcript_from_bytes, transcript_to_bytes, VerifierTr};
 
 #[cfg(feature = "std")]
+#[derive(Debug, Clone)]
 pub struct BlobCommitment {
 	pub commitment: Vec<u8>,
 	pub seed: [u8; 32],
