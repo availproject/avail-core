@@ -22,6 +22,52 @@ mod tests;
 pub use sampling::reconstruct_codeword_naive;
 pub use transcript::{transcript_from_bytes, transcript_to_bytes, VerifierTr};
 
+#[cfg(feature = "std")]
+pub struct BlobCommitment {
+	pub commitment: Vec<u8>,
+	pub seed: [u8; 32],
+	pub claim: [u8; 16],
+}
+
+#[cfg(feature = "std")]
+impl BlobCommitment {
+	pub fn compute(
+		randomness: &[u8; 32],
+		blob: &[u8],
+		blob_hash: &[u8; 32],
+	) -> Result<Self, FriBiniusError> {
+		compute_blob_commitment(randomness, blob, blob_hash)
+	}
+}
+
+#[cfg(feature = "std")]
+pub fn compute_blob_commitment(
+	randomness: &[u8; 32],
+	blob: &[u8],
+	blob_hash: &[u8; 32],
+) -> Result<BlobCommitment, FriBiniusError> {
+	let encoder = BytesEncoder::<B128>::new();
+	let packed = encoder.bytes_to_packed_mle(blob)?;
+	let cfg = FriParamsVersion::V0.to_config(packed.total_n_vars);
+	let pcs = FriBiniusPCS::new(cfg);
+	let ctx = pcs.initialize_fri_context::<B128>(packed.packed_mle.log_len())?;
+
+	let commit_output = pcs.commit(&packed.packed_mle, &ctx)?;
+
+	let seed = eval_utils::derive_seed_from_inputs(randomness, blob_hash);
+	let evaluation_point = eval_utils::derive_evaluation_point(seed, packed.total_n_vars);
+	let eval_claim = pcs.calculate_evaluation_claim(&packed.packed_values, &evaluation_point)?;
+
+	let claim: [u8; 16] = eval_utils::eval_claim_to_bytes(eval_claim);
+	let commitment = commit_output.commitment.to_vec();
+
+	Ok(BlobCommitment {
+		commitment,
+		seed,
+		claim,
+	})
+}
+
 #[cfg(any(test, feature = "bench"))]
 pub mod e2e_helpers {
 	use crate::core::{FriBiniusPCS, FriCommitOutput, FriCommitment, FriContext, B128};
