@@ -16,9 +16,6 @@ use serde::{Deserialize, Serialize};
 
 pub mod from_substrate;
 
-pub mod opaque_extrinsic;
-pub use opaque_extrinsic::*;
-
 /// DA Block
 #[cfg(feature = "runtime")]
 pub mod da_block;
