@@ -17,21 +17,15 @@ use serde::{Deserialize, Serialize};
 pub mod from_substrate;
 
 /// DA Block
-#[cfg(feature = "runtime")]
-pub mod da_block;
-#[cfg(feature = "runtime")]
-pub use da_block::*;
+pub mod block;
 
 /// Customized headers.
-#[cfg(feature = "runtime")]
 pub mod header;
+pub use header::HeaderVersion;
 
 /// Kate Commitment on Headers.
 pub mod kate_commitment;
 pub use kate_commitment::*;
-
-pub mod sha2;
-pub use sha2::ShaTwo256;
 
 pub mod traits;
 
@@ -51,13 +45,7 @@ pub use data_lookup::{v3_compact, v4_compact};
 pub mod constants;
 pub use constants::*;
 
-pub mod header_version;
-pub use header_version::HeaderVersion;
-
 pub mod const_generic_asserts;
-
-#[cfg(feature = "runtime")]
-pub mod bench_randomness;
 
 #[repr(u8)]
 pub enum InvalidTransactionCustomId {
