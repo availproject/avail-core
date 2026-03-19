@@ -21,8 +21,6 @@ pub use header::HeaderVersion;
 pub mod kate_commitment;
 pub use kate_commitment::*;
 
-pub mod traits;
-
 pub mod keccak256;
 pub use keccak256::Keccak256;
 

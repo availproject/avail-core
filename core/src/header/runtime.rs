@@ -19,26 +19,39 @@
 
 pub use super::extension::HeaderExtension;
 use crate::from_substrate::HexDisplay;
-use crate::traits::ExtendedHeader;
+use codec::Codec;
 use codec::{Decode, DecodeWithMemTracking, Encode};
 use primitive_types::U256;
-use sp_std::{
-	convert::TryFrom,
-	fmt::{Debug, Formatter},
-};
-use {
-	scale_info::TypeInfo,
-	sp_runtime::{
-		traits::{BlockNumber, Hash as HashT, Header as HeaderT},
-		Digest,
-	},
-};
+use scale_info::TypeInfo;
+use sp_runtime::traits::{BlockNumber, Hash as HashT, Header as HeaderT};
+use sp_runtime::{generic::Digest, traits::MaybeSerialize};
+use sp_std::fmt::Debug;
+use sp_std::{convert::TryFrom, fmt::Formatter};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "std")]
 const LOG_TARGET: &str = "header";
+
+/// Extended header access
+pub trait ExtendedHeader: sp_runtime::traits::Header {
+	type Extension: Clone + Send + Sync + Codec + Eq + MaybeSerialize + Debug + TypeInfo + 'static;
+
+	/// Creates new header.
+	fn new(
+		number: Self::Number,
+		extrinsics_root: Self::Hash,
+		state_root: Self::Hash,
+		parent_hash: Self::Hash,
+		digest: Digest,
+		extension: Self::Extension,
+	) -> Self;
+
+	fn extension(&self) -> &Self::Extension;
+
+	fn set_extension(&mut self, extension: Self::Extension);
+}
 
 /// Abstraction over a block header for a substrate chain.
 #[derive(PartialEq, Eq, Clone, TypeInfo, Encode, Decode, DecodeWithMemTracking)]
