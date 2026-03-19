@@ -1,3 +1,5 @@
+pub mod message;
+
 use bounded_collections::BoundedVec;
 use bounded_collections::ConstU32;
 use codec::{Decode, Encode};
@@ -16,8 +18,6 @@ pub const BOUNDED_DATA_MAX_LENGTH: u32 = 102_400;
 
 /// Maximum size of data allowed in the bridge
 pub type BoundedData = BoundedVec<u8, ConstU32<BOUNDED_DATA_MAX_LENGTH>>;
-
-pub mod message;
 
 pub use message::{AddressedMessage, Message, MessageType};
 
@@ -67,7 +67,6 @@ pub struct TxDataRoots {
 	pub bridge_root: H256,
 }
 
-#[cfg(feature = "runtime")]
 impl TxDataRoots {
 	pub fn new(submitted: H256, bridged: H256) -> Self {
 		use crate::from_substrate::keccak_256;

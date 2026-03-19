@@ -14,7 +14,6 @@ pub const BLOCK_CHUNK_SIZE: NonZeroU32 = unsafe { NonZeroU32::new_unchecked(32) 
 
 /// Money matters.
 pub mod currency {
-
 	pub type Balance = u128;
 
 	/// `AVAIL` has 18 decimal positions.
