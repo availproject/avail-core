@@ -74,7 +74,6 @@ itertools = { version = "0.14" }
 trybuild = { version = "1.0" }
 lru = { version = "0.16" }
 
-
 # ETH
 # TODO 3.0.0 has issues with some transitive dependency enabling STD in non-STD environment
 ethabi-decode = { version = "2.0.0", default-features = false }

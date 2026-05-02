@@ -41,7 +41,6 @@ sp-runtime-interface = { workspace = true, optional = true }
 sp-storage = { workspace = true, optional = true }
 sp-trie = { workspace = true, optional = true }
 
-
 [dev-dependencies]
 hex-literal = { workspace = true }
 rand = { workspace = true }
