@@ -46,6 +46,14 @@ impl HeaderExtension {
 		self.data_root
 	}
 
+	/// Returns true if this header commits to at least one DA blob.
+	///
+	/// - `false` ⇒ block contains no DA transactions
+	/// - `true`  ⇒ DA commitments must be verified
+	pub fn has_da_commitments(&self) -> bool {
+		!self.blobs.is_empty()
+	}
+
 	pub fn get_empty_header(data_root: H256) -> Self {
 		HeaderExtension {
 			data_root,

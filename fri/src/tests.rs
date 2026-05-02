@@ -5,7 +5,6 @@ mod e2e_tests {
 	use crate::{e2e_helpers::*, transcript_to_bytes, FriBiniusPCS, FriCommitment, FriContext};
 	use crate::{FriBiniusError, FriParamsConfig};
 	use avail_core::header::extension::{
-		fri::FriHeader,
 		fri_v1::{FriBlobCommitment, HeaderExtension as FriV1HeaderExtension},
 		HeaderExtension as CoreHeaderExtension,
 	};
@@ -413,26 +412,20 @@ mod e2e_tests {
 			params_version,
 		};
 
-		// Wrap in versioned FriHeader + top-level HeaderExtension
-		let core_header = CoreHeaderExtension::Fri(FriHeader::V1(fri_v1_header.clone()));
+		let core_header = CoreHeaderExtension::V1(fri_v1_header.clone());
 
 		let encoded = core_header.encode();
 		let decoded =
 			CoreHeaderExtension::decode(&mut &encoded[..]).expect("SCALE decode must succeed");
 
-		assert!(decoded.is_fri());
+		assert!(decoded.has_da_commitments());
 		assert_eq!(decoded.data_root(), data_root);
 
-		// Extract inner Fri v1 header again
-		let inner = match decoded {
-			CoreHeaderExtension::Fri(FriHeader::V1(h)) => h,
-			_ => panic!("expected Fri V1 header"),
-		};
-
-		assert_eq!(inner.params_version, FriParamsVersion::V0);
-		assert_eq!(inner.blobs.len(), 1);
-		assert_eq!(inner.blobs[0].size_bytes, blob_size as u64);
-		assert_eq!(inner.blobs[0].commitment, commitment_bytes);
+		let CoreHeaderExtension::V1(decoded_v1) = decoded;
+		assert_eq!(decoded_v1.params_version, FriParamsVersion::V0);
+		assert_eq!(decoded_v1.blobs.len(), 1);
+		assert_eq!(decoded_v1.blobs[0].size_bytes, blob_size as u64);
+		assert_eq!(decoded_v1.blobs[0].commitment, commitment_bytes);
 
 		let mut rng = StdRng::from_seed([7u8; 32]);
 		let eval_point = pcs.sample_evaluation_point(&mut rng);
