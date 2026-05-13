@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
-members = ["core", "kate/recovery", "kate", "fri"]
+members = ["core", "fri"]
+exclude = ["kate", "kate/recovery"]
 
 [profile.release]
 lto = "thin"
@@ -50,7 +51,6 @@ blake2b_simd = { version = "1.0", default-features = false }
 sha2 = { version = "0.10", default-features = false }
 sha3 = { version = "0.10", default-features = false }
 
-poly-multiproof = { git = "https://github.com/availproject/poly-multiproof", rev="c2794e32ca040e6b2544abde18b7187af3e66feb", default-features = false, features = ["ark-bls12-381", "blst"]}
 hash-db = { version = "0.16",  default-features = false }
 
 # fri
@@ -66,7 +66,6 @@ binius-iop = { git = "https://github.com/availproject/binius64", rev = "398615c0
 # Others
 rayon = "1.11"
 once_cell = "1.21"
-nalgebra = { version = "0.34", default-features = false }
 num-traits = { version = "0.2", default-features = false }
 divan = { version = "0.1" }
 digest = { version = "0.10" }
@@ -83,18 +82,3 @@ ethabi-decode = { version = "2.0.0", default-features = false }
 unexpected_cfgs = { level = "warn", check-cfg = [
 	'cfg(substrate_runtime)',
 ] }
-
-
-[profile.dev.package]
-nalgebra = { opt-level = 3 }
-blst = { opt-level = 3 }
-rayon = { opt-level = 3 }
-rayon-core = { opt-level = 3 }
-poly-multiproof = { opt-level = 3 }
-ark-bls12-381 = { opt-level = 3 }
-ark-ec = { opt-level = 3 }
-ark-ff = { opt-level = 3 }
-ark-poly = { opt-level = 3 }
-ark-serialize = { opt-level = 3 }
-ark-std = { opt-level = 3 }
-merlin = { opt-level = 3 }

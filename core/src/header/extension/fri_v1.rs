@@ -24,7 +24,6 @@ pub struct FriBlobCommitment {
 }
 
 /// DA commitment extension — input to LC sampling & verification.
-/// Replaces KZG’s KateCommitment format.
 #[derive(Clone, PartialEq, Eq, Encode, Decode, DecodeWithMemTracking, Default, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]

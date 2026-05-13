@@ -23,7 +23,7 @@ use static_assertions::const_assert_ne;
 use thiserror_no_std::Error;
 pub const LOG_TARGET: &str = "kate";
 pub const U32_USIZE_ERR: &str = "`u32` cast to `usize` overflows, unsupported platform";
-pub type Seed = [u8; 32];
+pub use avail_core::Seed;
 
 // #[cfg(feature = "std")]
 pub type M1NoPrecomp =
