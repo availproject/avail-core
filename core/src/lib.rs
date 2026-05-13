@@ -26,10 +26,6 @@ pub use da_block::*;
 #[cfg(feature = "runtime")]
 pub mod header;
 
-/// Kate Commitment on Headers.
-pub mod kate_commitment;
-pub use kate_commitment::*;
-
 pub mod sha2;
 pub use sha2::ShaTwo256;
 
@@ -44,12 +40,10 @@ pub use fri_config::*;
 pub mod data_proof;
 pub use data_proof::DataProof;
 
-pub mod data_lookup;
-pub use data_lookup::v3 as V3DataLookup;
-pub use data_lookup::v4::*;
-pub use data_lookup::{v3_compact, v4_compact};
 pub mod constants;
 pub use constants::*;
+
+pub type Seed = [u8; 32];
 
 pub mod header_version;
 pub use header_version::HeaderVersion;

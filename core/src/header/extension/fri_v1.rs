@@ -19,13 +19,11 @@ pub struct FriBlobCommitment {
 	pub blob_hash: H256,
 	/// Original blob size in bytes.
 	pub size_bytes: u64,
-
 	/// Fri PCS commitment (Merkle root of the blob codeword).
 	pub commitment: Vec<u8>,
 }
 
 /// DA commitment extension — input to LC sampling & verification.
-/// Replaces KZG’s KateCommitment format.
 #[derive(Clone, PartialEq, Eq, Encode, Decode, DecodeWithMemTracking, Default, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
@@ -33,12 +31,10 @@ pub struct FriBlobCommitment {
 pub struct HeaderExtension {
 	/// All blob commitments in canonical block order.
 	pub blobs: Vec<FriBlobCommitment>,
-
-	/// Dataroot to be used for bridge & blob inclusion proofs
-	pub data_root: H256,
-
 	/// Parameter set identifier to decode sampling domain / FRI params.
 	pub params_version: FriParamsVersion,
+	/// Dataroot to be used for bridge & blob inclusion proofs
+	pub data_root: H256,
 }
 
 impl HeaderExtension {
