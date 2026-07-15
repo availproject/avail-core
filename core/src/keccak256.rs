@@ -3,13 +3,11 @@ use scale_info::TypeInfo;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "runtime")]
-use sp_debug_derive::RuntimeDebug;
 
 /// Keccak 256 wrapper which supports `binary-merkle-tree::Hasher`.
 #[derive(PartialEq, Eq, Clone, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
+#[cfg_attr(feature = "runtime", derive(Debug))]
 pub struct Keccak256 {}
 
 impl Hasher for Keccak256 {

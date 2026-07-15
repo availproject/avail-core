@@ -32,12 +32,10 @@ use sp_std::prelude::*;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "runtime")]
-use sp_debug_derive::RuntimeDebug;
 
 /// Something to identify a block.
 #[derive(PartialEq, Eq, Clone, Encode, Decode)]
-#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
+#[cfg_attr(feature = "runtime", derive(Debug))]
 pub enum BlockId<Block: BlockT> {
 	/// Identify by block header hash.
 	Hash(Block::Hash),
@@ -81,7 +79,7 @@ impl<Block: BlockT> fmt::Display for BlockId<Block> {
 
 /// Abstraction over a substrate block.
 #[derive(
-	PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, scale_info::TypeInfo,
+	PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Debug, scale_info::TypeInfo,
 )]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
@@ -222,7 +220,7 @@ where
 }
 
 /// Abstraction over a substrate block and justification.
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
