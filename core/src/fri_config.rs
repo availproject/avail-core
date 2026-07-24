@@ -3,8 +3,6 @@ use scale_info::TypeInfo;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "runtime")]
-use sp_debug_derive::RuntimeDebug;
 /// Parameters that Avail config / node code will set.
 #[derive(Clone, Copy, Debug)]
 pub struct FriParamsConfig {
@@ -24,7 +22,7 @@ pub struct FriParamsConfig {
 /// codeword length and sampling domain.
 #[derive(Clone, Copy, PartialEq, Eq, Encode, Decode, DecodeWithMemTracking, Default, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
+#[cfg_attr(feature = "runtime", derive(Debug))]
 pub enum FriParamsVersion {
 	#[default]
 	V0,

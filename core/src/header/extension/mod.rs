@@ -4,8 +4,6 @@ use scale_info::TypeInfo;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "runtime")]
-use sp_debug_derive::RuntimeDebug;
 
 pub mod fri_v1;
 
@@ -15,7 +13,7 @@ pub mod fri_v1;
 /// header format evolution, not scheme selection.
 #[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
+#[cfg_attr(feature = "runtime", derive(Debug))]
 #[cfg_attr(not(feature = "runtime"), derive(Debug))]
 pub enum HeaderExtension {
 	V1(fri_v1::HeaderExtension),

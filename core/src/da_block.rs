@@ -21,23 +21,21 @@
 use std::fmt;
 
 use crate::traits::{ExtendedBlock, ExtendedHeader};
-use codec::{Codec, Decode, DecodeWithMemTracking, Encode};
+use codec::{Codec, Decode, DecodeWithMemTracking, Encode, EncodeLike};
 use sp_runtime::{
 	traits::{
 		self, Block as BlockT, Header as HeaderT, MaybeSerializeDeserialize, Member, NumberFor,
 	},
-	Justifications,
+	Justifications, OpaqueExtrinsic,
 };
 use sp_std::prelude::*;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "runtime")]
-use sp_debug_derive::RuntimeDebug;
 
 /// Something to identify a block.
 #[derive(PartialEq, Eq, Clone, Encode, Decode)]
-#[cfg_attr(feature = "runtime", derive(RuntimeDebug))]
+#[cfg_attr(feature = "runtime", derive(Debug))]
 pub enum BlockId<Block: BlockT> {
 	/// Identify by block header hash.
 	Hash(Block::Hash),
@@ -81,7 +79,7 @@ impl<Block: BlockT> fmt::Display for BlockId<Block> {
 
 /// Abstraction over a substrate block.
 #[derive(
-	PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, scale_info::TypeInfo,
+	PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Debug, scale_info::TypeInfo,
 )]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
@@ -97,6 +95,78 @@ where
 	pub extrinsics: Vec<Extrinsic>,
 }
 
+/// A shadow DA block that lazily decodes its extrinsics.
+#[derive(Debug, Encode, Decode, scale_info::TypeInfo)]
+pub struct DaLazyBlock<Header, Extrinsic> {
+	/// The block header.
+	pub header: Header,
+	/// The encoded extrinsics.
+	pub extrinsics: Vec<OpaqueExtrinsic>,
+	_phantom: core::marker::PhantomData<Extrinsic>,
+}
+
+impl<Header, Extrinsic: Into<OpaqueExtrinsic>> DaLazyBlock<Header, Extrinsic> {
+	/// Creates a lazy DA block from its decoded parts.
+	pub fn new(header: Header, extrinsics: Vec<Extrinsic>) -> Self {
+		Self {
+			header,
+			extrinsics: extrinsics.into_iter().map(Into::into).collect(),
+			_phantom: Default::default(),
+		}
+	}
+}
+
+impl<Header, Extrinsic: Codec + Into<OpaqueExtrinsic>> From<DaBlock<Header, Extrinsic>>
+	for DaLazyBlock<Header, Extrinsic>
+where
+	Header: Codec,
+{
+	fn from(block: DaBlock<Header, Extrinsic>) -> Self {
+		Self::new(block.header, block.extrinsics)
+	}
+}
+
+impl<Header, Extrinsic> EncodeLike<DaLazyBlock<Header, Extrinsic>> for DaBlock<Header, Extrinsic>
+where
+	Header: Codec,
+	Extrinsic: Codec,
+	DaBlock<Header, Extrinsic>: Encode,
+	DaLazyBlock<Header, Extrinsic>: Encode,
+{
+}
+
+impl<Header, Extrinsic> EncodeLike<DaBlock<Header, Extrinsic>> for DaLazyBlock<Header, Extrinsic>
+where
+	Header: Codec,
+	Extrinsic: Codec,
+	DaBlock<Header, Extrinsic>: Encode,
+	DaLazyBlock<Header, Extrinsic>: Encode,
+{
+}
+
+impl<Header, Extrinsic> traits::LazyBlock for DaLazyBlock<Header, Extrinsic>
+where
+	Header: HeaderT,
+	Extrinsic: core::fmt::Debug + traits::LazyExtrinsic,
+{
+	type Extrinsic = Extrinsic;
+	type Header = Header;
+
+	fn header(&self) -> &Self::Header {
+		&self.header
+	}
+
+	fn header_mut(&mut self) -> &mut Self::Header {
+		&mut self.header
+	}
+
+	fn extrinsics(&self) -> impl Iterator<Item = Result<Self::Extrinsic, codec::Error>> {
+		self.extrinsics
+			.iter()
+			.map(|extrinsic| Self::Extrinsic::decode_unprefixed(extrinsic.inner()))
+	}
+}
+
 impl<Header, Extrinsic> traits::HeaderProvider for DaBlock<Header, Extrinsic>
 where
 	Header: Codec + HeaderT,
@@ -108,12 +178,18 @@ where
 impl<Header, Extrinsic> BlockT for DaBlock<Header, Extrinsic>
 where
 	Header: Codec + HeaderT + MaybeSerializeDeserialize,
-	Extrinsic:
-		Member + Codec + DecodeWithMemTracking + MaybeSerializeDeserialize + traits::ExtrinsicLike,
+	Extrinsic: Member
+		+ Codec
+		+ DecodeWithMemTracking
+		+ MaybeSerializeDeserialize
+		+ traits::ExtrinsicLike
+		+ Into<OpaqueExtrinsic>
+		+ traits::LazyExtrinsic,
 {
 	type Extrinsic = Extrinsic;
 	type Header = Header;
 	type Hash = <Self::Header as traits::Header>::Hash;
+	type LazyBlock = DaLazyBlock<Header, Extrinsic>;
 
 	fn header(&self) -> &Self::Header {
 		&self.header
@@ -127,22 +203,24 @@ where
 	fn new(header: Self::Header, extrinsics: Vec<Self::Extrinsic>) -> Self {
 		DaBlock { header, extrinsics }
 	}
-	fn encode_from(header: &Self::Header, extrinsics: &[Self::Extrinsic]) -> Vec<u8> {
-		(header, extrinsics).encode()
-	}
 }
 
 impl<Header, Extrinsic> ExtendedBlock for DaBlock<Header, Extrinsic>
 where
 	Header: Codec + ExtendedHeader + MaybeSerializeDeserialize,
-	Extrinsic:
-		Member + Codec + DecodeWithMemTracking + traits::ExtrinsicLike + MaybeSerializeDeserialize,
+	Extrinsic: Member
+		+ Codec
+		+ DecodeWithMemTracking
+		+ traits::ExtrinsicLike
+		+ MaybeSerializeDeserialize
+		+ Into<OpaqueExtrinsic>
+		+ traits::LazyExtrinsic,
 {
 	type ExtHeader = Header;
 }
 
 /// Abstraction over a substrate block and justification.
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
